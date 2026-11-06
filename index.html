@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>Murga-o-matic</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Consola de tablado: banda de retazos arriba con transporte; debajo, controles y mezcla a la izquierda, coro y estructura a la derecha. En el teléfono, todo en una columna. */
+:root{
+  --bg:#eceef4; --panel:#fbfbfd; --ink:#16182b; --muted:#5d6079; --line:#d6d9e4; --well:#e3e6ef;
+  --accent:#d4920a; --accent-ink:#16182b;
+  --bajos:#c0392b; --segundos:#c97a12; --primos:#2b2e6e; --sobreprimos:#0f8a7e; --tercia:#8e3fb3; --bateria:#5d6079;
+  --display:"Bowlby One","Arial Black",Impact,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#101124; --panel:#181a33; --ink:#eef0fb; --muted:#9a9dbb; --line:#2c2f52; --well:#22254a;
+  --accent:#f2b33d; --accent-ink:#101124;
+  --bajos:#ff6b5b; --segundos:#f2a43b; --primos:#a9b0ff; --sobreprimos:#3fd1c1; --tercia:#cf8bf0; --bateria:#9a9dbb;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101124; --panel:#181a33; --ink:#eef0fb; --muted:#9a9dbb; --line:#2c2f52; --well:#22254a;
+  --accent:#f2b33d; --accent-ink:#101124;
+  --bajos:#ff6b5b; --segundos:#f2a43b; --primos:#a9b0ff; --sobreprimos:#3fd1c1; --tercia:#cf8bf0; --bateria:#9a9dbb;
+  color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink)}
+body{font:15px/1.5 var(--body);margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+/* banda de retazos: rombos del traje murguero */
+.retazos{height:14px;background:
+  conic-gradient(from 45deg at 50% 50%,var(--bajos) 0 25%,var(--accent) 0 50%,var(--sobreprimos) 0 75%,var(--tercia) 0) 0 0/28px 28px;
+  opacity:.9}
+header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:end;justify-content:space-between;padding-block:22px 18px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(34px,6vw,58px);line-height:.95;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1 span{color:var(--accent)}
+.tag{color:var(--muted);margin:6px 0 0;max-width:52ch}
+.transport{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+button,select,input{font:inherit;color:inherit}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:600}
+.btn:hover{border-color:var(--muted)}
+.btn:focus-visible,select:focus-visible,input:focus-visible,.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.play{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);min-width:118px;font-size:16px;padding:10px 18px;border-radius:12px}
+.play:disabled{opacity:.55;cursor:wait}
+.time{font:500 14px var(--mono);font-variant-numeric:tabular-nums;color:var(--muted);min-width:96px}
+.grid{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.panel h2{font-family:var(--display);font-weight:400;font-size:18px;margin:0 0 12px;letter-spacing:.01em}
+.field{display:grid;gap:5px;margin-bottom:14px}
+.lbl{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--well);border-radius:10px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;border-radius:8px;padding:7px 6px;cursor:pointer;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+select{width:100%;background:var(--well);border:1px solid transparent;border-radius:10px;padding:8px 10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seed{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.seed input{width:100%;background:var(--well);border:1px solid transparent;border-radius:10px;padding:8px 10px;font-family:var(--mono)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.hint{font-size:13px;color:var(--muted);margin:2px 0 0}
+.mixer{display:grid;gap:8px}
+.ch{display:grid;grid-template-columns:14px 92px minmax(0,1fr) 34px;gap:8px;align-items:center}
+.ch i{width:12px;height:12px;border-radius:3px;display:block}
+.ch b{font-weight:600;font-size:14px}
+.ch .rng{font:12px var(--mono);color:var(--muted);display:block;font-weight:400}
+.mute{border:1px solid var(--line);background:transparent;border-radius:7px;font:600 11px var(--mono);padding:4px 0;cursor:pointer;color:var(--muted)}
+.mute[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.status{font-size:13px;color:var(--muted);min-height:20px;margin-top:10px}
+.status.err{color:var(--bajos)}
+.timeline{position:relative;height:42px;border-radius:10px;overflow:hidden;background:var(--well);cursor:pointer;margin-bottom:10px;display:flex}
+.timeline .sec{height:100%;border-right:1px solid var(--panel);display:flex;align-items:center;padding:0 8px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.timeline .sec.cap{background:repeating-linear-gradient(135deg,transparent 0 6px,color-mix(in srgb,var(--accent) 22%,transparent) 6px 12px)}
+.timeline .ph{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);left:0;pointer-events:none}
+.rollbox{overflow-x:auto;border-radius:10px;background:var(--well)}
+canvas#roll{display:block;height:300px;width:100%;min-width:640px;cursor:pointer}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin:10px 0 0}
+.legend span{display:flex;gap:6px;align-items:center}
+.legend i{width:10px;height:10px;border-radius:2px;display:block}
+.est{margin-top:16px;overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+td.t{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.ac{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.pill{font-size:12px;border-radius:999px;padding:1px 8px;background:var(--well);white-space:nowrap}
+.pill.cap{background:var(--accent);color:var(--accent-ink)}
+.export{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+.notes{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+.notes p,.notes li{color:var(--muted);font-size:14px;max-width:65ch}
+.notes h3{font-size:15px;margin:0 0 6px}
+.notes ul{margin:0;padding-left:18px}
+a{color:var(--sobreprimos)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="retazos" aria-hidden="true"></div>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Murga-o-<span>matic</span></h1>
+      <p class="tag">Generador de murga uruguaya. La batería son loops reales de La Tríada y el coro canta en cinco cuerdas, armonizado con las reglas del género.</p>
+    </div>
+    <div class="transport">
+      <button class="btn play" id="play" disabled>Cargando…</button>
+      <span class="time" id="time">0:00 / 0:00</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <aside class="panel">
+      <h2>La pieza</h2>
+      <div class="field"><span class="lbl" id="l-forma">Forma</span>
+        <div class="seg" role="group" aria-labelledby="l-forma" id="forma">
+          <button data-v="retirada" aria-pressed="true">Retirada</button>
+          <button data-v="presentacion" aria-pressed="false">Presentación</button>
+          <button data-v="cuple" aria-pressed="false">Cuplé</button>
+        </div>
+      </div>
+      <div class="field"><span class="lbl">Tono</span>
+        <div class="row2">
+          <select id="tonica" aria-label="Tónica"></select>
+          <select id="modo" aria-label="Modo"><option value="menor">menor</option><option value="mayor">mayor</option></select>
+        </div>
+      </div>
+      <div class="field"><label class="lbl" for="ritmo">Ritmo de la batería</label>
+        <select id="ritmo"></select>
+        <p class="hint" id="ritmoHint"></p>
+      </div>
+      <div class="field"><label class="lbl" for="semilla">Semilla</label>
+        <div class="seed"><input id="semilla" type="number" min="1" max="99999" value="1" inputmode="numeric"><button class="btn" id="otra">Otra</button></div>
+        <p class="hint">Cada número da otra melodía y otra armonía.</p>
+      </div>
+      <div class="field"><label class="lbl" for="brillo">Timbre del coro</label>
+        <input id="brillo" type="range" min="0" max="1.5" step="0.1" value="1">
+        <div class="hint" style="display:flex;justify-content:space-between"><span>coro clásico</span><span>murguero</span><span>filoso</span></div>
+      </div>
+
+      <h2 style="margin-top:20px">Mezcla</h2>
+      <div class="mixer" id="mixer"></div>
+      <div class="status" id="status" role="status"></div>
+    </aside>
+
+    <main class="panel" style="min-width:0">
+      <h2>Coro y estructura</h2>
+      <div class="timeline" id="timeline" aria-label="Secciones; tocá para saltar"></div>
+      <div class="rollbox"><canvas id="roll" aria-label="Notas de cada cuerda del coro"></canvas></div>
+      <div class="legend" id="legend"></div>
+      <div class="est"><table><thead><tr><th>Tiempo</th><th>Sección</th><th>Textura</th><th>Acordes</th></tr></thead><tbody id="tabla"></tbody></table></div>
+      <div class="export">
+        <button class="btn" id="exportar">Descargar ZIP: mezcla WAV, coro MIDI y estructura</button>
+        <span class="hint" id="expStatus"></span>
+      </div>
+    </main>
+  </div>
+
+  <section class="notes">
+    <div>
+      <h3>Cómo arma cada pieza</h3>
+      <ul>
+        <li>La melodía la llevan los primos, en motivos silábicos con forma A A'. Hacen semicadencia en V al compás 4 y cierran en I al 8.</li>
+        <li>Los sobreprimos cantan una tercera arriba y los segundos una abajo, ajustadas a la nota del acorde en tiempo fuerte. Los bajos cantan la fundamental.</li>
+        <li>Recursos del género: pregunta y respuesta, unísono, lailareo en pedal, clarinada a capela con la tercia arriba y bajada al acorde final.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Registros de las cuerdas</h3>
+      <p>Según "Sin Disfraz" (Lamolle y Lombardo, 1998): segundos do3–do4, primos sol3–sol4, sobreprimos mi4–la4 hasta re5. La tercia es la voz más solista.</p>
+      <p>Batería: Pablo "Lolito" Iribarne (bombo), Raúl García (redoblante) y Gerardo "Batata" Cánepa (platillos), del video <a href="https://www.youtube.com/watch?v=0DSJVulzDYw" target="_blank" rel="noopener">17 ritmos fundamentales de murga</a>. Coro: muestras FluidR3 y MusyngKite.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+const DATOS = {"ritmos":[{"id":3,"nombre":"Marcha camión 2/4","tpc":2,"compas":0.894,"compases":2,"bpm":134.2,"archivo":"loops/03.wav"},{"id":4,"nombre":"Marcha camión 4/4","tpc":4,"compas":2.7999,"compases":2,"bpm":85.7,"archivo":"loops/04.wav"},{"id":6,"nombre":"Base de murga","tpc":4,"compas":2.0055,"compases":2,"bpm":119.7,"archivo":"loops/06.wav"},{"id":8,"nombre":"Candombe","tpc":4,"compas":1.9122,"compases":2,"bpm":125.5,"archivo":"loops/08.wav"},{"id":9,"nombre":"Pa'l costado","tpc":4,"compas":2.1376,"compases":2,"bpm":112.3,"archivo":"loops/09.wav"},{"id":10,"nombre":"Plena","tpc":4,"compas":1.7264,"compases":2,"bpm":139.0,"archivo":"loops/10.wav"},{"id":11,"nombre":"Bossa nova","tpc":4,"compas":2.8521,"compases":2,"bpm":84.1,"archivo":"loops/11.wav"},{"id":13,"nombre":"Conga","tpc":4,"compas":1.7319,"compases":2,"bpm":138.6,"archivo":"loops/13.wav"},{"id":14,"nombre":"Beat","tpc":4,"compas":1.7248,"compases":2,"bpm":139.1,"archivo":"loops/14.wav"},{"id":15,"nombre":"Bolero moderno","tpc":4,"compas":2.5466,"compases":2,"bpm":94.2,"archivo":"loops/15.wav"},{"id":17,"nombre":"Son cubano","tpc":4,"compas":1.9632,"compases":2,"bpm":122.2,"archivo":"loops/17.wav"},{"id":18,"nombre":"Montuno cubano","tpc":4,"compas":2.4945,"compases":2,"bpm":96.2,"archivo":"loops/18.wav"},{"id":19,"nombre":"Rumba cubana","tpc":4,"compas":2.4165,"compases":2,"bpm":99.3,"archivo":"loops/19.wav"},{"id":20,"nombre":"Miles Davis","tpc":4,"compas":2.6557,"compases":2,"bpm":90.4,"archivo":"loops/20.wav"}],"frases":{"1":{"archivo":"frases/01.wav","ultimo":5.6657,"seg":6.553},"5":{"archivo":"frases/05.wav","ultimo":2.798,"seg":3.999},"7":{"archivo":"frases/07.wav","ultimo":3.6629,"seg":4.196}},"acompana":{"3":[1,null],"4":[1,null],"6":[5,7]}};
+
+// ============================================================ azar con semilla
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+class Rng{constructor(s){this.r=mulberry32((s*9973+17)>>>0)} rand(){return this.r()} choice(a){return a[Math.floor(this.r()*a.length)]} uni(a,b){return a+(b-a)*this.r()}}
+
+// ============================================================ teoría
+const ACORDES={I:[0,[0,4,7]],I7:[0,[0,4,7,10]],ii:[2,[0,3,7]],II7:[2,[0,4,7,10]],IV:[5,[0,4,7]],iv:[5,[0,3,7]],
+  V:[7,[0,4,7]],V7:[7,[0,4,7,10]],vi:[9,[0,3,7]],VI7:[9,[0,4,7,10]],
+  i:[0,[0,3,7]],III:[3,[0,4,7]],VI:[8,[0,4,7]],VII:[10,[0,4,7]],ivm:[5,[0,3,7]]};
+const ESCALA={mayor:[0,2,4,5,7,9,11],menor:[0,2,3,5,7,8,10]};
+const PROG={
+  mayor:{estrofa:[["I","IV","I","V","I","IV","V","I"],["I","I7","IV","iv","I","V","I","I"],["I","vi","ii","V","I","IV","V","I"],["I","II7","V","V","I","IV","V7","I"]],
+         estribillo:[["IV","V","I","vi","IV","V","I","I"],["IV","I","V","I","IV","I","V7","I"],["I","IV","V","I","VI7","ii","V7","I"]]},
+  menor:{estrofa:[["i","VII","VI","V","i","VII","VI","V"],["i","VII","VI","III","V","i","VI","V"],["i","ivm","V7","i","i","ivm","V7","i"],["i","i","V7","V7","V7","V7","i","i"]],
+         estribillo:[["VI","VII","i","i","VI","VII","V","V"],["ivm","i","V7","i","VI","III","V7","i"]]}};
+const CUERDAS={
+  bajos:{nucleo:[43,52],limite:[40,55],cantores:2,pan:-.55,rango:"sol2–mi3"},
+  segundos:{nucleo:[52,60],limite:[48,62],cantores:3,pan:-.25,rango:"do3–do4"},
+  primos:{nucleo:[55,67],limite:[52,69],cantores:4,pan:.05,rango:"sol3–sol4"},
+  sobreprimos:{nucleo:[64,69],limite:[60,74],cantores:3,pan:.35,rango:"mi4–la4"},
+  tercia:{nucleo:[67,72],limite:[64,74],cantores:1,pan:.6,rango:"sol4–re5"}};
+const NOMBRES_CUERDA={bajos:"Bajos",segundos:"Segundos",primos:"Primos",sobreprimos:"Sobreprimos",tercia:"Tercia"};
+const RITMOS=[[1,1,2,1,1,2],[2,1,1,2,2],[1,1,1,1,2,2],[3,1,2,2],[1,1,2,2,2],[2,2,1,1,2],[1,1,1,1,1,1,2]];
+const CADENCIA=[[2,2,4],[4,4],[2,2,2,1,1],[3,1,4]];
+const NOTAS=["Do","Do#","Re","Mib","Mi","Fa","Fa#","Sol","Lab","La","Sib","Si"];
+const TEXTURAS={dos_voces:"a dos voces",tutti:"tutti",pregunta_respuesta:"pregunta y respuesta",unisono:"unísono",clarinada:"clarinada a capela",bajada:"bajada y acorde final"};
+
+const mod=(a,n)=>((a%n)+n)%n;
+function tonosAcorde(t,g){const [r,iv]=ACORDES[g];return [iv.map(i=>mod(t+r+i,12)),mod(t+r,12)]}
+function escala(t,modo,g){const e=ESCALA[modo].map(s=>mod(t+s,12));if(modo==="menor"&&(g==="V"||g==="V7"))e[6]=mod(t+11,12);return e}
+function cercano(pcs,obj,lo,hi){let best=null,bd=1e9;for(let m=lo;m<=hi;m++){if(!pcs.includes(mod(m,12)))continue;const d=Math.abs(m-obj);if(d<bd||(d===bd&&m<best)){bd=d;best=m}}return best}
+function pasoEscalar(m,pasos,esc){const d=pasos>0?1:-1;let x=m;for(let k=0;k<Math.abs(pasos);k++){x+=d;while(!esc.includes(mod(x,12)))x+=d}return x}
+
+// ============================================================ composición
+function seccion(o){return Object.assign({bateria:true,din:90,lailareo:false,fermata:false},o)}
+
+function melodia(rng,sec,motivo){
+  const n=sec.compases,t=sec.tonica,[lo,hi]=CUERDAS.primos.nucleo;
+  const ton=cercano([t],60,lo,hi);
+  if(!motivo)motivo={r1:rng.choice(RITMOS),r2:rng.choice(RITMOS),cad:rng.choice(CADENCIA),cadFinal:rng.choice([...CADENCIA.slice(0,2),[8]]),pico:rng.choice([2,2,3,6]),forma:rng.choice(["AA'","AB"])};
+  const ritmos=[];for(let c=0;c<n;c++)ritmos.push(c===n-1?motivo.cadFinal:c===3?motivo.cad:(c%2===0?motivo.r1:motivo.r2));
+  function objetivo(c,frac){const x=c+frac;let p=[[0,ton+4],[motivo.pico+.5,hi-rng.choice([0,1])],[3.9,ton+2],[4,ton+4],[6.5,hi-2],[n,ton]];
+    if(n<=4)p=[[0,ton+4],[1.5,hi-1],[n,ton]];
+    for(let i=0;i<p.length-1;i++){const[x0,y0]=p[i],[x1,y1]=p[i+1];if(x0<=x&&x<=x1)return y0+(y1-y0)*(x-x0)/Math.max(x1-x0,1e-6)}return p[p.length-1][1]}
+  let notas=[],prev=null;
+  for(let c=0;c<n;c++){const g=sec.acordes[c];const[ct]=tonosAcorde(t,g);const esc=escala(t,sec.modo,g);let pos=0;
+    ritmos[c].forEach((d,i)=>{const fuerte=pos===0||pos===4||d>=3;const obj=objetivo(c,pos/8);const ultimo=c===n-1&&i===ritmos[c].length-1;let m;
+      if(ultimo)m=(n>=4)?cercano([t],obj,lo,hi):cercano(ct,obj,lo,hi);
+      else if(c===3&&i===ritmos[c].length-1&&d>=2)m=cercano(ct,ton+2,lo,hi);
+      else if(fuerte||prev===null)m=cercano(ct,prev===null?obj:(obj+prev)/2,lo,hi);
+      else{const dir=obj>prev+.5?1:obj<prev-.5?-1:rng.choice([1,-1]);m=pasoEscalar(prev,dir,esc);if(m<lo||m>hi)m=pasoEscalar(prev,-dir,esc)}
+      if(prev!==null&&Math.abs(m-prev)>7)m=cercano(ct,prev,lo,hi);
+      notas.push([c*8+pos,d,m]);prev=m;pos+=d});}
+  if(n===8&&motivo.forma==="AA'"){notas=notas.map(([ini,d,m])=>{const c=Math.floor(ini/8);if(c===4||c===5){const o=notas.find(x=>x[0]===ini-32);
+    if(o){const[ct]=tonosAcorde(t,sec.acordes[c]);const fuerte=(ini%8===0||ini%8===4);m=(ct.includes(mod(o[2],12))||!fuerte)?o[2]:cercano(ct,o[2],lo,hi)}}return[ini,d,m]})}
+  return[notas,motivo];
+}
+
+function armonizar(sec,mel){
+  const t=sec.tonica,v={bajos:[],segundos:[],primos:[],sobreprimos:[],tercia:[]};let prevB=null;
+  const[loS,hiS]=CUERDAS.sobreprimos.limite,[lo2]=CUERDAS.segundos.limite,[loB,hiB]=CUERDAS.bajos.limite;
+  for(const[ini,d,m]of mel){const c=Math.floor(ini/8);const g=sec.acordes[Math.min(c,sec.acordes.length-1)];const[ct,raiz]=tonosAcorde(t,g);const esc=escala(t,sec.modo,g);
+    const fuerte=(ini%8===0||ini%8===4)||d>=2;
+    let ar=pasoEscalar(m,2,esc);if(fuerte&&!ct.includes(mod(ar,12)))ar=cercano(ct,m+4,m+3,m+9)??ar;
+    let ab=pasoEscalar(m,-2,esc);if(fuerte&&!ct.includes(mod(ab,12)))ab=cercano(ct,m-4,m-9,m-3)??ab;
+    if(ar>hiS)ar=m; if(ab<lo2)ab=(ab+12<m)?ab+12:m;
+    const bajo=cercano([raiz],prevB??48,loB,hiB);prevB=bajo;
+    const tex=sec.textura;
+    if(tex==="dos_voces")v.segundos.push([ini,d,ab]);
+    else if(tex==="tutti"||tex==="pregunta_respuesta"){const preg=tex==="pregunta_respuesta"&&(c%4)<2;if(!preg){v.sobreprimos.push([ini,d,ar]);v.segundos.push([ini,d,ab]);v.bajos.push([ini,d,bajo])}}
+    else if(tex==="unisono"){v.segundos.push([ini,d,m-12>=lo2?m-12:m]);v.sobreprimos.push([ini,d,m+12<=hiS?m+12:m]);v.bajos.push([ini,d,m-12<=hiB?m-12:m-24])}
+    v.primos.push([ini,d,m]);}
+  if(sec.lailareo){v.sobreprimos=[];const ped=cercano([mod(t+7,12)],67,64,71);
+    for(let c=0;c<sec.compases;c++){const[ct]=tonosAcorde(t,sec.acordes[c]);for(let q=0;q<4;q++){const p=ct.includes(mod(ped,12))?ped:cercano(ct,ped,62,72);v.sobreprimos.push([c*8+q*2,q%2===0?2:1,p])}}}
+  if(sec.nombre.startsWith("Estribillo")&&sec.compases>=8){for(let c=4;c<sec.compases;c++){const[ct]=tonosAcorde(t,sec.acordes[c]);v.tercia.push([c*8,8,cercano(ct,71,67,74)])}}
+  return v;
+}
+
+function clarinada(sec){
+  const t=sec.tonica,v={bajos:[],segundos:[],primos:[],sobreprimos:[],tercia:[]};const prev={bajos:47,segundos:57,primos:64,sobreprimos:69,tercia:72};
+  sec.acordes.forEach((g,c)=>{const[ct,raiz]=tonosAcorde(t,g);const dur=8*((sec.fermata&&c===sec.acordes.length-1)?2:1);const usadas=[];
+    for(const k of["bajos","segundos","primos","sobreprimos","tercia"]){const[lo,hi]=CUERDAS[k].limite;const pcs=k==="bajos"?[raiz]:ct;const cand=[];
+      for(let m=lo;m<=hi;m++)if(pcs.includes(mod(m,12)))cand.push(m);
+      cand.sort((a,b)=>(Math.abs(a-prev[k])+(usadas.includes(mod(a,12))?3:0))-(Math.abs(b-prev[k])+(usadas.includes(mod(b,12))?3:0))||a-b);
+      const m=cand[0];usadas.push(mod(m,12));prev[k]=m;v[k].push([c*8,dur,m])}});
+  return v;
+}
+
+function bajada(sec){
+  const t=sec.tonica,esc=escala(t,sec.modo,"V"),v={bajos:[],segundos:[],primos:[],sobreprimos:[],tercia:[]};
+  const[lo,hi]=CUERDAS.primos.nucleo;const fin=cercano([t],60,lo,hi);
+  const linea=[];for(let k=7;k>=0;k--)linea.push(pasoEscalar(fin,k,esc));
+  linea.slice(0,-1).forEach((m,i)=>{v.primos.push([i,1,m]);v.sobreprimos.push([i,1,pasoEscalar(m,2,esc)])});
+  const[vct,vr]=tonosAcorde(t,"V7");v.bajos.push([0,7,cercano([vr],47,40,55)]);v.segundos.push([0,7,cercano(vct,57,50,60)]);
+  const[ct,raiz]=tonosAcorde(t,sec.modo==="mayor"?"I":"i");
+  v.primos.push([7,9,cercano([t],fin,55,67)]);v.sobreprimos.push([7,9,cercano(ct,fin+4,62,71)]);v.segundos.push([7,9,cercano(ct,fin-5,50,60)]);
+  v.bajos.push([7,9,cercano([raiz],45,40,55)]);v.tercia.push([7,9,cercano(ct,72,67,74)]);
+  return v;
+}
+
+function planForma(nombre,t,modo,rng){
+  const prog=(m,k)=>[...rng.choice(PROG[m][k])];const par="mayor";const S=[];
+  if(nombre==="retirada"){const e=prog(modo,"estrofa");
+    S.push(seccion({nombre:"Intro con lailareo",compases:4,acordes:e.slice(0,4),modo,tonica:t,textura:"unisono",din:80,lailareo:true}),
+      seccion({nombre:"Estrofa 1",compases:8,acordes:e,modo,tonica:t,textura:"dos_voces",din:78}),
+      seccion({nombre:"Estrofa 2",compases:8,acordes:e,modo,tonica:t,textura:"tutti",din:92}),
+      seccion({nombre:"Estribillo",compases:8,acordes:prog(par,"estribillo"),modo:par,tonica:t,textura:"pregunta_respuesta",din:100}),
+      seccion({nombre:"Clarinada",compases:3,acordes:["IV","V7","I"],modo:par,tonica:t,textura:"clarinada",bateria:false,din:112,fermata:true}),
+      seccion({nombre:"Final",compases:2,acordes:["V7","I"],modo:par,tonica:t,textura:"bajada",din:118}));}
+  else if(nombre==="presentacion"){const e=prog(par,"estrofa");
+    S.push(seccion({nombre:"Intro",compases:4,acordes:["I","IV","V","I"],modo:par,tonica:t,textura:"unisono",din:96}),
+      seccion({nombre:"Estrofa 1",compases:8,acordes:e,modo:par,tonica:t,textura:"pregunta_respuesta",din:88}),
+      seccion({nombre:"Estrofa 2",compases:8,acordes:e,modo:par,tonica:t,textura:"tutti",din:95}),
+      seccion({nombre:"Estribillo con lailareo",compases:8,acordes:prog(par,"estribillo"),modo:par,tonica:t,textura:"tutti",din:104,lailareo:true}),
+      seccion({nombre:"Clarinada",compases:3,acordes:["IV","V7","I"],modo:par,tonica:t,textura:"clarinada",bateria:false,din:114,fermata:true}),
+      seccion({nombre:"Final",compases:2,acordes:["V7","I"],modo:par,tonica:t,textura:"bajada",din:120}));}
+  else{const e=prog(modo,"estrofa"),b=prog(modo,"estribillo");
+    S.push(seccion({nombre:"Estrofa 1",compases:8,acordes:e,modo,tonica:t,textura:"dos_voces",din:85}),
+      seccion({nombre:"Estribillo",compases:8,acordes:b,modo,tonica:t,textura:"tutti",din:98}),
+      seccion({nombre:"Estrofa 2",compases:8,acordes:e,modo,tonica:t,textura:"dos_voces",din:85}),
+      seccion({nombre:"Estribillo 2",compases:8,acordes:b,modo,tonica:t,textura:"unisono",din:104}),
+      seccion({nombre:"Final",compases:2,acordes:["V7",modo==="mayor"?"I":"i"],modo,tonica:t,textura:"bajada",din:110}));}
+  return S;
+}
+
+function componer(forma,t,modo,seed){
+  const rng=new Rng(seed);const secs=planForma(forma,t,modo,rng);const ev={bajos:[],segundos:[],primos:[],sobreprimos:[],tercia:[]};
+  let off=0;const motivos={};
+  for(const s of secs){let v;
+    if(s.textura==="clarinada")v=clarinada(s);else if(s.textura==="bajada")v=bajada(s);
+    else{const k=s.nombre.startsWith("Estribillo")?"estribillo":"estrofa";const[mel,mo]=melodia(rng,s,motivos[k]);motivos[k]=mo;v=armonizar(s,mel)}
+    for(const k in v)for(const[ini,d,m]of v[k])ev[k].push([off+ini,d,m,s.din]);
+    s.inicio=off;off+=s.compases*8+(s.fermata?8:0);}
+  return{secs,ev,total8:off};
+}
+
+// ============================================================ audio
+const SR=44100;
+const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;
+const decodeCtx=new OAC(1,1,SR);
+const MUDO=new Audio("data:audio/wav;base64,UklGRvQHAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YdAHAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==");MUDO.setAttribute("playsinline","");
+const cache=new Map();
+function cargar(url){if(!cache.has(url))cache.set(url,fetch(url).then(r=>{if(!r.ok)throw new Error(`no se pudo bajar ${url} (error ${r.status})`);return r.arrayBuffer()})
+  .then(b=>new Promise((ok,mal)=>{const p=decodeCtx.decodeAudioData(b,ok,()=>mal(new Error(`no se pudo leer ${url}`)));if(p&&p.catch)p.catch(()=>{})})).catch(e=>{cache.delete(url);throw e}));return cache.get(url)}
+const BANCOS=["musyng","fluid"];
+
+function eq(ctx,input,brillo){
+  const f=(type,freq,q,gain)=>{const b=ctx.createBiquadFilter();b.type=type;b.frequency.value=freq;if(q)b.Q.value=q;if(gain!==undefined)b.gain.value=gain;return b};
+  const chain=[f("highpass",110,.7),f("peaking",1100,1.2,2.5*brillo),f("peaking",2900,1,5*brillo),f("highshelf",7000,.7,2*brillo)];
+  let n=input;for(const c of chain){n.connect(c);n=c}return n;
+}
+
+// Cada cantor se mezcla a mano sobre arrays (mucho más rápido que un nodo por nota);
+// el motor de audio solo aplica la ecualización al final.
+async function renderCuerda(k,eventos,P,muestras){
+  const len=Math.ceil(P.total*SR),L=new Float32Array(len),R=new Float32Array(len);
+  const cfg=CUERDAS[k];const rng=new Rng(P.seed*31+k.length*7);
+  const ataque=Math.round(.09*SR),subida=Math.round(.012*SR),caida=Math.round(.09*SR),xf=Math.round(.1*SR);
+  for(let cantor=0;cantor<cfg.cantores;cantor++){
+    const banco=BANCOS[cantor%2];const desaf=rng.uni(-9,9);
+    const pan=Math.max(-1,Math.min(1,cfg.pan+rng.uni(-.12,.12)));const gl=Math.cos((pan+1)*Math.PI/4),gr=Math.sin((pan+1)*Math.PI/4);
+    for(const[ini,d,m,vel]of eventos){const buf=muestras[banco][m];if(!buf)continue;const x=buf.getChannelData(0);
+      const dur=d*P.seg8*(d>=2?.97:.85);const i0=Math.round((P.inicio+ini*P.seg8+rng.uni(0,.022))*SR);
+      const g=Math.pow(vel/127,1.6)*rng.uni(.85,1)/Math.sqrt(cfg.cantores);const rate=Math.pow(2,(desaf+rng.uni(-4,4))/1200);
+      const n=Math.min(Math.round(dur*SR)+caida,len-i0);const ls=Math.round(.8*SR),le=x.length-Math.round(.15*SR),per=le-ls;
+      const at=i=>{const j=Math.floor(i),f=i-j;return x[j]+(x[j+1]-x[j])*f};
+      let pos=ataque;
+      for(let s=0;s<n;s++){
+        if(pos>=le)pos-=per;
+        let v=at(pos);
+        if(pos>le-xf){const w=(pos-(le-xf))/xf;v=v*(1-w)+at(pos-per)*w}  // fundido en el punto de loop
+        let e=1;if(s<subida)e=s/subida;else if(s>n-caida)e=Math.max(0,(n-s)/caida);
+        const o=v*g*e;L[i0+s]+=o*gl;R[i0+s]+=o*gr;pos+=rate}
+    }
+  }
+  const ctx=new OAC(2,len,SR);const b=ctx.createBuffer(2,len,SR);b.copyToChannel(L,0);b.copyToChannel(R,1);
+  const src=ctx.createBufferSource();src.buffer=b;eq(ctx,src,P.brillo).connect(ctx.destination);src.start(0);
+  return ctx.startRendering();
+}
+
+async function renderPercusion(P,secs){
+  const len=Math.ceil(P.total*SR);const ctx=new OAC(2,len,SR);
+  const loop=await cargar(P.ritmo.archivo);const ln=loop.duration;const[llamada,corte]=DATOS.acompana[P.ritmo.id]||[null,null];
+  const tocar=(buf,when,off=0,dur,fadeOut=0,decay=false)=>{const s=ctx.createBufferSource();s.buffer=buf;const g=ctx.createGain();s.connect(g).connect(ctx.destination);
+    let w=when,o=off;if(w<0){o-=w;w=0}const D=dur??(buf.duration-o);if(D<=0)return;
+    g.gain.setValueAtTime(1,w);if(decay){g.gain.setTargetAtTime(0,w+.05,.35)}else if(fadeOut){g.gain.setValueAtTime(1,w+Math.max(0,D-fadeOut));g.gain.linearRampToValueAtTime(0,w+D)}
+    s.start(w,o,D)};
+  if(llamada){const f=DATOS.frases[llamada];tocar(await cargar(f.archivo),P.inicio-f.ultimo)}
+  for(let i=0;i<secs.length;i++){const s=secs[i];const t0=P.inicio+s.inicio/8*P.c4;const t1=t0+s.compases*P.c4;
+    if(s.bateria&&s.textura!=="bajada"){const sig=secs[i+1];const hayCorte=corte&&sig&&!sig.bateria;let finLoop=t1;
+      if(hayCorte)finLoop=t1-DATOS.frases[corte].ultimo;
+      for(let t=t0;t<finLoop-1e-4;t+=ln){const d=Math.min(ln,finLoop-t);const ultimo=t+ln>=finLoop-1e-4;tocar(loop,t,0,d,(ultimo&&(hayCorte||!sig||!sig.bateria))?.02:0)}
+      if(hayCorte){const f=DATOS.frases[corte];tocar(await cargar(f.archivo),finLoop,0,Math.min(f.seg,f.ultimo+.9),.5)}}
+    if(s.textura==="bajada"){const fin=t0+P.c4*7/8;for(let t=t0;t<fin-1e-4;t+=ln)tocar(loop,t,0,Math.min(ln,fin-t));tocar(loop,fin,0,1.6,0,true)}}
+  return ctx.startRendering();
+}
+
+function picoDe(bufs){let p=1e-9;const n=bufs[0].length;for(let ch=0;ch<2;ch++){const datos=bufs.map(b=>b.getChannelData(ch));for(let i=0;i<n;i+=2){let s=0;for(const d of datos)s+=d[i];const a=Math.abs(s);if(a>p)p=a}}return p}
+function procesar(buf,escala,drive){const k=Math.tanh(drive);for(let ch=0;ch<buf.numberOfChannels;ch++){const d=buf.getChannelData(ch);for(let i=0;i<d.length;i++)d[i]=Math.tanh(drive*d[i]*escala)/k}}
+function salaIR(ctx){const sr=ctx.sampleRate,n=Math.floor(.7*sr),ir=ctx.createBuffer(2,n,sr);const r=new Rng(5);for(let ch=0;ch<2;ch++){const d=ir.getChannelData(ch);for(let i=0;i<n;i++)d[i]=(r.rand()*2-1)*Math.exp(-7*i/n)}return ir}
+
+// ============================================================ estado
+const ORDEN=["bajos","segundos","primos","sobreprimos","tercia"];
+const S={forma:"retirada",tonica:9,modo:"menor",ritmo:6,seed:1,brillo:1,mix:{bajos:1,segundos:1,primos:1,sobreprimos:1,tercia:1,bateria:.75},mute:{},
+  pieza:null,stems:null,P:null,ac:null,nodos:null,inicio:0,offset:0,tocando:false,gen:0};
+const $=id=>document.getElementById(id);
+
+function estadoTexto(t,err){$("status").textContent=t;$("status").className="status"+(err?" err":"")}
+
+async function muestrasPara(ev){
+  const notas=new Set();for(const k in ev)for(const e of ev[k])notas.add(e[2]);
+  const out={musyng:{},fluid:{}};
+  await Promise.all([...notas].flatMap(m=>BANCOS.map(async b=>{if(m<40||m>76)return;out[b][m]=await cargar(`coro/${b}/${m}.mp3`)})));
+  return out;
+}
+
+async function generar(){
+  const gen=++S.gen;detener(true);$("play").disabled=true;$("play").textContent="Componiendo…";estadoTexto("Componiendo y cantando…");
+  try{
+    const ritmo=DATOS.ritmos.find(r=>r.id===S.ritmo);const c4=ritmo.compas*4/ritmo.tpc;const seg8=c4/8;
+    const pieza=componer(S.forma,S.tonica,S.modo,S.seed);
+    const[llamada]=DATOS.acompana[ritmo.id]||[null];let inicio=0;
+    if(llamada)inicio=Math.ceil((DATOS.frases[llamada].ultimo+.05)/c4)*c4;
+    const total=inicio+pieza.total8*seg8+2.5;
+    const P={ritmo,c4,seg8,inicio,total,seed:S.seed,brillo:S.brillo};
+    const muestras=await muestrasPara(pieza.ev);if(gen!==S.gen)return;
+    const voces=[];for(const k of ORDEN){voces.push(await renderCuerda(k,pieza.ev[k],P,muestras));if(gen!==S.gen)return}
+    const perc=await renderPercusion(P,pieza.secs);if(gen!==S.gen)return;
+    const pv=picoDe(voces);const drive=1+.8*S.brillo;voces.forEach(b=>procesar(b,1/pv,drive));
+    const pp=picoDe([perc]);procesar(perc,1/pp,1.05);
+    S.pieza=pieza;S.P=P;S.stems={...Object.fromEntries(ORDEN.map((k,i)=>[k,voces[i]])),bateria:perc};S.offset=0;
+    dibujarTodo();$("play").disabled=false;$("play").textContent="Tocar";
+    estadoTexto(`${S.forma==="cuple"?"Cuplé":S.forma==="presentacion"?"Presentación":"Retirada"} en ${NOTAS[S.tonica]} ${S.modo} · ${ritmo.bpm} BPM · ${fmt(total)}`);
+  }catch(e){console.error(e);estadoTexto(`No se pudieron preparar los sonidos: ${e&&e.message||e}. Recargá la página para reintentar.`,true);$("play").textContent="Tocar"}
+}
+
+// ============================================================ reproducción
+function grafo(ctx,dest,offset,when){
+  const master=ctx.createGain();master.gain.value=.9;const comp=ctx.createDynamicsCompressor();comp.threshold.value=-10;comp.ratio.value=3;comp.attack.value=.01;comp.release.value=.2;
+  master.connect(comp).connect(dest);
+  const vozBus=ctx.createGain();vozBus.connect(master);const rev=ctx.createConvolver();rev.buffer=salaIR(ctx);const send=ctx.createGain();send.gain.value=.16;vozBus.connect(send).connect(rev).connect(master);
+  const gains={},srcs=[];
+  for(const k of[...ORDEN,"bateria"]){const g=ctx.createGain();g.gain.value=S.mute[k]?0:S.mix[k]*(k==="bateria"?1:.9);g.connect(k==="bateria"?master:vozBus);gains[k]=g;
+    const s=ctx.createBufferSource();s.buffer=S.stems[k];s.connect(g);s.start(when,offset);srcs.push(s)}
+  return{gains,srcs};
+}
+function desbloquear(){
+  try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}       // iOS: que suene aunque el teléfono esté en silencio
+  try{MUDO.play().catch(()=>{})}catch(e){}
+  if(!S.ac){const AC=window.AudioContext||window.webkitAudioContext;S.ac=new AC()}
+  if(S.ac.state!=="running")S.ac.resume().catch(()=>{});
+  const b=S.ac.createBuffer(1,1,22050),s=S.ac.createBufferSource();s.buffer=b;s.connect(S.ac.destination);s.start(0);
+}
+function tocar(){if(!S.stems)return;desbloquear();
+  setTimeout(()=>{if(S.tocando&&S.ac.state!=="running")estadoTexto("El navegador no deja arrancar el audio. Tocá Pausa y de nuevo Tocar; en iPhone revisá que no esté en silencio.",true)},800);
+  const when=S.ac.currentTime+.05;S.nodos=grafo(S.ac,S.ac.destination,S.offset,when);S.inicio=when-S.offset;S.tocando=true;$("play").textContent="Pausa";
+  S.nodos.srcs[0].onended=()=>{if(S.tocando&&posicion()>=S.P.total-.1){detener();S.offset=0;pintarCursor()}};requestAnimationFrame(cuadro)}
+function detener(reset){if(S.nodos){S.nodos.srcs.forEach(s=>{try{s.stop()}catch(e){}});S.nodos=null}
+  if(S.tocando&&!reset)S.offset=posicion();S.tocando=false;if(reset)S.offset=0;$("play").textContent="Tocar"}
+function posicion(){return S.tocando?Math.min(S.ac.currentTime-S.inicio,S.P.total):S.offset}
+function saltar(t){const was=S.tocando;detener();S.offset=Math.max(0,Math.min(t,S.P.total-.05));if(was)tocar();pintarCursor()}
+function cuadro(){pintarCursor();if(S.tocando)requestAnimationFrame(cuadro)}
+$("play").onclick=()=>{try{S.tocando?detener():tocar()}catch(e){console.error(e);S.tocando=false;$("play").textContent="Tocar";estadoTexto(`No se pudo tocar: ${e&&e.message||e}`,true)}};
+
+// ============================================================ dibujo
+const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function tSec(s){return S.P.inicio+s.inicio*S.P.seg8}
+function dibujarTodo(){
+  const P=S.P,secs=S.pieza.secs,tl=$("timeline");tl.innerHTML="";
+  const add=(nombre,t0,t1,cap)=>{const d=document.createElement("div");d.className="sec"+(cap?" cap":"");d.style.flex=`${t1-t0} 0 0`;d.textContent=nombre;d.title=`${nombre} · ${fmt(t0)}`;tl.appendChild(d)};
+  if(P.inicio>0)add("Llamada",0,P.inicio,true);
+  secs.forEach(s=>{const t0=tSec(s);add(s.nombre,t0,t0+(s.compases*8+(s.fermata?8:0))*P.seg8,!s.bateria)});
+  const ult=secs[secs.length-1];add("",tSec(ult)+(ult.compases*8)*P.seg8,P.total,false);
+  const ph=document.createElement("div");ph.className="ph";ph.id="ph";tl.appendChild(ph);
+  const tb=$("tabla");tb.innerHTML="";
+  if(P.inicio>0)tb.insertAdjacentHTML("beforeend",`<tr><td class="t">0:00</td><td>Llamada</td><td><span class="pill cap">batería sola</span></td><td class="ac">—</td></tr>`);
+  for(const s of secs){const tr=document.createElement("tr");const tex=TEXTURAS[s.textura]+(s.lailareo?" + lailareo":"");
+    tr.innerHTML=`<td class="t">${fmt(tSec(s))}</td><td>${s.nombre}</td><td><span class="pill${s.bateria?"":" cap"}">${tex}</span></td><td class="ac"></td>`;
+    tr.querySelector(".ac").textContent=s.acordes.map(g=>`${g}`).join("  ");tr.style.cursor="pointer";tr.onclick=()=>saltar(tSec(s));tb.appendChild(tr)}
+  dibujarRoll();pintarCursor();
+}
+function dibujarRoll(){
+  const cv=$("roll"),dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;cv.width=w*dpr;cv.height=h*dpr;const g=cv.getContext("2d");g.scale(dpr,dpr);
+  const P=S.P,lo=38,hi=78,X=t=>t/P.total*w,Y=m=>h-(m-lo+1)/(hi-lo+1)*h;
+  g.fillStyle=css("--well");g.fillRect(0,0,w,h);
+  g.strokeStyle=css("--line");g.lineWidth=1;for(const m of[48,60,72]){g.beginPath();g.moveTo(0,Y(m)+.5);g.lineTo(w,Y(m)+.5);g.stroke()}
+  g.fillStyle=css("--muted");g.font=`11px ${css("--mono")}`;for(const[m,n]of[[48,"do3"],[60,"do4"],[72,"do5"]])g.fillText(n,4,Y(m)-3);
+  for(const s of S.pieza.secs){const x=X(tSec(s));g.fillStyle=css("--line");g.fillRect(x,0,1,h);
+    s.acordes.forEach((ac,c)=>{g.fillStyle=css("--muted");g.fillText(ac,X(tSec(s)+c*8*P.seg8)+3,h-5)})}
+  for(const k of ORDEN){if(S.mute[k])g.globalAlpha=.18;g.fillStyle=css("--"+k);
+    for(const[ini,d,m]of S.pieza.ev[k]){const x=X(P.inicio+ini*P.seg8),ww=Math.max(2,X(d*P.seg8)-1),y=Y(m);g.fillRect(x,y-(h/(hi-lo+1))+1,ww,h/(hi-lo+1)-1)}g.globalAlpha=1}
+}
+function pintarCursor(){if(!S.P)return;const t=posicion();$("time").textContent=`${fmt(t)} / ${fmt(S.P.total)}`;const ph=$("ph");if(ph)ph.style.left=`calc(${t/S.P.total*100}% - 1px)`;
+  dibujarRollCursor(t)}
+let rollCache=null;
+function dibujarRollCursor(t){const cv=$("roll");const dpr=window.devicePixelRatio||1;const g=cv.getContext("2d",{willReadFrequently:true});
+  if(!rollCache||rollCache.w!==cv.width||rollCache.h!==cv.height||rollCache.v!==S.gen+":"+JSON.stringify(S.mute)){dibujarRoll();rollCache={img:g.getImageData(0,0,cv.width,cv.height),w:cv.width,h:cv.height,v:S.gen+":"+JSON.stringify(S.mute)}}
+  else g.putImageData(rollCache.img,0,0);
+  g.setTransform(dpr,0,0,dpr,0,0);g.fillStyle=css("--ink");g.fillRect(t/S.P.total*cv.clientWidth-1,0,2,cv.clientHeight)}
+function clickSeek(el,ev){const r=el.getBoundingClientRect();saltar((ev.clientX-r.left)/r.width*S.P.total)}
+$("timeline").onclick=e=>S.P&&clickSeek($("timeline"),e);$("roll").onclick=e=>S.P&&clickSeek($("roll"),e);
+window.addEventListener("resize",()=>{if(S.P){rollCache=null;pintarCursor()}});
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",()=>{rollCache=null;if(S.P)pintarCursor()});
+
+// ============================================================ controles
+$("tonica").innerHTML=NOTAS.map((n,i)=>`<option value="${i}">${n}</option>`).join("");$("tonica").value=S.tonica;$("modo").value=S.modo;
+$("ritmo").innerHTML=DATOS.ritmos.map(r=>`<option value="${r.id}">${r.nombre} · ${r.bpm} BPM${DATOS.acompana[r.id]?.[1]?" · llamada y corte":DATOS.acompana[r.id]?" · con llamada":""}</option>`).join("");$("ritmo").value=S.ritmo;
+function hintRitmo(){const a=DATOS.acompana[S.ritmo];$("ritmoHint").textContent=a?.[1]?"Entra con llamada y corta la batería antes de la clarinada.":a?"Entra con la llamada de marcha camión.":"Sin llamada propia: la batería entra directo."}
+hintRitmo();
+let deb;const regen=()=>{clearTimeout(deb);deb=setTimeout(generar,250)};
+const DEF={retirada:[9,"menor"],presentacion:[2,"mayor"],cuple:[7,"mayor"]};
+$("forma").querySelectorAll("button").forEach(b=>b.onclick=()=>{$("forma").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));S.forma=b.dataset.v;[S.tonica,S.modo]=DEF[S.forma];$("tonica").value=S.tonica;$("modo").value=S.modo;regen()});
+$("tonica").onchange=e=>{S.tonica=+e.target.value;regen()};$("modo").onchange=e=>{S.modo=e.target.value;regen()};
+$("ritmo").onchange=e=>{S.ritmo=+e.target.value;hintRitmo();regen()};
+$("semilla").onchange=e=>{S.seed=Math.max(1,Math.floor(+e.target.value||1));e.target.value=S.seed;regen()};
+$("otra").onclick=()=>{S.seed=1+Math.floor(Math.random()*99998);$("semilla").value=S.seed;regen()};
+$("brillo").onchange=e=>{S.brillo=+e.target.value;regen()};
+
+const mixer=$("mixer");
+for(const k of[...ORDEN,"bateria"]){const row=document.createElement("div");row.className="ch";
+  row.innerHTML=`<i style="background:var(--${k})"></i><div><b>${k==="bateria"?"Batería":NOMBRES_CUERDA[k]}</b><span class="rng">${k==="bateria"?"loop real":CUERDAS[k].rango}</span></div>
+   <input type="range" min="0" max="1.5" step="0.05" value="${S.mix[k]}" id="vol-${k}" aria-label="Volumen ${k}"><button class="mute" aria-pressed="false" id="mute-${k}" aria-label="Silenciar ${k}">M</button>`;
+  mixer.appendChild(row);
+  row.querySelector("input").oninput=e=>{S.mix[k]=+e.target.value;aplicarMix(k)};
+  row.querySelector("button").onclick=e=>{S.mute[k]=!S.mute[k];e.target.setAttribute("aria-pressed",S.mute[k]);aplicarMix(k);rollCache=null;if(S.P)pintarCursor()}}
+function aplicarMix(k){if(S.nodos&&S.ac)S.nodos.gains[k].gain.setTargetAtTime(S.mute[k]?0:S.mix[k]*(k==="bateria"?1:.9),S.ac.currentTime,.02)}
+$("legend").innerHTML=ORDEN.map(k=>`<span><i style="background:var(--${k})"></i>${NOMBRES_CUERDA[k]}</span>`).join("")+`<span>Tocá el coro o las secciones para saltar.</span>`;
+
+// ============================================================ exportar
+function wav(buf){const n=buf.length,ch=2,ab=new ArrayBuffer(44+n*ch*2),v=new DataView(ab);const w=(o,s)=>[...s].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));
+  w(0,"RIFF");v.setUint32(4,36+n*ch*2,true);w(8,"WAVE");w(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,ch,true);v.setUint32(24,SR,true);v.setUint32(28,SR*ch*2,true);v.setUint16(32,ch*2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*ch*2,true);
+  const L=buf.getChannelData(0),R=buf.getChannelData(1);let o=44;for(let i=0;i<n;i++){for(const d of[L,R]){const s=Math.max(-1,Math.min(1,d[i]));v.setInt16(o,s<0?s*32768:s*32767,true);o+=2}}return new Uint8Array(ab)}
+function vlq(n){const b=[n&127];while(n>>=7)b.unshift((n&127)|128);return b}
+function midi(){const P=S.P,tpq=480,t8=240,bpm=240/P.c4,pre=Math.round(P.inicio*bpm/60*tpq);const pistas=[];
+  const pista=evs=>{evs.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const out=[];let ahora=0;for(const[t,,bytes]of evs){out.push(...vlq(Math.max(0,t-ahora)),...bytes);ahora=Math.max(ahora,t)}out.push(0,0xFF,0x2F,0);return out};
+  const txt=(t,tipo,s)=>{const b=[...new TextEncoder().encode(s)];return[t,0,[0xFF,tipo,...vlq(b.length),...b]]};
+  const us=Math.round(60e6/bpm);const meta=[[0,0,[0xFF,0x51,3,us>>16&255,us>>8&255,us&255]],[0,0,[0xFF,0x58,4,4,2,24,8]]];
+  for(const s of S.pieza.secs){meta.push(txt(pre+s.inicio*t8,6,s.nombre));s.acordes.forEach((g,c)=>{const[,r]=tonosAcorde(S.tonica,g);meta.push(txt(pre+(s.inicio+c*8)*t8,1,`${g} (${NOTAS[r]})`))})}
+  pistas.push(pista(meta));
+  ORDEN.forEach((k,ch)=>{const e=[txt(0,3,NOMBRES_CUERDA[k]),[0,0,[0xC0|ch,52]],[0,0,[0xB0|ch,10,Math.round(64+63*CUERDAS[k].pan)]]];
+    for(const[ini,d,m,vel]of S.pieza.ev[k]){const on=pre+ini*t8;e.push([on,1,[0x90|ch,m,Math.min(127,vel)]],[on+d*t8-10,0,[0x80|ch,m,0]])}pistas.push(pista(e))});
+  const head=[..."MThd"].map(c=>c.charCodeAt(0)).concat([0,0,0,6,0,1,0,pistas.length,tpq>>8,tpq&255]);
+  const body=pistas.flatMap(p=>[..."MTrk"].map(c=>c.charCodeAt(0)).concat([p.length>>>24&255,p.length>>>16&255,p.length>>>8&255,p.length&255],p));
+  return new Uint8Array(head.concat(body))}
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return d=>{let c=0xFFFFFFFF;for(let i=0;i<d.length;i++)c=t[(c^d[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0}})();
+function zip(files){const parts=[],central=[];let off=0;const enc=new TextEncoder();
+  for(const[name,data]of files){const nb=enc.encode(name),crc=CRC(data);const h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(8,0,true);h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,nb.length,true);
+    parts.push(new Uint8Array(h.buffer),nb,data);
+    const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,nb.length,true);c.setUint32(42,off,true);
+    central.push(new Uint8Array(c.buffer),nb);off+=30+nb.length+data.length}
+  const csize=central.reduce((a,b)=>a+b.length,0);const e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,csize,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...central,new Uint8Array(e.buffer)],{type:"application/zip"})}
+function estructuraTxt(){const P=S.P;const l=[`Murga-o-matic · ${S.forma} · ${NOTAS[S.tonica]} ${S.modo} · ${P.ritmo.nombre} (${P.ritmo.bpm} BPM) · semilla ${S.seed}`,""];
+  if(P.inicio>0)l.push("0:00  Llamada de batería");for(const s of S.pieza.secs)l.push(`${fmt(tSec(s))}  ${s.nombre} · ${TEXTURAS[s.textura]}${s.lailareo?" + lailareo":""} · ${s.acordes.join(" ")}`);
+  l.push("",`Duración: ${fmt(P.total)}`,"Batería: La Tríada (Iribarne, García, Cánepa). Coro: muestras FluidR3 y MusyngKite.");return l.join("\n")}
+$("exportar").onclick=async()=>{if(!S.stems)return;const st=$("expStatus");st.textContent="Mezclando…";
+  try{const ctx=new OAC(2,Math.ceil(S.P.total*SR),SR);grafo(ctx,ctx.destination,0,0);const mix=await ctx.startRendering();
+    let p=1e-9;for(let ch=0;ch<2;ch++){const d=mix.getChannelData(ch);for(let i=0;i<d.length;i++)p=Math.max(p,Math.abs(d[i]))}for(let ch=0;ch<2;ch++){const d=mix.getChannelData(ch);for(let i=0;i<d.length;i++)d[i]*=.95/p}
+    const base=`murga_${S.forma}_${NOTAS[S.tonica].replace("#","s")}${S.modo==="menor"?"m":""}_semilla${S.seed}`;
+    const blob=zip([[base+"/mezcla.wav",wav(mix)],[base+"/coro.mid",midi()],[base+"/estructura.txt",new TextEncoder().encode(estructuraTxt())]]);
+    const dl=window.claude?.use?await window.claude.use("downloads"):null;
+    if(dl){await dl.save({filename:base+".zip",data:blob});st.textContent="Guardado.";return}
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=base+".zip";document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),60000);st.textContent="Descargado.";
+  }catch(e){st.textContent=e?.code==="declined"?"Descarga cancelada.":"No se pudo descargar. Probá de nuevo.";console.error(e)}};
+
+generar();
+</script>
+
+</body>
+</html>
