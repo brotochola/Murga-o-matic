@@ -65,16 +65,58 @@ En cifrados de Contrafarsa y Agarrate Catalina (La Cuerda):
 | Salpicón: 4 compases de solista y 4 de coro | documentado (pares de cuartetas, solista contra coro) |
 | Bajada: el final del estribillo repetido 3 veces mientras se apaga | documentado |
 | Motivo con forma A A' y secuencia de un grado | interpretación (rasgos de las fuentes populares: marcha, tango, canción) |
+| Rellenos de las tercias en las notas largas | Asaltantes con Patente (1932) |
+| Lailareo en pedal a la octava, blanca con puntillo + negra | Agarrate Catalina (2010) |
+| Contracanto de los segundos en los huecos | Agarrate Catalina (2006) |
+| Recitado en semicorcheas sobre un bajo caminante en negras | Don Timoteo (2017) |
+| Melodía en los graves con golpes de "ah" en contratiempo | Contrafarsa (2002) |
+| Remate melismático de la tercia en los finales de frase | Higuera, 3.1.6.2 |
+| Clarinada a capela con calderones y novena en el penúltimo acorde; también antes de la bajada | Higuera, 3.2.2.1 |
+| Bajada triádica en candombeado, repetida, con una vuelta a capela con contracanto | Higuera, 3.2.2.2 |
+| Rítmica de candombe (corchea con puntillo y semicorchea, anticipaciones) con batería de base de murga; de marcha con marcha camión | Higuera, 3.4; "Aquello" |
 
-## Pendiente
+## Lo que muestran las transcripciones (Higuera, 2019, cap. 3)
 
-Las transcripciones del capítulo 3 de Higuera (2019) muestran qué hace cada voz en clarinadas, bajadas, lailareos y contracantos de Agarrate Catalina, Asaltantes con Patente, Contrafarsa y Don Timoteo. Con ese PDF se pueden ajustar los contracantos nota a nota.
+**Cuerdas y funciones**
+- Según Lombardo y Riquero, las subdivisiones dependen más del arreglo que del registro: sirven para ampliar la armonía o generar tensiones. En las bajadas suele haber una misma línea melódica en las tres cuerdas.
+- Registros de la tabla de *Sin Disfraz*: sobreprimos y tercia, fa4–do5 (excepcional do4–fa5); primos, sol3–sol4; segundos y bajos, do3–do4 (excepcional sol2–re4). Tabaré Cardozo no recomienda bajar de re3, o como mucho de do3, porque se pierde potencia y se desafina.
+- **Segundos:** son el soporte armónico y rara vez salen de la tríada (fundamental, tercera y quinta). A veces imitan la línea de un bajo eléctrico: en "Canto a los hijos" (Don Timoteo, 2017, arreglo de Lombardo), sobreprimos y segundos caminan en negras con "la" mientras los primos dicen el texto en semicorcheas. A veces llevan la melodía, en frases donde los demás no la cantan: en la Retirada 2002 de Contrafarsa, los bajos tienen la melodía y arriba suenan golpes de "ah" en contratiempo.
+- **Primos:** llevan la melodía principal, en textura homofónica o contrapuntística.
+- **Sobreprimos:** normalmente acompañan a los primos por arriba y amplían los acordes en el agudo. A veces llevan la melodía.
+- **Tercia:** tiene carácter de solista y remata los pasajes corales con una línea potente y melismática. Es la voz que más busca el sonido pregonero. En la Presentación 2010 de Agarrate Catalina entra sola cuando el coro termina la frase.
+
+**Armonía:** melodías armonizadas a tres voces consonantes (1, 3 y 5 del acorde), con tensiones (7.ª, 9.ª, 13.ª) en algunos cierres o en pasajes entre secciones (Tabaré Cardozo).
+
+**Antes:** solo había primos y segundos. Casi todos cantaban al unísono y una tercera voz, que bien podría ser la tercia, cantaba la misma melodía una octava arriba. Las armonías se hacían de oído (Lombardo).
+
+**Lailareo**, en tres usos:
+1. *Melodía principal armonizada:* las tres cuerdas en paralelo, mismo ritmo sincopado (Agarrate Catalina, 2006).
+2. *Contracanto:* sobreprimos y primos con el texto en terceras; los segundos meten "lai-la" sincopados en los huecos (Agarrate Catalina, 2006).
+3. *Notas pedales:* sobreprimos y segundos sostienen la misma nota a la octava en blanca con puntillo más negra ("La… lai"), y los primos cantan el texto en el medio (Agarrate Catalina, 2010).
+
+En la Despedida de Asaltantes con Patente (1932), primos y segundos cantan el texto en paralelo. Cuando la melodía queda en una nota larga, las tercias responden a dos voces con "lar-ra-rá lai-ra-rá".
+
+**Clarinada:** solo voces, sin tempo y a las indicaciones de quien dirige. Suele iniciar la presentación y la retirada, y también puede anteceder a la bajada. Es triádica, pero admite tensiones y agregados: segundas mayores, cuartas justas, cromatismo descendente y contracantos de los segundos. Usa calderones y cambios de compás (Don Timoteo, 2015 y 2017).
+
+**Bajada:** es un gancho que se repite para que el público no lo olvide. La armonía es muy triádica y las melodías de todas las voces son fáciles de cantar. En el concurso es usual que la repetición vaya sin batería, con contracantos en las cuerdas que no llevan la melodía o en las tercias (Asaltantes 2007; Agarrate Catalina 2008 y 2019).
+
+**Canciones finales y retiradas:** a veces las cantan pocos cantantes con guitarra, y la batería entra recién en la sección final. Las retiradas pueden tener pasajes sin batería, solo con guitarra.
+
+**Batería:** la marcha camión se usa sobre todo en retiradas y saludos. Su versión en 2/4 da una base más cerrada y rápida para acelerar hacia la siguiente sección, como en las bajadas de Contrafarsa de 2000 y 2002. El candombeado, también llamado "murga", se usa sobre todo en presentaciones y bajadas. Los platillos pueden dejar la base para acentuar un ritmo del coro o responder a una frase cantada.
+
+## "Aquello" (Jaime Roos, arreglo de Milo Lagomarsino)
+
+Es un arreglo coral de candombe a tres voces, no una murga de carnaval, pero muestra tres cosas útiles:
+- **Rítmica de candombe:** corchea con puntillo y semicorchea, notas ligadas que anticipan el tiempo, entradas en semicorchea después de un silencio.
+- **Movimiento complementario:** cuando una voz sostiene una nota larga, otra sigue con texto.
+- **Voces que imitan tambores:** "tum tum", "dm dm", "takatintan" en semicorcheas sobre una nota larga sostenida.
 
 ## Fuentes
 
 - Lamolle, G. y Lombardo, E. (1998). *Sin Disfraz*. Extractos: [Coro de murga](http://murgas-del-uruguay.blogspot.com/2012/03/coro-de-murga-extraido-del-libro-sin.html), [Repertorio de la murga](https://murgas-del-uruguay.blogspot.com/2012/03/repertorio-de-la-murga-extraido-del.html)
 - Fornaro, M. (2002). [Los cantos inmigrantes se mezclaron… La murga uruguaya](https://www.redalyc.org/pdf/822/82200607.pdf). *TRANS*.
-- Higuera Barajas, S. (2019). [Dicen que la murga es…](https://repository.udistrital.edu.co/items/19194ce0-bcba-42b6-a8ac-8c657b9da348). Universidad Distrital.
+- Higuera Barajas, S. (2019). [Dicen que la murga es…](https://repository.udistrital.edu.co/items/19194ce0-bcba-42b6-a8ac-8c657b9da348). Universidad Distrital. Capítulo 3: transcripciones de Contrafarsa, Agarrate Catalina, Asaltantes con Patente, Don Timoteo y Antimurga BCG.
+- Lagomarsino, M. [Aquello (Jaime Roos), arreglo coral a 3 voces](https://milolagomarsino.com/wp-content/uploads/2021/02/AQUELLO-arreglo-coral-3-voces-candombe-uruguay-Milo-Lagomarsino.pdf)
 - [Resolución 414/2010, patrimonio cultural (IMPO)](https://www.impo.com.uy/bases/resoluciones/414-2010)
 - Lagomarsino, M. [Partitura coral de murga](https://milolagomarsino.com/partitura-coral/de-murga/)
 - [La murga estilo uruguayo (CLACSO)](https://biblioteca-repositorio.clacso.edu.ar/bitstream/CLACSO/250231/1/La-murga-estilo-uruguayo.pdf)

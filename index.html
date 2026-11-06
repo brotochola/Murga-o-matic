@@ -164,10 +164,10 @@ a{color:var(--sobreprimos)}
     <div>
       <h3>Cómo arma cada pieza</h3>
       <ul>
-        <li>La melodía la llevan los primos, en motivos silábicos con forma A A' y secuencias. Hacen semicadencia en V al compás 4 y cierran en I al 8. En la retirada, una estrofa pasa la melodía a los segundos.</li>
-        <li>Los sobreprimos cantan una tercera arriba y los segundos una abajo, ajustadas a la nota del acorde en tiempo fuerte. Los bajos cantan la fundamental.</li>
-        <li>La tercia se separa del coro con un contracanto sincopado: entra donde la melodía no ataca y va en sentido contrario.</li>
-        <li>Presentación: abre con una clarinada a capela con golpes sueltos de batería. Retirada: termina con la bajada, que se repite y se apaga. Cuplé: salpicón de solista y coro.</li>
+        <li>Cada textura sigue una transcripción real: rellenos de las tercias (Asaltantes con Patente, 1932), lailareo en pedal (Agarrate Catalina, 2010), contracanto de los segundos (Agarrate Catalina, 2006), bajo caminante (Don Timoteo, 2017) y melodía en los graves con golpes de "ah" (Contrafarsa, 2002).</li>
+        <li>Los primos llevan la melodía con rítmica de marcha o de candombe, según la batería. Hay semicadencia en V al compás 4, forma A A', secuencias y recitado en semicorcheas.</li>
+        <li>La tercia remata los finales de frase con una línea melismática mientras el coro sostiene.</li>
+        <li>La clarinada va a capela, con calderones y una novena en el penúltimo acorde, al inicio de la presentación y de la retirada, y antes de la bajada. La bajada se canta tres veces: con batería, a capela con contracanto y de nuevo con batería mientras se apaga.</li>
       </ul>
     </div>
     <div>
@@ -196,16 +196,16 @@ const PROG={
   menor:{estrofa:[["i","VII","VI","V","i","VII","VI","V"],["i","VII","VI","III","V","i","VI","V"],["i","ivm","V7","i","i","ivm","V7","i"],["i","i","V7","V7","V7","V7","i","i"]],
          estribillo:[["VI","VII","i","i","VI","VII","V","V"],["ivm","i","V7","i","VI","III","V7","i"]]}};
 const CUERDAS={
-  bajos:{nucleo:[43,52],limite:[40,55],cantores:2,pan:-.55,rango:"sol2–mi3"},
+  bajos:{nucleo:[45,52],limite:[43,55],cantores:2,pan:-.55,rango:"la2–mi3"},
   segundos:{nucleo:[52,60],limite:[48,62],cantores:3,pan:-.25,rango:"do3–do4"},
   primos:{nucleo:[55,67],limite:[52,69],cantores:4,pan:.05,rango:"sol3–sol4"},
-  sobreprimos:{nucleo:[64,69],limite:[60,74],cantores:3,pan:.35,rango:"mi4–la4"},
-  tercia:{nucleo:[67,72],limite:[64,74],cantores:1,pan:.6,rango:"sol4–re5"}};
+  sobreprimos:{nucleo:[65,72],limite:[60,74],cantores:3,pan:.35,rango:"fa4–do5"},
+  tercia:{nucleo:[67,74],limite:[64,76],cantores:1,pan:.6,rango:"sol4–mi5"}};
 const NOMBRES_CUERDA={bajos:"Bajos",segundos:"Segundos",primos:"Primos",sobreprimos:"Sobreprimos",tercia:"Tercia"};
 const RITMOS=[[1,1,2,1,1,2],[2,1,1,2,2],[1,1,1,1,2,2],[3,1,2,2],[1,1,2,2,2],[2,2,1,1,2],[1,1,1,1,1,1,2]];
 const CADENCIA=[[2,2,4],[4,4],[2,2,2,1,1],[3,1,4]];
 const NOTAS=["Do","Do#","Re","Mib","Mi","Fa","Fa#","Sol","Lab","La","Sib","Si"];
-const TEXTURAS={dos_voces:"a dos voces",melodia_segundos:"melodía en los segundos",tutti:"tutti",pregunta_respuesta:"pregunta y respuesta",salpicon:"solista y coro",unisono:"unísono",unisono_tutti:"unísono que abre a voces",clarinada:"clarinada a capela",capela:"a capela",bajada:"se repite y se apaga",remate:"acorde final",llamada:"batería sola"};
+const TEXTURAS={dos_voces:"primos y segundos en paralelo",melodia_segundos:"melodía en los graves + golpes de ah",tutti:"tutti",pregunta_respuesta:"pregunta y respuesta",salpicon:"solista y coro",unisono:"unísono",unisono_tutti:"unísono que abre a voces",pedal:"lailareo en pedal",contracanto_seg:"contracanto de los segundos",caminante:"recitado + bajo caminante",clarinada:"clarinada a capela, con calderones",remate:"acorde final",llamada:"batería sola"};
 
 const mod=(a,n)=>((a%n)+n)%n;
 function tonosAcorde(t,g){const [r,iv]=ACORDES[g];return [iv.map(i=>mod(t+r+i,12)),mod(t+r,12)]}
@@ -214,161 +214,235 @@ function cercano(pcs,obj,lo,hi){let best=null,bd=1e9;for(let m=lo;m<=hi;m++){if(
 function pasoEscalar(m,pasos,esc){const d=pasos>0?1:-1;let x=m;for(let k=0;k<Math.abs(pasos);k++){x+=d;while(!esc.includes(mod(x,12)))x+=d}return x}
 
 // ============================================================ composición
-// Reglas documentadas (ver INVESTIGACION.md): primos con la melodía y el resto por terceras;
-// melodías de mucho registro repartidas entre cuerdas; unísonos para dar fuerza; notas pedales;
-// lailareo como melodía, contracanto o pedal; la tercia se desprende del coro para contrapuntearlo;
-// cuplé con cupletero solista contra el coro; salpicón en pares de cuartetas pregunta/respuesta;
-// clarinada: tema breve a capela, a veces con golpes no rítmicos de la batería;
-// retirada sin final formal: la bajada se repite mientras la murga baja del tablado, hasta apagarse.
+// Unidad de tiempo: semicorchea (16 por compás de 4/4). En los ritmos, un número negativo es silencio.
+// Cada textura está modelada sobre una transcripción real (Higuera Barajas, 2019; Lagomarsino):
+//   relleno       Despedida de Asaltantes con Patente (1932): primos y segundos con el texto en paralelo;
+//                 las tercias responden "lar-ra-rá lai-ra-rá" cuando la melodía queda en una nota larga.
+//   pedal         Presentación de Agarrate Catalina (2010): sobreprimos y segundos sostienen una nota
+//                 en octavas ("La… lai") y los primos dicen el texto en el medio.
+//   contracanto_seg  Presentación de Agarrate Catalina (2006): sobreprimos y primos con el texto en terceras;
+//                 los segundos meten un lailareo sincopado en los huecos.
+//   caminante     "Canto a los hijos", Don Timoteo (2017): primos recitando en semicorcheas;
+//                 sobreprimos y segundos caminan en negras como un bajo eléctrico.
+//   melodia_segundos  Retirada de Contrafarsa (2002): la melodía en los graves; arriba, golpes de "ah"
+//                 en contratiempo.
+//   remate        La tercia remata los pasajes corales con una línea potente y melismática.
+//   clarinada     Solo voces, sin tempo, con calderones; triádica con alguna tensión.
+//   bajada        Gancho repetido, triádico y fácil de cantar; una repetición sin batería con contracantos.
+const PB=16;
+const RIT={
+  marcha:[[2,2,4,2,2,4],[4,2,2,4,4],[2,2,2,2,4,4],[6,2,4,4],[2,2,4,4,4],[4,4,2,2,4],[2,2,2,2,2,2,4]],
+  candombe:[[3,1,4,3,1,4],[3,3,2,3,3,2],[-1,1,2,3,1,4,4],[2,1,1,3,1,4,4],[3,1,2,2,3,1,4],[-2,2,4,3,1,4],[3,3,4,2,2,2]],
+  recitado:[[-1,1,1,1,1,1,1,1,2,2,4],[-1,1,1,1,2,1,1,2,2,4],[-1,1,1,1,1,1,1,1,8]],
+  clarinada:[[4,4,4,4],[4,4,8],[8,4,4]],
+};
+const CAD={
+  marcha:[[4,4,8],[8,8],[4,4,4,2,2],[6,2,8]],
+  candombe:[[3,1,4,8],[3,5,8],[4,4,6,2],[6,2,8]],
+  recitado:[[16],[-1,1,1,1,12]],
+  clarinada:[[8,8],[16]],
+};
 const VACIO=()=>({bajos:[],segundos:[],primos:[],sobreprimos:[],tercia:[]});
-function seccion(o){return Object.assign({bateria:true,din:90,lailareo:false,contracanto:false,fermata:false,golpes:false,fade:false,sinVoces:false,tipo:""},o)}
+function seccion(o){return Object.assign({bateria:true,din:90,relleno:false,contracanto:false,remate:false,golpes:false,fade:false,sinVoces:false,tipo:"",estilo:"marcha",calderones:[]},o)}
+const compasDe=ini=>Math.floor(ini/PB);
+const fuerteEn=(pos,d)=>pos%8===0||d>=6;
 
 function melodia(rng,sec,motivo,rango){
   const n=sec.compases,t=sec.tonica,[lo,hi]=rango||CUERDAS.primos.nucleo;
-  const ton=cercano([t],(lo+hi)/2-1,lo,hi);
-  if(!motivo)motivo={r1:rng.choice(RITMOS),r2:rng.choice(RITMOS),cad:rng.choice(CADENCIA),cadFinal:rng.choice([...CADENCIA.slice(0,2),[8]]),
+  const ton=cercano([t],(lo+hi)/2-1,lo,hi);const est=sec.estilo;
+  if(!motivo)motivo={r1:rng.choice(RIT[est]),r2:rng.choice(RIT[est]),cad:rng.choice(CAD[est]),cadFinal:rng.choice(CAD[est].slice(0,2)),
     pico:rng.choice([2,2,3,6]),forma:rng.choice(["AA'","AA'","AB"]),secuencia:rng.choice([0,-1,-1,1])};
-  const ritmos=[];for(let c=0;c<n;c++)ritmos.push(c===n-1?motivo.cadFinal:c===3?motivo.cad:(c%2===0?motivo.r1:motivo.r2));
+  const ritmos=[];for(let c=0;c<n;c++)ritmos.push(c===n-1?motivo.cadFinal:(c%4===3)?motivo.cad:(c%2===0?motivo.r1:motivo.r2));
   function objetivo(c,frac){const x=c+frac;let p=[[0,ton+4],[motivo.pico+.5,hi-rng.choice([0,1])],[3.9,ton+2],[4,ton+4],[6.5,hi-2],[n,ton]];
     if(n<=4)p=[[0,ton+4],[1.5,hi-1],[n,ton]];
     for(let i=0;i<p.length-1;i++){const[x0,y0]=p[i],[x1,y1]=p[i+1];if(x0<=x&&x<=x1)return y0+(y1-y0)*(x-x0)/Math.max(x1-x0,1e-6)}return p[p.length-1][1]}
   let notas=[],prev=null;
   for(let c=0;c<n;c++){const g=sec.acordes[c];const[ct]=tonosAcorde(t,g);const esc=escala(t,sec.modo,g);let pos=0;
-    ritmos[c].forEach((d,i)=>{const fuerte=pos===0||pos===4||d>=3;const obj=objetivo(c,pos/8);const ultimo=c===n-1&&i===ritmos[c].length-1;let m;
+    const notasC=ritmos[c].filter(d=>d>0).length;let k=0;
+    for(const d0 of ritmos[c]){if(d0<0){pos-=d0;continue}const d=d0;k++;
+      const fuerte=fuerteEn(pos,d);const obj=objetivo(c,pos/PB);const ultimo=c===n-1&&k===notasC;let m;
       if(ultimo)m=(n>=4)?cercano([t],obj,lo,hi):cercano(ct,obj,lo,hi);
-      else if(c===3&&i===ritmos[c].length-1&&d>=2)m=cercano(ct,ton+2,lo,hi);            // semicadencia
+      else if(c%4===3&&k===notasC&&d>=4)m=cercano(ct,ton+2,lo,hi);                     // semicadencia
+      else if(prev!==null&&d<=1&&rng.rand()<.55&&(!fuerte||ct.includes(mod(prev,12))))m=prev;  // recitado: notas repetidas
       else if(fuerte||prev===null)m=cercano(ct,prev===null?obj:(obj+prev)/2,lo,hi);
       else{const dir=obj>prev+.5?1:obj<prev-.5?-1:rng.choice([1,-1]);m=pasoEscalar(prev,dir,esc);if(m<lo||m>hi)m=pasoEscalar(prev,-dir,esc)}
       if(prev!==null&&Math.abs(m-prev)>7)m=cercano(ct,prev,lo,hi);
-      notas.push([c*8+pos,d,m]);prev=m;pos+=d});}
-  // secuencia: el compás 3 repite el motivo del compás 1 un grado más abajo o más arriba
-  if(n>=4&&motivo.secuencia){notas=notas.map(([ini,d,m])=>{if(Math.floor(ini/8)!==2)return[ini,d,m];const o=notas.find(x=>x[0]===ini-16);if(!o)return[ini,d,m];
+      notas.push([c*PB+pos,d,m]);prev=m;pos+=d}}
+  if(n>=4&&motivo.secuencia){notas=notas.map(([ini,d,m])=>{if(compasDe(ini)!==2)return[ini,d,m];const o=notas.find(x=>x[0]===ini-2*PB);if(!o)return[ini,d,m];
     const g=sec.acordes[2],[ct]=tonosAcorde(t,g),esc=escala(t,sec.modo,g);let x=pasoEscalar(o[2],motivo.secuencia,esc);
-    if((ini%8===0||ini%8===4)&&!ct.includes(mod(x,12)))x=cercano(ct,x,lo,hi);if(x<lo||x>hi)x=m;return[ini,d,x]})}
-  // A A': los compases 5-6 repiten 1-2, reajustados a la armonía
-  if(n===8&&motivo.forma==="AA'"){notas=notas.map(([ini,d,m])=>{const c=Math.floor(ini/8);if(c===4||c===5){const o=notas.find(x=>x[0]===ini-32);
-    if(o){const[ct]=tonosAcorde(t,sec.acordes[c]);const fuerte=(ini%8===0||ini%8===4);m=(ct.includes(mod(o[2],12))||!fuerte)?o[2]:cercano(ct,o[2],lo,hi)}}return[ini,d,m]})}
+    if(fuerteEn(ini%PB,d)&&!ct.includes(mod(x,12)))x=cercano(ct,x,lo,hi);if(x<lo||x>hi)x=m;return[ini,d,x]})}
+  if(n===8&&motivo.forma==="AA'"){notas=notas.map(([ini,d,m])=>{const c=compasDe(ini);if(c===4||c===5){const o=notas.find(x=>x[0]===ini-4*PB);
+    if(o){const[ct]=tonosAcorde(t,sec.acordes[c]);m=(ct.includes(mod(o[2],12))||!fuerteEn(ini%PB,d))?o[2]:cercano(ct,o[2],lo,hi)}}return[ini,d,m]})}
   return[notas,motivo];
 }
 
-// tercera diatónica arriba/abajo, corregida a nota del acorde en tiempo fuerte
-function terceras(sec,ini,d,m){const c=Math.floor(ini/8);const g=sec.acordes[Math.min(c,sec.acordes.length-1)];const[ct,raiz]=tonosAcorde(sec.tonica,g);const esc=escala(sec.tonica,sec.modo,g);
-  const fuerte=(ini%8===0||ini%8===4)||d>=2;
+function acordeEn(sec,ini){return sec.acordes[Math.min(compasDe(ini),sec.acordes.length-1)]}
+function terceras(sec,ini,d,m){const g=acordeEn(sec,ini);const[ct,raiz]=tonosAcorde(sec.tonica,g);const esc=escala(sec.tonica,sec.modo,g);
+  const fuerte=fuerteEn(ini%PB,d)||d>=4;
   let ar=pasoEscalar(m,2,esc);if(fuerte&&!ct.includes(mod(ar,12)))ar=cercano(ct,m+4,m+3,m+9)??ar;
   let ab=pasoEscalar(m,-2,esc);if(fuerte&&!ct.includes(mod(ab,12)))ab=cercano(ct,m-4,m-9,m-3)??ab;
-  return{ar,ab,ct,raiz}}
+  return{ar,ab,ct,raiz,esc}}
+const lim=k=>CUERDAS[k].limite;
+const enRango=(k,m)=>m>=lim(k)[0]&&m<=lim(k)[1];
+const doblar8va=(k,m)=>enRango(k,m-12)?m-12:(enRango(k,m)?m:null);
 
-function armonizar(sec,mel){
+function armonizar(rng,sec,mel){
   const v=VACIO();let prevB=null;const tex=sec.textura;
-  const[,hiS]=CUERDAS.sobreprimos.limite,[lo2,hi2]=CUERDAS.segundos.limite,[loB,hiB]=CUERDAS.bajos.limite,[,hiP]=CUERDAS.primos.limite;
-  for(const[ini,d,m]of mel){const c=Math.floor(ini/8);let{ar,ab,raiz}=terceras(sec,ini,d,m);
-    if(ar>hiS)ar=m; if(ab<lo2)ab=(ab+12<m)?ab+12:m;
+  const[,hiS]=lim("sobreprimos"),[lo2]=lim("segundos"),[loB,hiB]=lim("bajos"),[,hiP]=lim("primos");
+  for(const[ini,d,m]of mel){const c=compasDe(ini);let{ar,ab,raiz}=terceras(sec,ini,d,m);
+    if(ar>hiS)ar=m;if(ab<lo2)ab=(ab+12<m)?ab+12:m;
     const bajo=cercano([raiz],prevB??48,loB,hiB);prevB=bajo;
     const tutti=()=>{v.sobreprimos.push([ini,d,ar,false]);v.segundos.push([ini,d,ab,false]);v.bajos.push([ini,d,bajo,false])};
     const unis=()=>{v.segundos.push([ini,d,m-12>=lo2?m-12:m,false]);v.sobreprimos.push([ini,d,m+12<=hiS?m+12:m,false]);v.bajos.push([ini,d,m-12<=hiB?m-12:m-24,false])};
-    let solo=false,canta=true;
-    if(tex==="melodia_segundos"){                         // la melodía baja a los segundos; primos una tercera arriba, bajos en la fundamental
-      v.segundos.push([ini,d,m,false]);let p=ar;if(p>hiP)p=m+12<=hiP?m+12:m;v.primos.push([ini,d,p,false]);v.bajos.push([ini,d,bajo,false]);continue}
-    if(tex==="dos_voces")v.segundos.push([ini,d,ab,false]);
-    else if(tex==="tutti")tutti();
-    else if(tex==="pregunta_respuesta"){if((c%4)>=2)tutti()}
-    else if(tex==="salpicon"){if(c<4)solo=true;else tutti()}              // cuarteta del solista, cuarteta del coro
-    else if(tex==="unisono")unis();
-    else if(tex==="unisono_tutti"){if(c<2)unis();else tutti()}            // arranca al unísono y abre a voces
-    if(canta)v.primos.push([ini,d,m,solo]);}
-  if(sec.lailareo){v.sobreprimos=[];const ped=cercano([mod(sec.tonica+7,12)],67,64,71);   // lailareo en pedal sobre la 5ta
-    for(let c=0;c<sec.compases;c++){const[ct]=tonosAcorde(sec.tonica,sec.acordes[c]);for(let q=0;q<4;q++){const p=ct.includes(mod(ped,12))?ped:cercano(ct,ped,62,72);v.sobreprimos.push([c*8+q*2,q%2===0?2:1,p,false])}}}
+    let solo=false;
+    switch(tex){
+      case"melodia_segundos":{v.segundos.push([ini,d,m,false]);const b=doblar8va("bajos",m);if(b)v.bajos.push([ini,d,b,false]);continue}
+      case"dos_voces":v.segundos.push([ini,d,ab,false]);break;
+      case"contracanto_seg":v.sobreprimos.push([ini,d,ar,false]);break;    // texto en terceras arriba; los segundos hacen el contracanto
+      case"tutti":tutti();break;
+      case"pregunta_respuesta":if((c%4)>=2)tutti();break;
+      case"salpicon":if(c<4)solo=true;else tutti();break;
+      case"unisono":unis();break;
+      case"unisono_tutti":if(c<2)unis();else tutti();break;
+      // pedal y caminante: los primos solos acá; las otras cuerdas se agregan abajo
+    }
+    v.primos.push([ini,d,m,solo]);}
+  const t=sec.tonica,n=sec.compases;
+  if(tex==="pedal"){                                   // "La… lai": blanca con puntillo + negra, en octavas
+    let ped=cercano([mod(t+4,12),mod(t+7,12)],67,62,73);if(sec.modo==="menor")ped=cercano([mod(t+3,12),mod(t+7,12)],67,62,73);
+    for(let c=0;c<n;c++){const[ct]=tonosAcorde(t,sec.acordes[c]);const p=ct.includes(mod(ped,12))?ped:cercano(ct,ped,62,72);
+      for(const[o,d]of[[0,12],[12,4]]){v.sobreprimos.push([c*PB+o,d,p,false]);const s=doblar8va("segundos",p);if(s)v.segundos.push([c*PB+o,d,s,false]);const b=s&&doblar8va("bajos",s);if(b)v.bajos.push([c*PB+o,d,b,false])}}}
+  if(tex==="caminante"){                               // bajo caminante en negras, sobreprimos a la décima
+    let prevW=null;
+    for(let c=0;c<n;c++){const g=sec.acordes[c],sig=sec.acordes[Math.min(c+1,n-1)];const[ct,r]=tonosAcorde(t,g);const[,r2]=tonosAcorde(t,sig);const esc=escala(t,sec.modo,g);
+      const[lo,hi]=[50,61];let a=cercano([r],prevW??55,lo,hi);const b=cercano([r2],a,lo,hi);const dir=Math.sign(b-a)||(a>56?-1:1);
+      const linea=[a];for(let q=1;q<4;q++){let x=pasoEscalar(linea[q-1],dir,esc);if(x<lo||x>hi)x=pasoEscalar(linea[q-1],-dir,esc);linea.push(x)}
+      linea.forEach((w,q)=>{v.segundos.push([c*PB+q*4,4,w,false]);const s=w+15<=hiS?pasoEscalar(w+12,2,esc):null;if(s)v.sobreprimos.push([c*PB+q*4,4,s,false]);const bb=doblar8va("bajos",w);if(bb)v.bajos.push([c*PB+q*4,4,bb,false])});
+      prevW=linea[3]}}
+  if(tex==="melodia_segundos"){                        // golpes de "ah" en contratiempo arriba
+    for(let c=0;c<n;c++){const[ct]=tonosAcorde(t,sec.acordes[c]);const p=cercano(ct,62,58,66),s=cercano(ct,p+4,p+3,p+8);
+      for(const o of[2,6,10,14]){v.primos.push([c*PB+o,1,p,false]);v.sobreprimos.push([c*PB+o,1,s,false])}}}
+  if(tex==="contracanto_seg")v.segundos=contracanto(rng,sec,mel,50,60,"abajo");
+  if(sec.relleno){                                     // lailareo de las tercias en las notas largas de la melodía
+    v.sobreprimos=v.sobreprimos.filter(()=>tex!=="dos_voces");
+    for(const[ini,d,m]of mel){if(d<6)continue;const g=acordeEn(sec,ini);const[ct]=tonosAcorde(t,g);const esc=escala(t,sec.modo,g);
+      let pos=ini+2,fin=ini+d;let x=cercano(ct,69,65,71);
+      for(const dd of[3,1,4,3,1,4]){if(pos+dd>fin)break;v.sobreprimos.push([pos,dd,x,false]);v.tercia.push([pos,dd,pasoEscalar(x,2,esc),false]);
+        x=pasoEscalar(x,-1,esc);if(dd===4&&!ct.includes(mod(x,12)))x=cercano(ct,x,64,71);pos+=dd}}}
+  if(sec.contracanto)v.tercia=v.tercia.concat(contracanto(rng,sec,mel,66,74,"arriba"));
+  if(sec.remate)v.tercia=v.tercia.concat(remateTercia(rng,sec,mel));
   return v;
 }
 
-// Contracanto de la tercia: entra en los huecos de la melodía, en contratiempo, con notas del
-// acorde en movimiento contrario y por grado conjunto.
-function contracanto(rng,sec,mel){
-  const out=[],lo=66,hi=74;let prev=null;
+// Contracanto: ataca donde la melodía no ataca (contratiempos primero), notas del acorde,
+// movimiento contrario y por grado conjunto. "arriba" para la tercia, "abajo" para los segundos.
+function contracanto(rng,sec,mel,lo,hi,lado){
+  const out=[];let prev=null;
   for(let c=0;c<sec.compases;c++){
     const g=sec.acordes[Math.min(c,sec.acordes.length-1)];const[ct]=tonosAcorde(sec.tonica,g);
-    const ons=new Set(mel.filter(x=>Math.floor(x[0]/8)===c).map(x=>x[0]%8));
-    let cand=[1,3,5,7,2,6].filter(p=>!ons.has(p));
-    cand.sort((a,b)=>((a%2?0:1)-(b%2?0:1))||(rng.rand()-.5));
+    const ons=new Set(mel.filter(x=>compasDe(x[0])===c).map(x=>x[0]%PB));
+    let cand=[2,6,10,14,3,11,4,12].filter(p=>!ons.has(p)&&!ons.has(p-1));
+    cand.sort((a,b)=>((a%4===2?0:1)-(b%4===2?0:1))||(rng.rand()-.5));
     const k=Math.min(cand.length,rng.choice([2,2,3]));const pos=cand.slice(0,k).sort((a,b)=>a-b);
-    pos.forEach((p,i)=>{const q=i+1<pos.length?pos[i+1]:8;const d=Math.max(1,Math.min(3,q-p));const t=c*8+p;
+    pos.forEach((p,i)=>{const q=i+1<pos.length?pos[i+1]:PB;const d=Math.max(1,Math.min(6,q-p));const t=c*PB+p;
       const sonando=[...mel].reverse().find(x=>x[0]<=t)||mel[0];const antes=[...mel].reverse().find(x=>x[0]<sonando[0]);
       const dirMel=antes?Math.sign(sonando[2]-antes[2]):0;
-      let obj=prev===null?70:prev-dirMel*2;let m=cercano(ct,obj,Math.max(lo,sonando[2]+3),hi)??cercano(ct,obj,lo,hi);
-      if(prev!==null&&Math.abs(m-prev)>5)m=cercano(ct,prev,Math.max(lo,sonando[2]+3),hi)??m;
+      const a=lado==="arriba"?Math.max(lo,sonando[2]+3):lo,b=lado==="arriba"?hi:Math.min(hi,sonando[2]-3);
+      let obj=prev===null?(a+b)/2:prev-dirMel*2;let m=cercano(ct,obj,a,b)??cercano(ct,obj,lo,hi);
+      if(prev!==null&&Math.abs(m-prev)>5)m=cercano(ct,prev,a,b)??m;
       out.push([t,d,m,false]);prev=m});
   }
   return out;
 }
 
-// Bloques de acordes largos (pasaje a capela, remate)
+// Remate de la tercia: en los finales de frase, mientras el coro sostiene, una línea melismática que baja a una nota del acorde.
+function remateTercia(rng,sec,mel){
+  const out=[];
+  for(let c=3;c<sec.compases;c+=4){const enC=mel.filter(x=>compasDe(x[0])===c);const ult=enC[enC.length-1];if(!ult||ult[1]<6)continue;
+    const g=acordeEn(sec,ult[0]);const[ct]=tonosAcorde(sec.tonica,g);const esc=escala(sec.tonica,sec.modo,g);
+    let pos=ult[0]+2,fin=Math.min(ult[0]+ult[1],(c+1)*PB);let x=cercano(ct,72,69,74);
+    const fig=rng.choice([[1,1,2,1,1,2,4],[2,1,1,2,2,4],[3,1,2,2,4]]);
+    fig.forEach((d,i)=>{if(pos+d>fin)return;const ultima=i===fig.length-1;const m=ultima?cercano(ct,x,64,74):x;out.push([pos,d,m,false]);x=pasoEscalar(x,-1,esc);pos+=d});}
+  return out;
+}
+
+// Bloques de acordes largos (remate final)
 function acordesBloque(sec){
   const t=sec.tonica,v=VACIO();const prev={bajos:47,segundos:57,primos:64,sobreprimos:69,tercia:72};
-  sec.acordes.forEach((g,c)=>{const[ct,raiz]=tonosAcorde(t,g);const dur=8*((sec.fermata&&c===sec.acordes.length-1)?2:1);const usadas=[];
-    for(const k of["bajos","segundos","primos","sobreprimos","tercia"]){const[lo,hi]=CUERDAS[k].limite;const pcs=k==="bajos"?[raiz]:ct;const cand=[];
+  sec.acordes.forEach((g,c)=>{const[ct,raiz]=tonosAcorde(t,g);const dur=PB;const usadas=[];
+    for(const k of["bajos","segundos","primos","sobreprimos","tercia"]){const[lo,hi]=lim(k);const pcs=k==="bajos"?[raiz]:ct;const cand=[];
       for(let m=lo;m<=hi;m++)if(pcs.includes(mod(m,12)))cand.push(m);
       cand.sort((a,b)=>(Math.abs(a-prev[k])+(usadas.includes(mod(a,12))?3:0))-(Math.abs(b-prev[k])+(usadas.includes(mod(b,12))?3:0))||a-b);
-      const m=cand[0];usadas.push(mod(m,12));prev[k]=m;v[k].push([c*8,dur,m,false])}});
+      const m=cand[0];usadas.push(mod(m,12));prev[k]=m;v[k].push([c*PB,dur,m,false])}});
   return v;
 }
 
-// Clarinada: tema breve a capela, de llamada de clarín (notas largas, arpegios), con la tercia arriba
+// Calderones: estiran el final de los compases indicados y corren todo lo que sigue.
+function aplicarCalderones(v,sec,extra=8){
+  sec.largo=sec.compases*PB;if(!sec.calderones.length)return v;
+  const puntos=sec.calderones.map(c=>c*PB);
+  const corr=p=>p+extra*puntos.filter(x=>x<=p).length;
+  for(const k in v)v[k]=v[k].map(([ini,d,m,s,f])=>{const ni=corr(ini),nf=corr(ini+d);return[ni,nf-ni,m,s,f]});
+  sec.largo+=extra*puntos.length;sec.corr=corr;return v;
+}
+
 function clarinadaSec(rng,sec){
-  const mo={r1:[3,1,2,2],r2:[2,2,4],cad:[4,4],cadFinal:[8],pico:1,forma:"AB",secuencia:0};
-  const[mel]=melodia(rng,sec,mo);const v=armonizar({...sec,textura:"tutti"},mel);
-  sec.acordes.forEach((g,c)=>{const[ct]=tonosAcorde(sec.tonica,g);v.tercia.push([c*8,8,cercano(ct,72,67,74),false])});
-  if(sec.fermata){const fin=sec.compases*8;for(const k in v)v[k].forEach(e=>{if(e[0]+e[1]===fin)e[1]+=8})}
-  return v;
+  const mo={r1:rng.choice(RIT.clarinada),r2:rng.choice(RIT.clarinada),cad:[8,8],cadFinal:[16],pico:1,forma:"AB",secuencia:0};
+  const[mel]=melodia(rng,{...sec,estilo:"clarinada"},mo);const v=armonizar(rng,{...sec,textura:"tutti",relleno:false,contracanto:false,remate:false},mel);
+  if(sec.contracanto)v.segundos=contracanto(rng,sec,mel,50,60,"abajo");
+  sec.acordes.forEach((g,c)=>{const[ct,r]=tonosAcorde(sec.tonica,g);
+    let m=cercano(ct,72,67,74);if(c===sec.acordes.length-2){m=cercano([mod(r+2,12)],71,64,76)}   // tensión (9na) en el penúltimo acorde
+    v.tercia.push([c*PB,PB,m,false])});
+  return aplicarCalderones(v,sec);
 }
 
-function planForma(nombre,t,modo,rng,llamadaComp){
-  const prog=(m,k)=>[...rng.choice(PROG[m][k])];const par="mayor";const S=[];
+function planForma(nombre,t,modo,rng,llamadaComp,estilo){
+  const prog=(m,k)=>[...rng.choice(PROG[m][k])];const par="mayor";const S=[];const I=modo==="mayor"?"I":"i";
   const llamada=()=>llamadaComp?[seccion({nombre:"Llamada",compases:llamadaComp,acordes:[],tipo:"llamada",textura:"llamada",bateria:false,sinVoces:true})]:[];
-  if(nombre==="retirada"){const e=prog(modo,"estrofa"),e3=prog(modo,"estrofa"),b=prog(par,"estribillo");
-    S.push(...llamada(),
-      seccion({nombre:"Intro con lailareo",compases:4,acordes:e.slice(0,4),modo,tonica:t,textura:"unisono",din:80,lailareo:true}),
-      seccion({nombre:"Estrofa 1",compases:8,acordes:e,modo,tonica:t,textura:"dos_voces",din:78,clave:"estrofa"}),
-      seccion({nombre:"Estrofa 2",compases:8,acordes:e,modo,tonica:t,textura:"tutti",din:90,contracanto:true,clave:"estrofa"}),
-      seccion({nombre:"Estrofa 3",compases:8,acordes:e3,modo,tonica:t,textura:"melodia_segundos",din:86,clave:"puente"}),
-      seccion({nombre:"Estribillo",compases:8,acordes:b,modo:par,tonica:t,textura:"pregunta_respuesta",din:100,clave:"estribillo"}),
-      seccion({nombre:"Pasaje a capela",compases:3,acordes:["IV","V7","I"],modo:par,tonica:t,textura:"capela",bateria:false,din:112,fermata:true}),
-      seccion({nombre:"Estribillo final",compases:8,acordes:b,modo:par,tonica:t,textura:"unisono_tutti",din:108,contracanto:true,clave:"estribillo"}),
-      seccion({nombre:"Bajada",compases:12,acordes:b.slice(4),modo:par,tonica:t,textura:"bajada",din:100,fade:true,clave:"estribillo"}));}
-  else if(nombre==="presentacion"){const e=prog(par,"estrofa"),b=prog(par,"estribillo");
-    S.push(seccion({nombre:"Clarinada",compases:4,acordes:["I","IV","V7","I"],modo:par,tonica:t,textura:"clarinada",bateria:false,golpes:true,din:110,fermata:true}),
-      ...llamada(),
-      seccion({nombre:"Estrofa 1",compases:8,acordes:e,modo:par,tonica:t,textura:"pregunta_respuesta",din:88,clave:"estrofa"}),
-      seccion({nombre:"Estrofa 2",compases:8,acordes:e,modo:par,tonica:t,textura:"tutti",din:95,contracanto:true,clave:"estrofa"}),
-      seccion({nombre:"Estribillo con lailareo",compases:8,acordes:b,modo:par,tonica:t,textura:"tutti",din:104,lailareo:true,clave:"estribillo"}),
-      seccion({nombre:"Estribillo final",compases:8,acordes:b,modo:par,tonica:t,textura:"unisono_tutti",din:108,contracanto:true,clave:"estribillo"}),
-      seccion({nombre:"Remate",compases:2,acordes:["V7","I"],modo:par,tonica:t,textura:"remate",din:118,fermata:true}));}
+  const clar=(nom,m,acs,extra={})=>seccion({nombre:nom,compases:4,acordes:acs,modo:m,tonica:t,textura:"clarinada",bateria:false,golpes:true,din:108,calderones:[2,4],...extra});
+  if(nombre==="retirada"){const e=prog(modo,"estrofa"),e3=prog(modo,"estrofa"),b=prog(par,"estribillo"),bj=prog(par,"estribillo").slice(4);
+    S.push(clar("Clarinada",modo,modo==="mayor"?["I","IV","V7","I"]:["i","VI","V7","i"]),...llamada(),
+      seccion({nombre:"Estrofa 1",compases:8,acordes:e,modo,tonica:t,textura:"dos_voces",relleno:true,din:80,clave:"estrofa",estilo}),
+      seccion({nombre:"Estrofa 2",compases:8,acordes:e,modo,tonica:t,textura:"tutti",contracanto:true,din:90,clave:"estrofa",estilo}),
+      seccion({nombre:"Estrofa 3",compases:8,acordes:e3,modo,tonica:t,textura:"melodia_segundos",din:86,clave:"graves",estilo}),
+      seccion({nombre:"Estribillo",compases:8,acordes:b,modo:par,tonica:t,textura:"pregunta_respuesta",remate:true,din:100,clave:"estribillo",estilo}),
+      clar("Clarinada antes de la bajada",par,["IV","I","V7","I"],{contracanto:true,din:112}),
+      seccion({nombre:"Bajada",compases:4,acordes:bj,modo:par,tonica:t,textura:"tutti",din:104,clave:"bajada",estilo:"candombe"}),
+      seccion({nombre:"Bajada a capela",compases:4,acordes:bj,modo:par,tonica:t,textura:"tutti",contracanto:true,bateria:false,din:96,clave:"bajada",estilo:"candombe",sinCorte:true}),
+      seccion({nombre:"Bajada (se apaga)",compases:8,acordes:[...bj,...bj],modo:par,tonica:t,textura:"tutti",din:100,fade:true,clave:"bajada2",estilo:"candombe"}));}
+  else if(nombre==="presentacion"){const e=prog(par,"estrofa"),e2=prog(par,"estrofa"),b=prog(par,"estribillo");
+    S.push(clar("Clarinada",par,["I","IV","V7","I"]),...llamada(),
+      seccion({nombre:"Estrofa 1",compases:8,acordes:e,modo:par,tonica:t,textura:"caminante",din:88,clave:"recitado",estilo:"recitado"}),
+      seccion({nombre:"Estrofa 2",compases:8,acordes:e2,modo:par,tonica:t,textura:"pedal",din:92,clave:"estrofa",estilo}),
+      seccion({nombre:"Estribillo",compases:8,acordes:b,modo:par,tonica:t,textura:"contracanto_seg",remate:true,din:104,clave:"estribillo",estilo}),
+      seccion({nombre:"Estribillo final",compases:8,acordes:b,modo:par,tonica:t,textura:"unisono_tutti",contracanto:true,din:108,clave:"estribillo",estilo}),
+      seccion({nombre:"Remate",compases:2,acordes:["V7","I"],modo:par,tonica:t,textura:"remate",din:118,calderones:[2]}));}
   else{const e=prog(modo,"estrofa"),b=prog(modo,"estribillo");
     S.push(...llamada(),
-      seccion({nombre:"Salpicón 1",compases:8,acordes:e,modo,tonica:t,textura:"salpicon",din:88,clave:"estrofa"}),
-      seccion({nombre:"Estribillo",compases:8,acordes:b,modo,tonica:t,textura:"tutti",din:98,clave:"estribillo"}),
-      seccion({nombre:"Salpicón 2",compases:8,acordes:e,modo,tonica:t,textura:"salpicon",din:88,clave:"estrofa"}),
-      seccion({nombre:"Estribillo 2",compases:8,acordes:b,modo,tonica:t,textura:"unisono_tutti",din:104,clave:"estribillo"}),
-      seccion({nombre:"Remate",compases:2,acordes:["V7",modo==="mayor"?"I":"i"],modo,tonica:t,textura:"remate",din:112,fermata:true}));}
+      seccion({nombre:"Salpicón 1",compases:8,acordes:e,modo,tonica:t,textura:"salpicon",din:88,clave:"estrofa",estilo}),
+      seccion({nombre:"Estribillo",compases:8,acordes:b,modo,tonica:t,textura:"dos_voces",relleno:true,din:98,clave:"estribillo",estilo}),
+      seccion({nombre:"Salpicón 2",compases:8,acordes:e,modo,tonica:t,textura:"salpicon",din:88,clave:"estrofa",estilo}),
+      seccion({nombre:"Estribillo 2",compases:8,acordes:b,modo,tonica:t,textura:"unisono_tutti",remate:true,din:104,clave:"estribillo",estilo}),
+      seccion({nombre:"Remate",compases:2,acordes:["V7",I],modo,tonica:t,textura:"remate",din:112,calderones:[2]}));}
   return S;
 }
 
-function componer(forma,t,modo,seed,llamadaComp=0){
-  const rng=new Rng(seed);const secs=planForma(forma,t,modo,rng,llamadaComp);const ev=VACIO();
+function componer(forma,t,modo,seed,llamadaComp=0,estilo="candombe"){
+  const rng=new Rng(seed);const secs=planForma(forma,t,modo,rng,llamadaComp,estilo);const ev=VACIO();
   let off=0;const motivos={},melos={};
-  for(const s of secs){let v=VACIO();
+  for(const s of secs){let v=VACIO();s.largo=s.compases*PB;
     if(s.sinVoces){}
-    else if(s.textura==="capela"||s.textura==="remate")v=acordesBloque(s);
+    else if(s.textura==="remate")v=aplicarCalderones(acordesBloque(s),s,PB);
     else if(s.textura==="clarinada")v=clarinadaSec(rng,s);
-    else if(s.textura==="bajada"){                       // se repite y se apaga mientras la murga baja del tablado
-      const sub={...s,compases:4,textura:"tutti"};const[mel]=melodia(rng,sub,motivos.estribillo);const v1=armonizar(sub,mel);
-      const reps=s.compases/4;for(let r=0;r<reps;r++){const f=1-r*.28;for(const k in v1)for(const[ini,d,m,so]of v1[k])v[k].push([ini+r*32,d,m,so,f])}}
-    else{const k=s.clave;const rango=s.textura==="melodia_segundos"?[50,62]:null;
-      let mel;const igual=melos[k]&&melos[k].acordes.join()===s.acordes.join()&&!rango;
-      if(igual)mel=melos[k].mel;else{let mo;[mel,mo]=melodia(rng,s,motivos[k],rango);motivos[k]=mo;if(!rango)melos[k]={mel,acordes:s.acordes}}
-      v=armonizar(s,mel);if(s.contracanto)v.tercia=contracanto(rng,s,mel)}
-    for(const k in v)for(const[ini,d,m,solo,f]of v[k])ev[k].push([off+ini,d,m,Math.round(s.din*(f??1)),!!solo]);
-    s.inicio=off;off+=s.compases*8+(s.fermata?8:0);}
-  return{secs,ev,total8:off};
+    else{const k=s.clave;const rango=s.textura==="melodia_segundos"?[50,61]:null;let mel;
+      const base=k==="bajada2"?"bajada":k;
+      if(melos[base]&&!rango){const m0=melos[base];mel=[];for(let r=0;r*m0.n<s.compases;r++)for(const[ini,d,m]of m0.mel)mel.push([ini+r*m0.n*PB,d,m])}
+      else{let mo;[mel,mo]=melodia(rng,s,motivos[k],rango);motivos[k]=mo;if(!rango)melos[k]={mel,n:s.compases}}
+      v=armonizar(rng,s,mel)}
+    const L=s.largo;
+    for(const k in v)for(const[ini,d,m,solo]of v[k]){const f=s.fade?1-.75*(ini/L):1;ev[k].push([off+ini,d,m,Math.round(s.din*f),!!solo])}
+    s.inicio=off;off+=L;}
+  return{secs,ev,total16:off};
 }
 
 // ============================================================ audio
@@ -397,7 +471,7 @@ async function renderCuerda(k,eventos,P,muestras){
     const banco=BANCOS[cantor%2];const desaf=rng.uni(-9,9);
     const pan=Math.max(-1,Math.min(1,cfg.pan+rng.uni(-.12,.12)));const gl=Math.cos((pan+1)*Math.PI/4),gr=Math.sin((pan+1)*Math.PI/4);
     for(const[ini,d,m,vel,solo]of eventos){if(solo&&cantor>0)continue;const buf=muestras[banco][m];if(!buf)continue;const x=buf.getChannelData(0);
-      const dur=d*P.seg8*(d>=2?.97:.85);const i0=Math.round((P.inicio+ini*P.seg8+rng.uni(0,.022))*SR);
+      const dur=d*P.paso*(d>=3?.97:.82);const i0=Math.round((P.inicio+ini*P.paso+rng.uni(0,.022))*SR);
       const g=Math.pow(vel/127,1.6)*rng.uni(.85,1)/(solo?1.1:Math.sqrt(cfg.cantores));const rate=Math.pow(2,(desaf+rng.uni(-4,4))/1200);
       const n=Math.min(Math.round(dur*SR)+caida,len-i0);const ls=Math.round(.8*SR),le=x.length-Math.round(.15*SR),per=le-ls;
       const at=i=>{const j=Math.floor(i),f=i-j;return x[j]+(x[j+1]-x[j])*f};
@@ -423,12 +497,12 @@ async function renderPercusion(P,secs){
     g.gain.setValueAtTime(1,w);if(decay){g.gain.setTargetAtTime(0,w+.05,.35)}else if(fadeOut){g.gain.setValueAtTime(1,w+Math.max(0,D-fadeOut));g.gain.linearRampToValueAtTime(0,w+D)}
     s.start(w,o,D)};
   const golpe=t=>tocar(loop,t,0,1.4,0,true);
-  for(let i=0;i<secs.length;i++){const s=secs[i];const t0=P.inicio+s.inicio/8*P.c4;const t1=t0+s.compases*P.c4;
+  for(let i=0;i<secs.length;i++){const s=secs[i];const t0=P.inicio+s.inicio*P.paso;const t1=t0+s.largo*P.paso;
     if(s.tipo==="llamada"&&llamada){const f=DATOS.frases[llamada];tocar(await cargar(f.archivo),t1-f.ultimo);continue}   // su último golpe cae en el 1 que sigue
-    if(s.golpes){s.acordes.forEach((_,c)=>golpe(t0+c*P.c4));continue}                                                    // golpes sueltos en la clarinada
+    if(s.golpes){s.acordes.forEach((_,c)=>golpe(t0+(s.corr?s.corr(c*PB):c*PB)*P.paso));continue}                                                    // golpes sueltos en la clarinada
     if(s.textura==="remate"){for(let t=t0;t<t0+P.c4-1e-4;t+=ln)tocar(loop,t,0,Math.min(ln,t0+P.c4-t));golpe(t0+P.c4);continue}
     if(!s.bateria)continue;
-    const sig=secs[i+1];const hayCorte=corte&&sig&&!sig.bateria&&sig.tipo!=="llamada";let finLoop=t1;
+    const sig=secs[i+1];const hayCorte=corte&&sig&&!sig.bateria&&sig.tipo!=="llamada"&&!sig.sinCorte;let finLoop=t1;
     if(hayCorte)finLoop=t1-DATOS.frases[corte].ultimo;
     let dest=ctx.destination;
     if(s.fade){const g=ctx.createGain();g.gain.setValueAtTime(1,t0);g.gain.linearRampToValueAtTime(.04,t1);g.connect(ctx.destination);dest=g}   // la bajada se apaga
@@ -459,11 +533,12 @@ async function muestrasPara(ev){
 async function generar(){
   const gen=++S.gen;detener(true);$("play").disabled=true;$("play").textContent="Componiendo…";estadoTexto("Componiendo y cantando…");
   try{
-    const ritmo=DATOS.ritmos.find(r=>r.id===S.ritmo);const c4=ritmo.compas*4/ritmo.tpc;const seg8=c4/8;
+    const ritmo=DATOS.ritmos.find(r=>r.id===S.ritmo);const c4=ritmo.compas*4/ritmo.tpc;const paso=c4/PB;
+    const estilo=[3,4].includes(ritmo.id)?"marcha":"candombe";
     const[llamada]=DATOS.acompana[ritmo.id]||[null];const llamadaComp=llamada?Math.ceil((DATOS.frases[llamada].ultimo+.05)/c4):0;
-    const pieza=componer(S.forma,S.tonica,S.modo,S.seed,llamadaComp);const inicio=0;
-    const total=pieza.total8*seg8+2.5;
-    const P={ritmo,c4,seg8,inicio,total,seed:S.seed,brillo:S.brillo};
+    const pieza=componer(S.forma,S.tonica,S.modo,S.seed,llamadaComp,estilo);const inicio=0;
+    const total=pieza.total16*paso+2.5;
+    const P={ritmo,c4,paso,inicio,total,seed:S.seed,brillo:S.brillo};
     const muestras=await muestrasPara(pieza.ev);if(gen!==S.gen)return;
     const voces=[];for(const k of ORDEN){voces.push(await renderCuerda(k,pieza.ev[k],P,muestras));if(gen!==S.gen)return}
     const perc=await renderPercusion(P,pieza.secs);if(gen!==S.gen)return;
@@ -506,15 +581,15 @@ $("play").onclick=()=>{try{S.tocando?detener():tocar()}catch(e){console.error(e)
 // ============================================================ dibujo
 const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-function tSec(s){return S.P.inicio+s.inicio*S.P.seg8}
+function tSec(s){return S.P.inicio+s.inicio*S.P.paso}
 function dibujarTodo(){
   const P=S.P,secs=S.pieza.secs,tl=$("timeline");tl.innerHTML="";
   const add=(nombre,t0,t1,cap)=>{const d=document.createElement("div");d.className="sec"+(cap?" cap":"");d.style.flex=`${t1-t0} 0 0`;d.textContent=nombre;d.title=`${nombre} · ${fmt(t0)}`;tl.appendChild(d)};
-  secs.forEach(s=>{const t0=tSec(s);add(s.nombre,t0,t0+(s.compases*8+(s.fermata?8:0))*P.seg8,!s.bateria&&!s.sinVoces)});
-  const ult=secs[secs.length-1];add("",tSec(ult)+(ult.compases*8+(ult.fermata?8:0))*P.seg8,P.total,false);
+  secs.forEach(s=>{const t0=tSec(s);add(s.nombre,t0,t0+s.largo*P.paso,!s.bateria&&!s.sinVoces)});
+  const ult=secs[secs.length-1];add("",tSec(ult)+ult.largo*P.paso,P.total,false);
   const ph=document.createElement("div");ph.className="ph";ph.id="ph";tl.appendChild(ph);
   const tb=$("tabla");tb.innerHTML="";
-  for(const s of secs){const tr=document.createElement("tr");const tex=TEXTURAS[s.textura]+(s.lailareo?" + lailareo":"")+(s.contracanto?" + contracanto":"");
+  for(const s of secs){const tr=document.createElement("tr");const tex=TEXTURAS[s.textura]+(s.relleno?" + rellenos de las tercias":"")+(s.contracanto?" + contracanto":"")+(s.remate?" + remate de la tercia":"")+(s.bateria||s.sinVoces||s.textura==="clarinada"?"":" (a capela)");
     tr.innerHTML=`<td class="t">${fmt(tSec(s))}</td><td>${s.nombre}</td><td><span class="pill${s.bateria||s.sinVoces?"":" cap"}">${tex}</span></td><td class="ac"></td>`;
     tr.querySelector(".ac").textContent=s.acordes.length?s.acordes.join("  "):"—";tr.style.cursor="pointer";tr.onclick=()=>saltar(tSec(s));tb.appendChild(tr)}
   dibujarRoll();pintarCursor();
@@ -526,9 +601,9 @@ function dibujarRoll(){
   g.strokeStyle=css("--line");g.lineWidth=1;for(const m of[48,60,72]){g.beginPath();g.moveTo(0,Y(m)+.5);g.lineTo(w,Y(m)+.5);g.stroke()}
   g.fillStyle=css("--muted");g.font=`11px ${css("--mono")}`;for(const[m,n]of[[48,"do3"],[60,"do4"],[72,"do5"]])g.fillText(n,4,Y(m)-3);
   let ultAc=-1e9;for(const s of S.pieza.secs){const x=X(tSec(s));g.fillStyle=css("--line");g.fillRect(x,0,1,h);
-    s.acordes.forEach((ac,c)=>{const x=X(tSec(s)+c*8*P.seg8)+3;if(x-ultAc<g.measureText(ac).width+8)return;ultAc=x;g.fillStyle=css("--muted");g.fillText(ac,x,h-5)})}
+    s.acordes.forEach((ac,c)=>{const x=X(tSec(s)+(s.corr?s.corr(c*PB):c*PB)*P.paso)+3;if(x-ultAc<g.measureText(ac).width+8)return;ultAc=x;g.fillStyle=css("--muted");g.fillText(ac,x,h-5)})}
   for(const k of ORDEN){if(S.mute[k])g.globalAlpha=.18;g.fillStyle=css("--"+k);
-    for(const[ini,d,m]of S.pieza.ev[k]){const x=X(P.inicio+ini*P.seg8),ww=Math.max(2,X(d*P.seg8)-1),y=Y(m);g.fillRect(x,y-(h/(hi-lo+1))+1,ww,h/(hi-lo+1)-1)}g.globalAlpha=1}
+    for(const[ini,d,m]of S.pieza.ev[k]){const x=X(P.inicio+ini*P.paso),ww=Math.max(2,X(d*P.paso)-1),y=Y(m);g.fillRect(x,y-(h/(hi-lo+1))+1,ww,h/(hi-lo+1)-1)}g.globalAlpha=1}
 }
 function pintarCursor(){if(!S.P)return;const t=posicion();$("time").textContent=`${fmt(t)} / ${fmt(S.P.total)}`;const ph=$("ph");if(ph)ph.style.left=`calc(${t/S.P.total*100}% - 1px)`;
   dibujarRollCursor(t)}
@@ -571,11 +646,11 @@ function wav(buf){const n=buf.length,ch=2,ab=new ArrayBuffer(44+n*ch*2),v=new Da
   w(0,"RIFF");v.setUint32(4,36+n*ch*2,true);w(8,"WAVE");w(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,ch,true);v.setUint32(24,SR,true);v.setUint32(28,SR*ch*2,true);v.setUint16(32,ch*2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*ch*2,true);
   const L=buf.getChannelData(0),R=buf.getChannelData(1);let o=44;for(let i=0;i<n;i++){for(const d of[L,R]){const s=Math.max(-1,Math.min(1,d[i]));v.setInt16(o,s<0?s*32768:s*32767,true);o+=2}}return new Uint8Array(ab)}
 function vlq(n){const b=[n&127];while(n>>=7)b.unshift((n&127)|128);return b}
-function midi(){const P=S.P,tpq=480,t8=240,bpm=240/P.c4,pre=Math.round(P.inicio*bpm/60*tpq);const pistas=[];
+function midi(){const P=S.P,tpq=480,t8=120,bpm=240/P.c4,pre=Math.round(P.inicio*bpm/60*tpq);const pistas=[];
   const pista=evs=>{evs.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const out=[];let ahora=0;for(const[t,,bytes]of evs){out.push(...vlq(Math.max(0,t-ahora)),...bytes);ahora=Math.max(ahora,t)}out.push(0,0xFF,0x2F,0);return out};
   const txt=(t,tipo,s)=>{const b=[...new TextEncoder().encode(s)];return[t,0,[0xFF,tipo,...vlq(b.length),...b]]};
   const us=Math.round(60e6/bpm);const meta=[[0,0,[0xFF,0x51,3,us>>16&255,us>>8&255,us&255]],[0,0,[0xFF,0x58,4,4,2,24,8]]];
-  for(const s of S.pieza.secs){meta.push(txt(pre+s.inicio*t8,6,s.nombre));s.acordes.forEach((g,c)=>{const[,r]=tonosAcorde(S.tonica,g);meta.push(txt(pre+(s.inicio+c*8)*t8,1,`${g} (${NOTAS[r]})`))})}
+  for(const s of S.pieza.secs){meta.push(txt(pre+s.inicio*t8,6,s.nombre));s.acordes.forEach((g,c)=>{const[,r]=tonosAcorde(S.tonica,g);meta.push(txt(pre+(s.inicio+(s.corr?s.corr(c*PB):c*PB))*t8,1,`${g} (${NOTAS[r]})`))})}
   pistas.push(pista(meta));
   ORDEN.forEach((k,ch)=>{const e=[txt(0,3,NOMBRES_CUERDA[k]),[0,0,[0xC0|ch,52]],[0,0,[0xB0|ch,10,Math.round(64+63*CUERDAS[k].pan)]]];
     for(const[ini,d,m,vel]of S.pieza.ev[k]){const on=pre+ini*t8;e.push([on,1,[0x90|ch,m,Math.min(127,vel)]],[on+d*t8-10,0,[0x80|ch,m,0]])}pistas.push(pista(e))});
@@ -592,7 +667,7 @@ function zip(files){const parts=[],central=[];let off=0;const enc=new TextEncode
   const csize=central.reduce((a,b)=>a+b.length,0);const e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,csize,true);e.setUint32(16,off,true);
   return new Blob([...parts,...central,new Uint8Array(e.buffer)],{type:"application/zip"})}
 function estructuraTxt(){const P=S.P;const l=[`Murga-o-matic · ${S.forma} · ${NOTAS[S.tonica]} ${S.modo} · ${P.ritmo.nombre} (${P.ritmo.bpm} BPM) · semilla ${S.seed}`,""];
-  for(const s of S.pieza.secs)l.push(`${fmt(tSec(s))}  ${s.nombre} · ${TEXTURAS[s.textura]}${s.lailareo?" + lailareo":""}${s.contracanto?" + contracanto":""}${s.acordes.length?" · "+s.acordes.join(" "):""}`);
+  for(const s of S.pieza.secs)l.push(`${fmt(tSec(s))}  ${s.nombre} · ${TEXTURAS[s.textura]}${s.relleno?" + rellenos":""}${s.contracanto?" + contracanto":""}${s.remate?" + remate":""}${s.acordes.length?" · "+s.acordes.join(" "):""}`);
   l.push("",`Duración: ${fmt(P.total)}`,"Batería: La Tríada (Iribarne, García, Cánepa). Coro: muestras FluidR3 y MusyngKite.");return l.join("\n")}
 $("exportar").onclick=async()=>{if(!S.stems)return;const st=$("expStatus");st.textContent="Mezclando…";
   try{const ctx=new OAC(2,Math.ceil(S.P.total*SR),SR);grafo(ctx,ctx.destination,0,0);const mix=await ctx.startRendering();
