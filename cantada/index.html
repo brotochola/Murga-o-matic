@@ -40,6 +40,8 @@ body { background: var(--fondo); color: var(--tinta); font-family: var(--f-ui); 
 .envoltura { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 140px; display: grid; gap: 28px; }
 .retazos { height: 10px; border-radius: 2px; background: repeating-linear-gradient(115deg, var(--r1) 0 34px, var(--r2) 34px 68px, var(--r3) 68px 102px, var(--r4) 102px 136px); }
 header.cabeza { display: grid; gap: 10px; }
+.volver { justify-self: start; font-size: .9rem; font-weight: 700; color: var(--tenue); text-decoration: none; }
+.volver:hover { color: var(--acento); text-decoration: underline; }
 h1 { font-family: var(--f-cartel); font-weight: 400; font-size: clamp(2.2rem, 7vw, 3.4rem); line-height: 1; margin: 0; letter-spacing: .01em; text-wrap: balance; }
 .bajada { margin: 0; max-width: 62ch; color: var(--tenue); }
 h2 { font-family: var(--f-ui); font-size: .8rem; text-transform: uppercase; letter-spacing: .12em; color: var(--tenue); margin: 0; font-weight: 700; }
@@ -146,6 +148,7 @@ button:disabled { opacity: .45; cursor: default; }
 <div class="envoltura">
   <header class="cabeza">
     <div class="retazos" aria-hidden="true"></div>
+    <a class="volver" href="../">← Murga-o-matic</a>
     <h1>Murga cantada</h1>
     <p class="bajada">El Murga-o-matic compone la música. Un letrista algorítmico escribe una letra que entra en esa melodía, sílaba por nota, con rima y en rioplatense. Un coro sintético de trece voces la canta, con la batería de La Tríada. Todo corre en tu navegador, sin conexión.</p>
   </header>

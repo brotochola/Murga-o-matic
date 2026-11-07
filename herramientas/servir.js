@@ -10,7 +10,7 @@ const PUERTO = +process.argv[2] || 8123;
 
 http.createServer((req, res) => {
   let ruta = decodeURIComponent(req.url.split('?')[0]);
-  if (ruta === '/') ruta = '/index.html';
+  if (ruta.endsWith('/')) ruta += 'index.html';
   const f = normalize(join(RAIZ, ruta));
   // La página no usa nada de murga_trabajo: así se nota enseguida si algo lo pide
   if (!f.startsWith(normalize(RAIZ)) || ruta.startsWith('/murga_trabajo') || !existsSync(f) || !statSync(f).isFile()) { res.writeHead(404); res.end('no está'); return; }
