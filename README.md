@@ -6,9 +6,21 @@ Elegís presentación o retirada, murga, tono y largo, y compone una pieza nueva
 
 - **Batería:** siempre loops reales, del video [17 ritmos fundamentales de murga](https://www.youtube.com/watch?v=0DSJVulzDYw), de La Tríada: Pablo "Lolito" Iribarne (bombo), Raúl García (redoblante) y Gerardo "Batata" Cánepa (platillos). Para cambiar de tempo, cada golpe del loop se corta y se pone en su lugar nuevo, así la afinación no cambia.
 - **Composición:** recombina gestos reales de dos compases, con su melodía, sus voces y sus acordes, según la forma: pregunta, respuesta, contraste y vuelta. Cada pocas notas cambia una nota débil, y los gestos seguidos vienen de temas distintos: el pasaje igual a un tema real más largo tiene, en la mediana, 9 notas.
-- **Coro:** cinco cuerdas (bajos, segundos, primos, sobreprimos y tercia) con muestras "aah" de FluidR3 y MusyngKite, tomadas de [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts). Cada cuerda tiene de dos a cuatro cantores (la tercia es una voz sola), y el timbre se ecualiza hacia el de un coro de murga medido.
+- **Voces:** se eligen arriba de todo.
+  - *Muestras de coro:* cinco cuerdas (bajos, segundos, primos, sobreprimos y tercia) con muestras "aah" de FluidR3 y MusyngKite, tomadas de [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts). Cada cuerda tiene de dos a cuatro cantores (la tercia es una voz sola), y el timbre se ecualiza hacia el de un coro de murga medido.
+  - *Cantores sintéticos:* un letrista algorítmico escribe una letra rioplatense que entra en la melodía, sílaba por nota y con rima, y trece voces de fuente glótica y formantes la cantan. No usa muestras ni modelos de lenguaje, y anda sin conexión. La letra se puede editar o pedir otra, y un panel muestra paso a paso cómo se hizo cada verso. La voz se calibró contra La Trasnochada 2020. Detalles y mediciones en [docs/cantores_y_letras.md](docs/cantores_y_letras.md).
 
-Desde la página podés mezclar en vivo, ver el piano-roll y descargar un ZIP con la mezcla en WAV, el coro en MIDI y la estructura.
+Desde la página podés mezclar en vivo y seguir la partitura, con la letra sílaba por sílaba cuando cantan los cantores sintéticos. Se puede bajar:
+- la mezcla en **MP3**, tal como suena con los volúmenes de la mezcla;
+- la **partitura coral en PDF**: cinco pentagramas, la letra debajo de cada nota y los acordes arriba. También se puede ver en la página;
+- la **letra con los acordes** en TXT, o el cifrado por compases si no hay letra;
+- un **ZIP** con la mezcla en WAV, el coro en MIDI (con la letra), la estructura y la letra.
+
+Los acordes de cada sección se pueden cambiar desde la tabla de estructura: la melodía y las voces se acomodan solas al acorde nuevo, y el resto de la pieza no cambia. Los cambios de tono siguen lo que hacen las murgas del corpus: casi la mitad cambia también de modo, y de mayor al menor de la misma tónica es de los más comunes ([docs/cambios_de_modo.md](docs/cambios_de_modo.md)).
+
+La dirección vieja `/cantada/` lleva a la página principal con los cantores sintéticos elegidos.
+
+Fuera de la página, con una placa de video, cada cantor se puede pasar por [Seed-VC](https://github.com/Plachtaa/seed-vc) para que suene a las voces reales de una murga: `herramientas/exportar_voces.mjs` exporta las voces y `transcripcion/convertir_coro.py` las convierte y las vuelve a mezclar. Los pasos están en la [sección 4](docs/cantores_y_letras.md#4-voces-de-verdad-con-seed-vc-fuera-de-la-página).
 
 ## Uso local
 
@@ -26,6 +38,7 @@ Si se abre `index.html` como archivo, sin servidor, el navegador no deja cargar 
 | 3 | Controla cada tramo | `herramientas/revisar.js` → `docs/revision_de_los_midis.md` |
 | 4 | Mide la pureza y el unísono de cada golpe | `transcripcion/pureza.py` |
 | 5 | Aprende los gestos y las tablas | `herramientas/aprender.js` → `motor/modelo.js` |
+| 5b | Mide cómo cambian de tono y de modo | `herramientas/cambios_de_modo.js` → `motor/modos.js`, [docs/cambios_de_modo.md](docs/cambios_de_modo.md) |
 | 6 | Mide el timbre del coro real | `herramientas/timbre.js` → `motor/timbre.js` |
 | 7 | Compone y canta | `motor/compositor.js`, `motor/app.js` |
 | 8 | Juzga lo generado contra lo real y elige las demos | `herramientas/jurado.js`, `herramientas/copia.js`, `herramientas/demos.js` → `motor/demos.js` |

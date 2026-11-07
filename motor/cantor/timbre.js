@@ -1,0 +1,2 @@
+// Curva del ecualizador de la voz: el coro sintético cantando las notas de La Trasnochada 2020 (presentación, a capela), comparado con la grabación.
+export const CURVA = [[100,26.9],[126,16.8],[159,11.7],[200,2.6],[252,4.9],[317,2.2],[400,1.3],[504,-3.1],[635,-4.2],[800,3.7],[1008,-5.6],[1270,7.5],[1600,-0.5],[2016,10.4],[2540,10.2],[3200,18.4],[4032,22],[5080,17.7],[6400,12.4],[8063,19.1],[10159,19.1]];

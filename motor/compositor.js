@@ -9,6 +9,7 @@ export const CUERDAS = ['bajos', 'segundos', 'primos', 'sobreprimos', 'tercia'];
 export const RANGOS = { bajos: [43, 55], segundos: [48, 62], primos: [54, 69], sobreprimos: [60, 74], tercia: [64, 77] };
 const MELODIA = [57, 73];   // la melodía va arriba del bloque
 const mod = (a, n) => ((a % n) + n) % n;
+import { MODOS } from './modos.js';
 
 // ── Azar con semilla ───────────────────────────────────────────────
 export class Rng {
@@ -350,16 +351,28 @@ function acordesAbs(sec, grados) { return grados.map(g => { const a = acorde(g);
 // mismos acordes, mismo ritmo, misma melodía con algún cambio, como cuando cambia la letra.
 function tema(rng, E, T, sec, ev, opc = {}) {
   const de = opc.de?.memoria;
-  const plan = de ? de.plan : planTema(rng, opc.celdas, T, sec, opc.usados);
+  const original = de ? de.plan : planTema(rng, opc.celdas, T, sec, opc.usados);
   const din0 = sec.din, curva = sec.curva || 0;
-  const unidades = plan.length;
+  const unidades = original.length;
+  // Acordes cambiados: {índice de medio compás: grado}. La melodía y las voces de esos golpes se adaptan después,
+  // sin tocar el azar del resto (así cambiar un acorde no cambia la pieza entera).
+  const cambiar = { ...(opc.cambiar || {}) };
+  const ult = original[unidades - 1]?.ac || [];
+  if (opc.llegada && opc.rngMod && !(unidades * 8 - 1 in cambiar) && TONICA(ult[7]) && TONICA(ult[6]) && DOMINANTE(ult[5]) && opc.rngMod.r() < opc.llegada) {
+    const g = sec.modo === 'mayor' ? 'i' : 'I';   // la llegada en el modo contrario: Do menor … G7 → Do mayor
+    cambiar[unidades * 8 - 2] = g; cambiar[unidades * 8 - 1] = g;
+  }
+  const cambiados = new Set(Object.keys(cambiar).map(Number).filter(i => i >= 0 && i < unidades * 8));
+  const plan = cambiados.size ? original.map((u, iu) => ({ ...u, ac: u.ac.map((g, c) => (cambiados.has(iu * 8 + c) ? cambiar[iu * 8 + c] : g)) })) : original;
+  const rngAlt = new Rng(sec.inicio * 31 + 7);
   const G = [];
   plan.forEach((u, iu) => {
     const acs = acordesAbs(sec, u.ac);
     for (const h of u.g) {
       const q = h[0] + iu * 64;
       if (q < 0) continue;
-      G.push({ q, d: h[1], u: iu, ac: acs[Math.max(0, Math.min(7, Math.floor(h[0] / 8)))], guia: h[2] + (h[4] ?? u.off), dist: h[3], tex: h[3].length + 1, final: false });
+      const ia = Math.max(0, Math.min(7, Math.floor(h[0] / 8)));
+      G.push({ q, d: h[1], u: iu, ac: acs[ia], guia: h[2] + (h[4] ?? u.off), dist: h[3], tex: h[3].length + 1, final: false, rearm: cambiados.has(iu * 8 + ia) });
     }
   });
   G.sort((a, b) => a.q - b.q);
@@ -402,23 +415,29 @@ function tema(rng, E, T, sec, ev, opc = {}) {
     for (const g of G) if (g.u === 3) g.nota = mapa.get(g.q) ?? g.guia;
   }
   const notas = G.map(g => g.nota);
+  const notaFinal = notas[notas.length - 1];
+  // la melodía sobre los acordes cambiados se acomoda; las voces de abajo se arman de nuevo sobre el acorde
+  G.forEach((g, i) => { if (g.rearm) notas[i] = ajustar(notas[i], g, sec, notas[i - 1]); });
   const prev = {};
   const compuesto = G.map((g, i) => {
     const din = Math.round(din0 + 8 * Math.sin(Math.PI * mod(g.q, 64) / 64) + (mod(g.q, 8) === 0 ? 5 : 0) + curva * (g.u / Math.max(1, unidades)));
-    voces(rng, E, sec, g, notas[i], g.tex, ev, din, prev);
+    if (g.rearm) voces(rngAlt, E, sec, { ...g, dist: null }, notas[i], g.tex, ev, din, prev);
+    else voces(rng, E, sec, g, notas[i], g.tex, ev, din, prev);
     if (notas[i] !== g.guia) sec.cambiadas = (sec.cambiadas || 0) + 1;
     return { ...g, nota: notas[i] };
   });
   sec.acordes = plan.flatMap(u => u.ac).slice(0, unidades * 8);
-  sec.memoria = { plan, notas };
-  sec.notaFinal = notas[notas.length - 1];
+  // lo que repiten otras secciones es el tema como era (los acordes cambiados son de esta sección)
+  sec.memoria = { plan: original, notas: G.map(g => g.nota) };
+  sec.notaFinal = notaFinal;
+  if (cambiados.size) sec.cambiados = [...cambiados].sort((a, b) => a - b);
   return compuesto;
 }
 
 // Clarinada: un coral lento a capela, con sus sílabas, que se estira al final de cada frase
-function clarinada(rng, E, T, sec, ev, usados, celdas) {
+function clarinada(rng, E, T, sec, ev, usados, celdas, extra = {}) {
   sec.capela = true; sec.densidad = 'amplio'; sec.tipo = 'clarinada';
-  const G = tema(rng, E, T, sec, ev, { usados, celdas });
+  const G = tema(rng, E, T, sec, ev, { usados, celdas, ...extra });
   sec.estirar = [];
   // calderón en la nota larga de cada fin de frase
   for (const g of G) if (g.d >= 6 && (g.final || rng.r() < .4)) sec.estirar.push([g.q, g.q + g.d, rng.uni(1.3, 2.2)]);
@@ -489,15 +508,32 @@ function elegirLoop(rng, E, parte, opcion, tempo) {
   return Object.values(f).some(v => v > 1e-6) ? +rng.peso(f) : LOOP_DEFECTO;
 }
 
-// Un cambio de tono de los que hace el corpus. Sube por semitono a menudo; también va a la relativa.
-function modular(rng, E, tonica, modo) {
-  const de = modo === 'mayor' ? 'M' : 'm';
-  const base = { MM1: .3, mm1: .3, mM3: .25, Mm9: .12, Mm0: .1, mM0: .1, MM2: .1, mm2: .1, MM5: .08, mm5: .08, MM7: .06, mm7: .06 };
+// Un cambio de tono de los que hace el corpus (herramientas/cambios_de_modo.js): de qué modo a qué modo y a qué
+// distancia. Pesan los de la murga elegida y los de todas; los que aparecen una sola vez quedan afuera (pueden ser
+// errores del detector). Lo más común es subir un semitono en el mismo modo; cambiar de modo es casi la mitad de los
+// cambios, pero casi siempre con otra tónica (de menor al mayor del VI, de mayor al menor del IV).
+function modular(rng, estilo, { tonica, modo }) {
+  const de = modo === 'mayor' ? 'M' : 'm', todas = MODOS.cambios.todas, propia = estilo !== 'todas' ? MODOS.cambios[estilo] || {} : {};
   const h = {};
-  for (const [k, v] of Object.entries(base)) if (k[0] === de) h[k] = v;
-  for (const [k, v] of Object.entries(E.forma?.modula || {})) if (h[k] !== undefined) h[k] += v;
+  for (const [k, n] of Object.entries(todas)) if (k[0] === de && n >= 2) h[k] = n + 2 * (propia[k] || 0);
   const k = rng.peso(h);
   return { tonica: mod(tonica + +k.slice(2), 12), modo: k[1] === 'M' ? 'mayor' : 'menor' };
+}
+// El grado, en el tono de la sección, de un acorde dado por su distancia a la tónica (para escribir V7 del tono nuevo)
+const GRADO_DE = ['I', 'bII', 'II', 'bIII', 'III', 'IV', '#IV', 'V', 'bVI', 'VI', 'bVII', 'VII'];
+
+// Una nota que quedó sobre un acorde nuevo: en los lugares fuertes va a la nota del acorde más cercana, en los
+// débiles a la escala que suena sobre él. Lo menos posible, y del lado de la nota anterior.
+function ajustar(p, g, sec, antes) {
+  const { tonica, modo } = sec, esc = escalaSobre(modo, g.ac);
+  const fuerte = fuerza(g) === 'f' || g.final;
+  const ok = x => (fuerte ? g.ac.pcs.includes(mod(x - tonica, 12)) : esc.has(mod(x - tonica, 12)));
+  if (ok(p)) return p;
+  for (let d = 1; d <= 6; d++) {
+    const c = [p - d, p + d].filter(ok);
+    if (c.length) return c.length === 1 || antes == null ? c[0] : c.sort((a, b) => Math.abs(a - antes) - Math.abs(b - antes))[0];
+  }
+  return p;
 }
 
 export function componer(M, op) {
@@ -505,6 +541,8 @@ export function componer(M, op) {
   const E = M.estilos[o.estilo] || M.estilos.todas;
   const F = E.forma || {};
   const rng = new Rng(o.semilla);
+  // los cambios de tono y su preparación se sortean aparte: así no corren el azar de la melodía y las voces
+  const rngMod = new Rng(o.semilla * 7919 + 101);
   const ev = Object.fromEntries(CUERDAS.map(k => [k, []]));
   const secs = [];
   const usados = new Set();
@@ -537,11 +575,24 @@ export function componer(M, op) {
     if (!n || !prev || prev.bateria || prev.tipo === 'llamada') return;
     cerrar(nueva({ nombre: 'Llamada', tipo: 'llamada', compases: n, bateria: false, loop: l, acordes: [], tonica: prev.tonica, modo: prev.modo }));
   };
+  // Acordes que cambian en una sección: los que pide la persona (o.acordes[nombre]) y, si la sección que sigue
+  // cambia de tono, a veces el último compás pasa a la dominante del tono nuevo (como en el corpus: 11 % de los
+  // cambios; 29 % cuando pasa de mayor al menor de la misma tónica). Si no, a veces la llegada final a la tónica
+  // es en el modo contrario.
+  const cambiosDe = (s, prepara) => {
+    const c = {}, ult = s.compases * 2;
+    if (prepara && (prepara.tonica !== s.tonica || prepara.modo !== s.modo)) {
+      const p = prepara.tonica === s.tonica && prepara.modo === 'menor' ? MODOS.preparar.aMenorMismoTono.dominante : MODOS.preparar.todos.dominante;
+      if (rngMod.r() < p) { const g = GRADO_DE[mod(prepara.tonica + 7 - s.tonica, 12)] + '7'; c[ult - 2] = g; c[ult - 1] = g; s.prepara = g; }
+    }
+    return { cambiar: { ...c, ...(o.acordes?.[s.nombre] || {}) }, llegada: prepara ? 0 : MODOS.llegadaContraria[s.modo] || 0, rngMod };
+  };
   const temaSec = (nombre, compases, cfg = {}) => {
     if (cfg.bateria !== false) llamada(cfg.loop ?? loop);
-    const s = nueva({ nombre, compases, ...cfg });
+    const { prepara, ...resto } = cfg;
+    const s = nueva({ nombre, compases, ...resto });
     s.notaPrev = secs[secs.length - 2]?.notaFinal ?? null;
-    const c = tema(rng, E, T[s.modo], s, ev, { usados, de: cfg.de, celdas });
+    const c = tema(rng, E, T[s.modo], s, ev, { usados, de: cfg.de, celdas, ...cambiosDe(s, prepara) });
     delete s.de;
     if (o.tercia > 0 && cfg.conTercia !== false) tercia(rng, s, c, ev, o.tercia);
     cerrar(s);
@@ -552,41 +603,47 @@ export function componer(M, op) {
     const seg = cfg.segundos ?? (F.capInicial?.[parte] || 40);
     const porComp = 240 / tCap;
     const compases = Math.max(8, Math.min(16, 8 * Math.round(seg / porComp / 8)));
-    const s = nueva({ nombre, compases, bateria: false, din: 96, tempo: tCap, ...cfg });
-    clarinada(rng, E, T[s.modo], s, ev, usados, celdas);
+    const { prepara, ...resto } = cfg;
+    const s = nueva({ nombre, compases, bateria: false, din: 96, tempo: tCap, ...resto });
+    clarinada(rng, E, T[s.modo], s, ev, usados, celdas, cambiosDe(s, prepara));
     cerrar(s);
     return s;
   };
 
   if (o.forma === 'retirada') {
     let tono = { tonica: o.tonica, modo: o.modo };
+    // los cambios de tono se deciden antes, para que la sección de antes los pueda preparar
+    const t1 = o.modula && veces >= 2 ? modular(rngMod, o.estilo, tono) : tono;
+    const t2 = o.modula && rngMod.r() < .5 ? modular(rngMod, o.estilo, t1) : t1;
     if (o.cancionFinal) {
       const can = temaSec('Canción final', 16, { densidad: 'amplio', din: 82, tipo: 'duo', conTercia: false, bateria: false, tempo: Math.round(tPri * .92) });
       temaSec('Canción final, con el coro', 16, { din: 92, tipo: 'pleno', tempo: Math.round(tPri * .92), de: can });
     }
     if (o.clarinada) clar('Clarinada', tono);
     const pri = temaSec('Primera parte', 16, { densidad: 'medio', din: 88, momento: [0, .6], ...tono });
-    temaSec('Primera parte, con todo', 16, { din: 94, tipo: 'pleno', curva: 6, ...tono, de: pri });
+    temaSec('Primera parte, con todo', 16, { din: 94, tipo: 'pleno', curva: 6, ...tono, de: pri, prepara: veces >= 2 ? (o.clarinada ? null : t1) : t2 });
     if (veces >= 2) {
-      if (o.clarinada) clar('Clarinada del medio', { ...tono, compases: 8, segundos: 20 });
-      if (o.modula) tono = modular(rng, E, tono.tonica, tono.modo);
+      if (o.clarinada) clar('Clarinada del medio', { ...tono, compases: 8, segundos: 20, prepara: t1 });
+      tono = t1;
       const seg = temaSec('Segunda parte', 16, { densidad: 'silabico', din: 92, tempo: tUlt, loop: loopUlt, momento: [.4, 1], ...tono });
-      temaSec('Segunda parte, repetida', 16, { din: 98, tipo: 'pleno', tempo: tUlt, loop: loopUlt, ...tono, curva: 6, de: seg });
+      temaSec('Segunda parte, repetida', 16, { din: 98, tipo: 'pleno', tempo: tUlt, loop: loopUlt, ...tono, curva: 6, de: seg, prepara: veces >= 3 ? null : t2 });
       if (veces >= 3) {
         const ter = temaSec('Tercera parte', 16, { densidad: 'silabico', din: 98, tempo: tUlt, loop: loopUlt, momento: [.5, 1], ...tono });
-        temaSec('Tercera parte, repetida', 16, { din: 100, tipo: 'pleno', tempo: tUlt, loop: loopUlt, ...tono, curva: 6, de: ter });
+        temaSec('Tercera parte, repetida', 16, { din: 100, tipo: 'pleno', tempo: tUlt, loop: loopUlt, ...tono, curva: 6, de: ter, prepara: t2 });
       }
     }
-    if (o.modula && rng.r() < .5) tono = modular(rng, E, tono.tonica, tono.modo);
+    tono = t2;
     llamada(8);
     const bajada = nueva({ nombre: 'Bajada', compases: 8, densidad: 'medio', din: 104, tipo: 'pleno', loop: 8, tempo: tUlt, momento: [.78, 1], gancho: true, ...tono });
-    const melBajada = tema(rng, E, T[bajada.modo], bajada, ev, { usados, celdas });
+    const melBajada = tema(rng, E, T[bajada.modo], bajada, ev, { usados, celdas, cambiar: o.acordes?.[bajada.nombre] || {} });
     cerrar(bajada);
     const repetir = (nombre, cfg = {}) => {
       const s = nueva({ ...bajada, nombre, ...cfg, inicio: ini, golpes: [] });
       s.inicio = ini;
       const prev = {};
-      for (const g of melBajada) voces(rng, E, s, { ...g }, g.nota, Math.max(g.tex, 2), ev, s.din, prev);
+      const alt = new Rng(s.inicio * 31 + 7);
+      for (const g of melBajada) { if (g.rearm) voces(alt, E, s, { ...g, dist: null }, g.nota, Math.max(g.tex, 2), ev, s.din, prev); else voces(rng, E, s, { ...g }, g.nota, Math.max(g.tex, 2), ev, s.din, prev); }
+      s.repite = bajada.nombre;
       if (cfg.conTercia) tercia(rng, s, melBajada, ev, .6);
       s.acordes = bajada.acordes;
       cerrar(s);
@@ -599,17 +656,19 @@ export function componer(M, op) {
   } else {
     if (o.clarinada) clar('Clarinada');
     let tono = { tonica: o.tonica, modo: o.modo };
+    const t1 = o.modula && veces >= 2 ? modular(rngMod, o.estilo, tono) : tono;
+    const t2 = o.modula && veces >= 3 ? modular(rngMod, o.estilo, t1) : t1;
     const pri = temaSec('Primera parte', 16, { densidad: 'medio', din: 88, momento: [0, .6], ...tono });
-    temaSec('Primera parte, otra vuelta', 16, { din: 92, tipo: 'pleno', ...tono, de: pri });
+    temaSec('Primera parte, otra vuelta', 16, { din: 92, tipo: 'pleno', ...tono, de: pri, prepara: t1 });
     if (veces >= 2) {
-      if (o.modula) tono = modular(rng, E, tono.tonica, tono.modo);
+      tono = t1;
       const seg = temaSec('Segunda parte', 16, { densidad: 'silabico', din: 94, momento: [.3, 1], ...tono });
       temaSec('Segunda parte, otra vuelta', 16, { din: 97, tipo: 'pleno', ...tono, de: seg });
     }
     const est = temaSec('Estribillo', 16, { densidad: 'medio', din: 98, tipo: 'pleno', curva: 8, tempo: tUlt, momento: [.5, 1], ...tono });
-    if (veces >= 2) temaSec('Estribillo, con todo', 16, { din: 102, tipo: 'pleno', curva: 8, tempo: tUlt, ...tono, de: est });
+    if (veces >= 2) temaSec('Estribillo, con todo', 16, { din: 102, tipo: 'pleno', curva: 8, tempo: tUlt, ...tono, de: est, prepara: t2 });
     if (veces >= 3) {
-      if (o.modula) tono = modular(rng, E, tono.tonica, tono.modo);
+      tono = t2;
       temaSec('Tercera parte', 16, { densidad: 'silabico', din: 98, tempo: tUlt, momento: [.5, 1], ...tono });
       temaSec('Estribillo final', 16, { din: 104, tipo: 'pleno', curva: 8, tempo: tUlt, ...tono, de: est });
     }

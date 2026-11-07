@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-</head>
-<body>
 <title>Murga-o-matic</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Consola de tablado: banda de retazos arriba con transporte; debajo, controles y mezcla a la izquierda, coro y estructura a la derecha. En el teléfono, todo en una columna. */
+/* Consola de tablado: banda de retazos arriba con transporte; debajo, controles y mezcla a la izquierda, partitura y estructura a la derecha.
+   Con cantores sintéticos aparecen la letra y cómo se hizo cada verso. En el teléfono, todo en una columna. */
 :root{
   --bg:#eceef4; --panel:#fbfbfd; --ink:#16182b; --muted:#5d6079; --line:#d6d9e4; --well:#e3e6ef;
-  --accent:#d4920a; --accent-ink:#16182b;
+  --accent:#d4920a; --accent-ink:#16182b; --accent-soft:#f5e6c4;
+  --ok:#1d7448; --cerca:#8a5a00; --mal:#b3361a;
   --bajos:#c0392b; --segundos:#c97a12; --primos:#2b2e6e; --sobreprimos:#0f8a7e; --tercia:#8e3fb3; --bateria:#5d6079;
   --display:"Bowlby One","Arial Black",Impact,sans-serif;
   --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -22,15 +22,18 @@
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#101124; --panel:#181a33; --ink:#eef0fb; --muted:#9a9dbb; --line:#2c2f52; --well:#22254a;
-  --accent:#f2b33d; --accent-ink:#101124;
+  --accent:#f2b33d; --accent-ink:#101124; --accent-soft:#3a3120;
+  --ok:#59c98f; --cerca:#e2b84a; --mal:#ff8a5c;
   --bajos:#ff6b5b; --segundos:#f2a43b; --primos:#a9b0ff; --sobreprimos:#3fd1c1; --tercia:#cf8bf0; --bateria:#9a9dbb;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#101124; --panel:#181a33; --ink:#eef0fb; --muted:#9a9dbb; --line:#2c2f52; --well:#22254a;
-  --accent:#f2b33d; --accent-ink:#101124;
+  --accent:#f2b33d; --accent-ink:#101124; --accent-soft:#3a3120;
+  --ok:#59c98f; --cerca:#e2b84a; --mal:#ff8a5c;
   --bajos:#ff6b5b; --segundos:#f2a43b; --primos:#a9b0ff; --sobreprimos:#3fd1c1; --tercia:#cf8bf0; --bateria:#9a9dbb;
   color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{background:var(--bg);color:var(--ink)}
 body{font:15px/1.5 var(--body);margin:0}
 .wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
@@ -38,7 +41,7 @@ body{font:15px/1.5 var(--body);margin:0}
 .retazos{height:14px;background:
   conic-gradient(from 45deg at 50% 50%,var(--bajos) 0 25%,var(--accent) 0 50%,var(--sobreprimos) 0 75%,var(--tercia) 0) 0 0/28px 28px;
   opacity:.9}
-header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:end;justify-content:space-between;padding-block:22px 18px}
+header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:end;justify-content:space-between;padding-block:22px 12px}
 h1{font-family:var(--display);font-weight:400;font-size:clamp(34px,6vw,58px);line-height:.95;margin:0;letter-spacing:-.01em;text-wrap:balance}
 h1 span{color:var(--accent)}
 .tag{color:var(--muted);margin:6px 0 0;max-width:52ch}
@@ -46,19 +49,26 @@ h1 span{color:var(--accent)}
 button,select,input{font:inherit;color:inherit}
 .btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:600}
 .btn:hover{border-color:var(--muted)}
+.btn:disabled{opacity:.5;cursor:default}
 .btn:focus-visible,select:focus-visible,input:focus-visible,.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .play{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);min-width:118px;font-size:16px;padding:10px 18px;border-radius:12px}
 .play:disabled{opacity:.55;cursor:wait}
 .time{font:500 14px var(--mono);font-variant-numeric:tabular-nums;color:var(--muted);min-width:96px}
+.bajar{font-size:15px;padding:10px 16px;border-radius:12px}
+.estado-top{display:grid;gap:6px;margin-bottom:16px;min-height:26px}
+.estado-top progress{width:100%;height:6px;accent-color:var(--accent)}
+.status{font-size:14px;color:var(--muted);margin:0}
+.status.err{color:var(--mal)}
 .grid{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;align-items:start}
 @media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
 .panel h2{font-family:var(--display);font-weight:400;font-size:18px;margin:0 0 12px;letter-spacing:.01em}
 .field{display:grid;gap:5px;margin-bottom:14px}
 .lbl{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--well);border-radius:10px;padding:3px;gap:3px}
-.seg button{border:0;background:transparent;border-radius:8px;padding:7px 6px;cursor:pointer;font-weight:600;color:var(--muted)}
+.seg button{border:0;background:transparent;border-radius:8px;padding:7px 6px;cursor:pointer;font-weight:600;color:var(--muted);line-height:1.25}
 .seg button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.voces{border:2px solid var(--accent);border-radius:12px;padding:10px;margin-bottom:16px}
 select{width:100%;background:var(--well);border:1px solid transparent;border-radius:10px;padding:8px 10px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .seed{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
@@ -72,18 +82,22 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .ch .rng{font:12px var(--mono);color:var(--muted);display:block;font-weight:400}
 .mute{border:1px solid var(--line);background:transparent;border-radius:7px;font:600 11px var(--mono);padding:4px 0;cursor:pointer;color:var(--muted)}
 .mute[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
-.status{font-size:13px;color:var(--muted);min-height:20px;margin-top:10px}
-.status.err{color:var(--bajos)}
 .timeline{position:relative;height:42px;border-radius:10px;overflow:hidden;background:var(--well);cursor:pointer;margin-bottom:10px;display:flex}
 .timeline .sec{height:100%;border-right:1px solid var(--panel);display:flex;align-items:center;padding:0 8px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .timeline .sec.cap{background:repeating-linear-gradient(135deg,transparent 0 6px,color-mix(in srgb,var(--accent) 22%,transparent) 6px 12px)}
 .timeline .ph{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);left:0;pointer-events:none}
-.rollbox{overflow-x:auto;border-radius:10px;background:var(--well)}
-canvas#roll{display:block;height:300px;width:100%;min-width:640px;cursor:pointer}
-.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin:10px 0 0}
+.fila-roll{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin:0}
 .legend span{display:flex;gap:6px;align-items:center}
 .legend i{width:10px;height:10px;border-radius:2px;display:block}
+.zoom{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
+.zoom .btn{padding:3px 11px}
+canvas.roll{display:block;width:100%;height:340px;background:var(--well);border-radius:10px;touch-action:pan-y;cursor:grab}
+canvas.mapa{display:block;width:100%;height:30px;margin-top:6px;background:var(--well);border-radius:8px;cursor:pointer;touch-action:none}
+@media (max-width:560px){canvas.roll{height:280px}}
+.nota-roll{font-size:13px;color:var(--muted);margin:8px 0 0}
 .est{margin-top:16px;overflow-x:auto}
+.est table{min-width:620px}
 table{border-collapse:collapse;width:100%;font-size:14px}
 th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.05em;text-transform:uppercase}
@@ -91,34 +105,132 @@ td.t{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowra
 td.ac{font-family:var(--mono);font-size:13px;color:var(--muted)}
 .pill{font-size:12px;border-radius:999px;padding:1px 8px;background:var(--well);white-space:nowrap}
 .pill.cap{background:var(--accent);color:var(--accent-ink)}
-.export{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+td.ac .prep{display:block;font-family:var(--body);font-size:12px;color:var(--muted)}
+td.ac .editar{display:block;margin-top:6px;font:600 12px var(--body);padding:4px 10px}
+tr.editor td{background:var(--well);border-radius:10px}
+tr.editor .grilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin:8px 0}
+tr.editor .compas{display:grid;grid-template-columns:22px 1fr 1fr;gap:4px;align-items:center}
+tr.editor .nb{font:12px var(--mono);color:var(--muted);text-align:right}
+tr.editor select{font:12px var(--mono);padding:5px 2px;background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:0}
+tr.editor select.cambiado{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+tr.editor select.auto{border-style:dashed}
+.export{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-top:16px}
+.export .hint{flex-basis:100%}
 .notes{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
 .notes p,.notes li{color:var(--muted);font-size:14px;max-width:65ch}
 .notes h3{font-size:15px;margin:0 0 6px}
 .notes ul{margin:0;padding-left:18px}
 a{color:var(--sobreprimos)}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .chk{display:flex;gap:8px;align-items:center;font-size:14px;margin:4px 0;cursor:pointer}
 .demos{display:flex;flex-wrap:wrap;gap:6px}
 .demos .btn{font-size:13px;padding:6px 10px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* partitura grabada */
+.grabada{margin-top:18px}
+.grabada .cabeza{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.grabada .cabeza h2{margin:0}
+.hoja{background:#fff;color:#000;border-radius:10px;padding:12px;overflow-x:auto;min-height:120px}
+.hoja svg{display:block;max-width:none}
+
+/* letra y proceso */
+.dos{display:grid;gap:18px;margin-top:18px}
+@media (min-width:1000px){.dos{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}.proceso-panel{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}}
+.tema{display:grid;gap:6px;margin-bottom:10px}
+.tema input{width:100%;background:var(--well);border:1px solid transparent;border-radius:10px;padding:8px 10px}
+.temas{display:flex;flex-wrap:wrap;gap:6px}
+.chip-tema{font-size:13px;font-weight:500;padding:4px 10px;border-radius:999px;background:var(--well);border:1px solid transparent;cursor:pointer}
+.chip-tema:hover{border-color:var(--muted)}
+.botones{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 8px}
+.btn.fuerte{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.aviso{margin:8px 0;padding:8px 10px;border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 8px 8px 0;font-size:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+#libreto{display:grid;gap:20px;margin-top:12px}
+.parte header{display:grid;gap:2px;margin-bottom:6px}
+.parte h3{font-size:16px;margin:0}
+.funcion,.se-canta{margin:0;font-size:13px;color:var(--muted)}
+.versos{list-style:none;margin:0;padding:0;display:grid;gap:2px;counter-reset:v}
+.verso{display:grid;grid-template-columns:2em minmax(0,1fr) 3.6em;align-items:center;gap:8px;border-radius:8px;padding:2px 4px}
+.verso::before{counter-increment:v;content:counter(v);font:12px var(--mono);color:var(--muted);text-align:right}
+.verso input{font-size:16px;font-weight:500;background:transparent;border:0;border-bottom:1px dashed var(--line);border-radius:0;padding:5px 2px;width:100%;min-width:0}
+.verso input:focus{border-bottom-color:var(--accent);outline:none;background:var(--well)}
+.verso.sonando{background:var(--accent-soft)}
+.verso.elegido{box-shadow:inset 3px 0 0 var(--accent)}
+.cuenta{font:12px var(--mono);text-align:center;border-radius:999px;padding:2px 6px;border:1px solid var(--line);color:var(--muted)}
+.cuenta[data-estado="ok"]{color:var(--ok);border-color:var(--ok)}
+.cuenta[data-estado="cerca"]{color:var(--cerca);border-color:var(--cerca)}
+.cuenta[data-estado="mal"]{color:var(--mal);border-color:var(--mal)}
+.proceso-cabeza{display:flex;gap:12px;align-items:start;justify-content:space-between;margin-bottom:12px}
+.verso-grande{font-size:20px;font-weight:600;margin:2px 0 0;text-wrap:balance}
+.sub{margin:0;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.nav{display:flex;gap:6px;flex:none}
+.nav button{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:4px 11px;cursor:pointer;font-weight:700}
+.pasos{list-style:none;margin:0;padding:0;display:grid;gap:18px;counter-reset:paso}
+.paso{display:grid;gap:8px;padding-left:38px;position:relative;min-width:0}
+.paso::before{counter-increment:paso;content:counter(paso);position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:13px;display:grid;place-items:center}
+.paso h4{margin:2px 0 0;font-size:15px}
+.paso p{margin:0;font-size:14px}
+.paso .nota{font-size:13px;color:var(--muted)}
+.secciones{display:flex;flex-wrap:wrap;gap:6px}
+.secciones .sec{display:grid;font-size:13px;padding:5px 9px;border-radius:8px;border:1px solid var(--line);background:var(--well)}
+.secciones .sec small{color:var(--muted);font-size:11px}
+.secciones .sec.esta{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.cajitas-marco{overflow-x:auto;padding-bottom:4px}
+.cajitas .nota-caja{fill:var(--primos)}
+.cajitas .fuerte{fill:var(--accent)}
+.cajitas .num{font:9px var(--body);fill:var(--muted)}
+.cajitas .sil{font:13px var(--body);fill:var(--ink)}
+.cajitas .sil.acentuada{font-weight:700}
+.cajitas .melisma{stroke:var(--ink);stroke-width:1.2}
+.cajitas .corte{stroke:var(--accent);stroke-width:1.5}
+.cifras{display:flex;flex-wrap:wrap;gap:6px}
+.cifras span{font-size:13px;padding:4px 9px;border-radius:8px;background:var(--well);font-variant-numeric:tabular-nums}
+.elegido{font-size:16px;font-weight:600}
+.total{font:12px var(--mono);color:var(--muted);margin-left:6px}
+.puntos{display:flex;flex-wrap:wrap;gap:6px}
+.punto-p{font-size:12px;padding:3px 8px;border-radius:999px;border:1px solid currentColor;font-variant-numeric:tabular-nums}
+.punto-p.mas{color:var(--ok)}.punto-p.menos{color:var(--mal)}
+.lista{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px}
+.descartes li span{display:block;font-size:12px;color:var(--muted)}
+.tabla-marco{overflow-x:auto}
+.fonemas{border-collapse:collapse;font-size:14px;width:auto}
+.fonemas th,.fonemas td{border-bottom:1px solid var(--line);padding:4px 10px 4px 0}
+.fonemas td:first-child{font-weight:500}
+.fonemas .acentuada{font-weight:700}
+.fonemas abbr{text-decoration:underline dotted;cursor:help}
+.nada{color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
+</head>
+<body>
 
 <div class="retazos" aria-hidden="true"></div>
 <div class="wrap">
   <header class="top">
     <div>
       <h1>Murga-o-<span>matic</span></h1>
-      <p class="tag">Generador de murga uruguaya. Aprendió de presentaciones y retiradas reales transcriptas nota por nota; la batería son los loops de La Tríada.</p>
+      <p class="tag">Generador de murga uruguaya. Aprendió de presentaciones y retiradas reales transcriptas nota por nota; la batería son los loops de La Tríada. Puede cantar con muestras de coro o con cantores sintéticos que cantan una letra escrita para la melodía.</p>
     </div>
     <div class="transport">
       <button class="btn play" id="play" disabled>Cargando…</button>
       <span class="time" id="time">0:00 / 0:00</span>
+      <button class="btn bajar" id="mp3" disabled>Descargar MP3</button>
     </div>
   </header>
+  <div class="estado-top">
+    <progress id="avance" max="1" value="0" hidden></progress>
+    <p class="status" id="status" role="status"></p>
+  </div>
 
   <div class="grid">
     <aside class="panel">
       <h2>La pieza</h2>
+      <div class="field voces"><span class="lbl" id="l-voces">Voces</span>
+        <div class="seg" role="group" aria-labelledby="l-voces" id="voces">
+          <button data-v="muestras" aria-pressed="true">Muestras de coro</button>
+          <button data-v="sintetizadas" aria-pressed="false">Cantores sintéticos</button>
+        </div>
+        <p class="hint" id="vocesHint"></p>
+      </div>
       <div class="field"><span class="lbl">Para empezar</span>
         <div class="demos" id="demos"></div>
       </div>
@@ -143,7 +255,7 @@ a{color:var(--sobreprimos)}
       </div>
       <div class="field"><span class="lbl">Tempo y largo</span>
         <div class="row2">
-          <input id="tempo" type="number" min="60" max="170" placeholder="Tempo del corpus" inputmode="numeric" aria-label="Tempo en BPM">
+          <input id="tempo" type="number" min="60" max="170" placeholder="Tempo del corpus" inputmode="numeric" aria-label="Tempo en BPM" style="width:100%;background:var(--well);border:1px solid transparent;border-radius:10px;padding:8px 10px">
           <select id="largo" aria-label="Largo"><option value="corta">Corta</option><option value="normal" selected>Normal</option><option value="larga">Larga</option></select>
         </div>
       </div>
@@ -163,27 +275,66 @@ a{color:var(--sobreprimos)}
         <div class="seed"><input id="semilla" type="number" min="1" max="99999" value="1" inputmode="numeric"><button class="btn" id="otra">Otra</button></div>
         <p class="hint">Cada número da otra melodía y otra armonía.</p>
       </div>
-      <div class="field"><label class="lbl" for="brillo">Timbre del coro</label>
+      <div class="field" id="campoBrillo"><label class="lbl" for="brillo">Timbre de las muestras</label>
         <input id="brillo" type="range" min="0" max="1.5" step="0.1" value="1">
         <div class="hint" style="display:flex;justify-content:space-between"><span>muestra pura</span><span>murga medida</span><span>más filoso</span></div>
       </div>
 
       <h2 style="margin-top:20px">Mezcla</h2>
       <div class="mixer" id="mixer"></div>
-      <div class="status" id="status" role="status"></div>
     </aside>
 
-    <main class="panel" style="min-width:0">
-      <h2>Coro y estructura</h2>
+    <main class="panel">
+      <h2>Partitura y estructura</h2>
       <div class="timeline" id="timeline" aria-label="Secciones; tocá para saltar"></div>
-      <div class="rollbox"><canvas id="roll" aria-label="Notas de cada cuerda del coro"></canvas></div>
-      <div class="legend" id="legend"></div>
+      <div class="fila-roll">
+        <div class="legend" id="legend"></div>
+        <div class="zoom"><button class="btn" id="zoomMenos" aria-label="Alejar">−</button><button class="btn" id="zoomMas" aria-label="Acercar">+</button><label class="chk"><input type="checkbox" id="seguir" checked> Seguir el audio</label></div>
+      </div>
+      <canvas id="roll" class="roll" aria-label="Partitura: las notas de cada cuerda y, con cantores sintéticos, la letra sílaba por sílaba"></canvas>
+      <canvas id="mapa" class="mapa" aria-label="Toda la pieza: tocá para ir a esa parte"></canvas>
+      <p class="nota-roll" id="notaRoll">Tocá las notas o las secciones para escuchar desde ahí; arrastrá para moverte.</p>
       <div class="est"><table><thead><tr><th>Tiempo</th><th>Sección</th><th>Textura</th><th>Acordes</th></tr></thead><tbody id="tabla"></tbody></table></div>
       <div class="export">
-        <button class="btn" id="exportar">Descargar ZIP: mezcla WAV, coro MIDI y estructura</button>
-        <span class="hint" id="expStatus"></span>
+        <button class="btn" id="verPartitura" aria-expanded="false">Ver la partitura</button>
+        <button class="btn" id="pdf" disabled>Partitura en PDF</button>
+        <button class="btn" id="txt" disabled>Letra y acordes (TXT)</button>
+        <button class="btn" id="exportar" disabled>ZIP: WAV, MIDI y estructura</button>
+        <span class="hint" id="expStatus" role="status"></span>
       </div>
     </main>
+  </div>
+
+  <section class="panel grabada" id="grabada" hidden aria-labelledby="t-grabada">
+    <div class="cabeza">
+      <h2 id="t-grabada">Partitura coral</h2>
+      <button class="btn" id="pdf2">Descargar PDF</button>
+    </div>
+    <p class="hint" id="grabadaNota"></p>
+    <div class="hoja" id="hoja"></div>
+  </section>
+
+  <div class="dos" id="cantada" hidden>
+    <section class="panel" aria-labelledby="t-letra">
+      <h2 id="t-letra">La letra</h2>
+      <div class="tema">
+        <label class="lbl" for="tema">Tema</label>
+        <input id="tema" type="text" placeholder="De qué habla la letra, en pocas palabras" autocomplete="off">
+        <div class="temas" id="temas"></div>
+      </div>
+      <div class="botones">
+        <button class="btn fuerte" id="otraLetra">Otra letra</button>
+        <button class="btn" id="lailareo">Lailareo</button>
+      </div>
+      <div class="aviso" id="avisoLetra" hidden><span>Cambiaste la letra.</span><button class="btn fuerte" id="recantar">Cantar esta letra</button></div>
+      <p class="status" id="estadoLetra"></p>
+      <div id="libreto"></div>
+    </section>
+    <section class="panel proceso-panel" aria-labelledby="t-proceso">
+      <h2 id="t-proceso">Cómo se hace</h2>
+      <p class="hint">Elegí un verso, en la letra o en la partitura, y acá aparece cada paso con sus datos: qué pide la melodía, cómo eligió el letrista, cómo caen las sílabas en las notas y qué canta cada voz.</p>
+      <div id="proceso"></div>
+    </section>
   </div>
 
   <section class="notes">
@@ -194,14 +345,20 @@ a{color:var(--sobreprimos)}
         <li>La forma pide los gestos: una pregunta que termina en la dominante, una respuesta con la misma cabeza que termina en la tónica, un contraste, y vuelve. Cada verso repite el anterior con alguna nota cambiada, como cuando cambia la letra.</li>
         <li>Cada pocas notas cambia una nota débil, y los gestos vienen de temas distintos: es música nueva en el idioma de la murga, no un collage.</li>
         <li>La presentación entra a capela y sigue con un bloque largo de batería. La retirada tiene canción final, dos velocidades, un puente a capela y la bajada que se apaga. Las duraciones y los tempos son los medidos.</li>
-        <li>Canta con muestras de coro "aah": cada cuerda tiene de dos a cuatro cantores (la tercia es una voz sola), cada uno con su desafinación, su retraso y su lugar en el estéreo, y el timbre se ecualiza hacia el de un coro de murga medido.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Las voces</h3>
+      <ul>
+        <li><b>Muestras de coro:</b> muestras "aah" de FluidR3 y MusyngKite. Cada cuerda tiene de dos a cuatro cantores (la tercia es una voz sola), cada uno con su desafinación, su retraso y su lugar en el estéreo, y el timbre se ecualiza hacia el de un coro de murga medido.</li>
+        <li><b>Cantores sintéticos:</b> un letrista algorítmico, sin modelos de lenguaje, escribe una letra rioplatense que entra en la melodía, sílaba por nota y con rima. Trece voces de fuente glótica y formantes la cantan. El timbre y las consonantes se calibraron contra La Trasnochada 2020.</li>
       </ul>
     </div>
     <div>
       <h3>De dónde sale</h3>
-      <p>Del análisis de presentaciones, canciones finales y retiradas: voces separadas con Demucs y transcriptas con MuScriptor. Los números están en <a href="https://github.com/brotochola/Murga-o-matic/blob/main/docs/analisis_de_los_midis.md" target="_blank" rel="noopener">el análisis</a>.</p>
+      <p>Del análisis de presentaciones, canciones finales y retiradas: voces separadas con Demucs y transcriptas con MuScriptor. Los números están en <a href="https://github.com/brotochola/Murga-o-matic/blob/main/docs/analisis_de_los_midis.md" target="_blank" rel="noopener">el análisis</a> y en <a href="https://github.com/brotochola/Murga-o-matic/blob/main/docs/cantores_y_letras.md" target="_blank" rel="noopener">cantores y letras</a>.</p>
       <p>Registros según "Sin Disfraz" (Lamolle y Lombardo, 1998): segundos do3–do4, primos sol3–sol4, sobreprimos mi4–la4 hasta re5.</p>
-      <p>Batería: Pablo "Lolito" Iribarne (bombo), Raúl García (redoblante) y Gerardo "Batata" Cánepa (platillos), del video <a href="https://www.youtube.com/watch?v=0DSJVulzDYw" target="_blank" rel="noopener">17 ritmos fundamentales de murga</a>. Muestras de coro: FluidR3 y MusyngKite.</p>
+      <p>Batería: Pablo "Lolito" Iribarne (bombo), Raúl García (redoblante) y Gerardo "Batata" Cánepa (platillos), del video <a href="https://www.youtube.com/watch?v=0DSJVulzDYw" target="_blank" rel="noopener">17 ritmos fundamentales de murga</a>. MP3 con <a href="https://github.com/zhuker/lamejs" target="_blank" rel="noopener">lamejs</a> (LAME, LGPL); partitura con abcjs, jsPDF y svg2pdf.js.</p>
     </div>
   </section>
 </div>
