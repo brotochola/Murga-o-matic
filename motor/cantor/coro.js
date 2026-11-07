@@ -62,6 +62,13 @@ export function silabear(P, letras) {
   return { porQ, informe, detalle };
 }
 
+// Cada cantor un poco más fuerte o más suave (variacion.js), siempre igual para la misma semilla
+export function volumenDe(semilla, V = VARIACION) {
+  if (!V.volumen) return 1;
+  const x = Math.sin(semilla * 12.9898 + 78.233) * 43758.5453, u = x - Math.floor(x);
+  return Math.pow(10, (u * 2 - 1) * V.volumen / 20);
+}
+
 // Qué canta cada cantor: notas con su sílaba y en segundos
 export function cantores(P, porQ, { semilla = 1 } = {}) {
   const { T } = tiempos(P);
@@ -104,8 +111,9 @@ export function cantores(P, porQ, { semilla = 1 } = {}) {
       for (let i = 0; i + 1 < notas.length; i++) { const hueco = notas[i + 1].t0 - notas[i].t1; if (hueco > 0 && hueco < .25) notas[i].t1 = notas[i + 1].t0; }
       // el primero de cada cuerda puede llevarla: un poco más fuerte y adelantado (variacion.js)
       const lider = c === 0 && cfg.cantores > 1;
-      res.push({ cuerda: k, tipo: cfg.tipo, semilla: semilla * 101 + (n++) * 7, pan: Math.max(-1, Math.min(1, cfg.pan + (c - (cfg.cantores - 1) / 2) * .12)),
-        ganancia: cfg.ganancia / Math.sqrt(cfg.cantores) * (lider ? Math.pow(10, VARIACION.liderDb / 20) : 1), retraso: lider ? -VARIACION.liderAdelanto : 0, notas });
+      const sem = semilla * 101 + (n++) * 7;
+      res.push({ cuerda: k, tipo: cfg.tipo, semilla: sem, pan: Math.max(-1, Math.min(1, cfg.pan + (c - (cfg.cantores - 1) / 2) * .12)),
+        ganancia: cfg.ganancia / Math.sqrt(cfg.cantores) * (lider ? Math.pow(10, VARIACION.liderDb / 20) : 1) * volumenDe(sem), retraso: lider ? -VARIACION.liderAdelanto : 0, notas });
     });
   }
   return res;

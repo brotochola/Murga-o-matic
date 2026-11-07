@@ -10,7 +10,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cantar } from '../motor/cantor/cantor.js';
-import { CORO } from '../motor/cantor/coro.js';
+import { CORO, volumenDe } from '../motor/cantor/coro.js';
 import { ecualizar } from '../motor/cantor/eq.js';
 import { CURVA } from '../motor/cantor/timbre.js';
 import { RANGOS } from '../motor/compositor.js';
@@ -91,7 +91,7 @@ for (const f of fragmentos) {
     for (let i = 0; i + 1 < notas.length; i++) { const h = notas[i + 1].t0 - notas[i].t1; if (h > 0 && h < .25) notas[i].t1 = notas[i + 1].t0; }
     const V = { ...VARIACION, ...(variacion || {}) }, lider = c === 0 && ls.length > 1;
     const cfg = CORO[k], semilla = 1000 + idx * 7;
-    const ganancia = cfg.ganancia / Math.sqrt(cfg.cantores) * (lider && V.liderDb ? Math.pow(10, V.liderDb / 20) : 1);
+    const ganancia = cfg.ganancia / Math.sqrt(cfg.cantores) * (lider && V.liderDb ? Math.pow(10, V.liderDb / 20) : 1) * volumenDe(semilla, V);
     const r = cantar(notas, { sr: SR, tipo: cfg.tipo, semilla, separar: true, variacion: variacion || undefined, retraso: lider && V.liderAdelanto ? -V.liderAdelanto : 0 });
     const m = Math.min(n, r.voz.length);
     for (let s = 0; s < m; s++) { voz[s] += r.voz[s] * ganancia; ruido[s] += r.ruido[s] * ganancia; }

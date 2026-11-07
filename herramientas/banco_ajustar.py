@@ -37,7 +37,7 @@ BANCO = BM.BANCO
 ESTADO, PRUEBAS = BANCO / "ajuste_estado.json", BANCO / "pruebas"
 # lo que se busca, con sus límites
 LIMITES = {
-    "desafinacion": (0.02, 0.30), "retraso": (0.0, 0.06), "desfase": (0.0, 0.035),
+    "desafinacion": (0.02, 0.30), "desafinaNota": (0.0, 0.12), "retraso": (0.0, 0.06), "desfase": (0.0, 0.035),
     "vibratoLo": (0.0, 0.25), "vibratoHi": (0.02, 0.45), "garganta": (0.0, 0.06),
     "vocales": (0.0, 0.10), "liderDb": (0.0, 4.0), "liderAdelanto": (0.0, 0.025),
 }
@@ -56,13 +56,13 @@ def leer_actual():
 
 
 def a_vector(v):
-    return {"desafinacion": v["desafinacion"], "retraso": v["retraso"], "desfase": v["desfase"], "vibratoLo": v["vibrato"][0], "vibratoHi": v["vibrato"][1],
+    return {"desafinacion": v["desafinacion"], "desafinaNota": v.get("desafinaNota", 0), "retraso": v["retraso"], "desfase": v["desfase"], "vibratoLo": v["vibrato"][0], "vibratoHi": v["vibrato"][1],
             "garganta": v["garganta"], "vocales": v["vocales"], "liderDb": v["liderDb"], "liderAdelanto": v["liderAdelanto"]}
 
 
 def a_variacion(x, base):
     v = dict(base)
-    v.update({k: round(float(x[k]), 4) for k in ("desafinacion", "retraso", "desfase", "garganta", "vocales", "liderDb", "liderAdelanto")})
+    v.update({k: round(float(x[k]), 4) for k in ("desafinacion", "desafinaNota", "retraso", "desfase", "garganta", "vocales", "liderDb", "liderAdelanto")})
     lo, hi = sorted([x["vibratoLo"], x["vibratoHi"]])
     v["vibrato"] = [round(float(lo), 4), round(float(max(hi, lo + .01)), 4)]
     return v
@@ -92,6 +92,9 @@ def escribir_variacion(v, nota):
         "garganta": "largo del tracto, más o menos este tanto sobre el de su tipo de voz", "pulso": "forma del pulso de la glotis",
         "aire": "cuánto aire, multiplicando el de su tipo", "vocales": "cada vocal de cada cantor, F1 y F2 corridos hasta este tanto",
         "liderDb": "el primer cantor de cada cuerda, tantos dB más fuerte", "liderAdelanto": "y tantos segundos adelantado",
+        "desafinaNota": "y además cada nota hasta este tanto alta o baja", "diccion": "cuánto más largas o más cortas hace las consonantes",
+        "vibratoEntra": "segundos: cuándo le entra el vibrato en una nota larga", "pique": "cuánto más o menos pica desde abajo al entrar",
+        "volumen": "dB: cada cantor un poco más fuerte o más suave",
     }
     lineas = ["// variacion.js — cuánto se diferencian los cantores sintéticos entre sí. Lo usan cantor.js y coro.js.",
               f"// Ajustado por herramientas/banco_ajustar.py: {nota}", "export const VARIACION = {"]
