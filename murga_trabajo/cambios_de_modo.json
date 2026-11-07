@@ -1,0 +1,788 @@
+{
+ "tramos": 41,
+ "cambios": {
+  "total": 135,
+  "porTipo": {
+   "otro tono, mismo modo": 70,
+   "otro tono y otro modo": 49,
+   "mismo tono, cambia el modo": 9,
+   "a la relativa": 7
+  },
+  "porClave": {
+   "MM1": 10,
+   "mm1": 9,
+   "mM8": 8,
+   "Mm5": 8,
+   "MM7": 8,
+   "Mm0": 7,
+   "MM5": 6,
+   "Mm2": 6,
+   "mm5": 6,
+   "Mm1": 5,
+   "mm8": 5,
+   "mM3": 5,
+   "MM8": 4,
+   "mm10": 4,
+   "mM11": 3,
+   "mM6": 3,
+   "mM2": 2,
+   "Mm10": 2,
+   "mm7": 2,
+   "mm2": 2,
+   "Mm9": 2,
+   "Mm4": 2,
+   "mm9": 2,
+   "mM5": 2,
+   "mm4": 2,
+   "MM11": 2,
+   "mM0": 2,
+   "MM4": 2,
+   "mM4": 2,
+   "Mm11": 2,
+   "Mm8": 1,
+   "mm6": 1,
+   "Mm7": 1,
+   "MM10": 1,
+   "mM9": 1,
+   "mM10": 1,
+   "MM6": 1,
+   "MM2": 1,
+   "mm3": 1,
+   "MM9": 1
+  },
+  "enCostura": 35,
+  "conDominante": 15
+ },
+ "paralelos": {
+  "total": 9,
+  "menorAMayor": 2,
+  "mayorAMenor": 7,
+  "enCostura": 3,
+  "conDominante": 2,
+  "tonicaVieja": 4,
+  "porParte": {
+   "retirada": 5,
+   "presentacion": 3,
+   "final_y_retirada": 1
+  },
+  "ejemplos": [
+   {
+    "tramo": "agarrate_catalina_2008_retirada",
+    "t": "4:11",
+    "de": "Fa mayor",
+    "a": "menor",
+    "donde": "silencio",
+    "antes": "Do7",
+    "despues": "Lab"
+   },
+   {
+    "tramo": "agarrate_catalina_2010_retirada",
+    "t": "4:28",
+    "de": "Lab mayor",
+    "a": "menor",
+    "donde": null,
+    "antes": "Lab",
+    "despues": "Fa#"
+   },
+   {
+    "tramo": "agarrate_catalina_2022_retirada",
+    "t": "1:37",
+    "de": "Fa menor",
+    "a": "mayor",
+    "donde": null,
+    "antes": "Do#",
+    "despues": "Sibm"
+   },
+   {
+    "tramo": "la_gran_muneca_2016_presentacion",
+    "t": "1:50",
+    "de": "Mib mayor",
+    "a": "menor",
+    "donde": null,
+    "antes": "Mib",
+    "despues": "Sib7"
+   },
+   {
+    "tramo": "la_trasnochada_2019_presentacion",
+    "t": "1:36",
+    "de": "Sol menor",
+    "a": "mayor",
+    "donde": null,
+    "antes": "Solm",
+    "despues": "Lam"
+   },
+   {
+    "tramo": "la_trasnochada_2019_presentacion",
+    "t": "2:38",
+    "de": "Lab mayor",
+    "a": "menor",
+    "donde": "batería",
+    "antes": "Lab7",
+    "despues": "Do#"
+   },
+   {
+    "tramo": "la_trasnochada_2020_retirada",
+    "t": "6:05",
+    "de": "Fa mayor",
+    "a": "menor",
+    "donde": null,
+    "antes": "Sib7",
+    "despues": "Sibm"
+   },
+   {
+    "tramo": "la_trasnochada_2022_final_y_retirada",
+    "t": "3:25",
+    "de": "Mi mayor",
+    "a": "menor",
+    "donde": "silencio",
+    "antes": "La",
+    "despues": "Mi7"
+   },
+   {
+    "tramo": "la_trasnochada_2026_retirada",
+    "t": "6:08",
+    "de": "Sol mayor",
+    "a": "menor",
+    "donde": null,
+    "antes": "Re7",
+    "despues": "Solm"
+   }
+  ]
+ },
+ "llegadas": {
+  "menor": {
+   "total": 136,
+   "contrario": 11,
+   "conSeptima": 3,
+   "haciaIV": 5,
+   "queda": 1,
+   "enCostura": 1
+  },
+  "mayor": {
+   "total": 213,
+   "contrario": 5,
+   "conSeptima": 0,
+   "haciaIV": 0,
+   "queda": 1,
+   "enCostura": 1
+  }
+ },
+ "confirmados": {
+  "total": 62,
+  "porClave": {
+   "mm1": 8,
+   "Mm0": 6,
+   "MM1": 5,
+   "mM8": 5,
+   "Mm2": 4,
+   "MM7": 4,
+   "MM5": 3,
+   "Mm9": 2,
+   "MM8": 2,
+   "Mm1": 2,
+   "mm8": 2,
+   "mM11": 2,
+   "mM3": 2,
+   "mM2": 1,
+   "Mm8": 1,
+   "Mm4": 1,
+   "mm10": 1,
+   "MM4": 1,
+   "MM11": 1,
+   "mm2": 1,
+   "mm5": 1,
+   "Mm11": 1,
+   "MM6": 1,
+   "mm4": 1,
+   "MM9": 1,
+   "Mm5": 1,
+   "mm9": 1,
+   "mM6": 1
+  },
+  "porTipo": {
+   "otro tono, mismo modo": 33,
+   "otro tono y otro modo": 19,
+   "mismo tono, cambia el modo": 6,
+   "a la relativa": 4
+  },
+  "cambianModo": 29,
+  "ejemplos": [
+   {
+    "tramo": "agarrate_catalina_2008_retirada",
+    "t": "0:22",
+    "de": "Mib menor",
+    "a": "Fa mayor",
+    "clave": "mM2",
+    "donde": null,
+    "contexto": "Si Mibm Do# | Do7 | Fa"
+   },
+   {
+    "tramo": "agarrate_catalina_2008_retirada",
+    "t": "4:11",
+    "de": "Fa mayor",
+    "a": "Fa menor",
+    "clave": "Mm0",
+    "donde": "silencio",
+    "contexto": "Sol7 Do7 | Lab | Sibm"
+   },
+   {
+    "tramo": "agarrate_catalina_2010_retirada",
+    "t": "3:32",
+    "de": "Sol mayor",
+    "a": "Lab mayor",
+    "clave": "MM1",
+    "donde": null,
+    "contexto": "Mi7 Sol La7 | Lab"
+   },
+   {
+    "tramo": "agarrate_catalina_2010_retirada",
+    "t": "4:28",
+    "de": "Lab mayor",
+    "a": "Lab menor",
+    "clave": "Mm0",
+    "donde": null,
+    "contexto": "Sibm Lab Fa# | Lab7 | Sol"
+   },
+   {
+    "tramo": "agarrate_catalina_2010_retirada",
+    "t": "6:54",
+    "de": "Lab menor",
+    "a": "Mi mayor",
+    "clave": "mM8",
+    "donde": "batería",
+    "contexto": "Do#m Si Mib7 Mi | Fa#7"
+   },
+   {
+    "tramo": "agarrate_catalina_2010_retirada",
+    "t": "10:19",
+    "de": "Do mayor",
+    "a": "Lab menor",
+    "clave": "Mm8",
+    "donde": null,
+    "contexto": "Lam Sib7 | Do | Sol7 | La | Labm | Mi7"
+   },
+   {
+    "tramo": "agarrate_catalina_2011_final_y_retirada",
+    "t": "4:18",
+    "de": "Do# mayor",
+    "a": "Fa# mayor",
+    "clave": "MM5",
+    "donde": null,
+    "contexto": "Sibm Si Fa# | Si | Fa#"
+   },
+   {
+    "tramo": "agarrate_catalina_2012_retirada",
+    "t": "4:15",
+    "de": "Si mayor",
+    "a": "Do# menor",
+    "clave": "Mm2",
+    "donde": null,
+    "contexto": "Si Lab7 | Do#m | Lab7 | Mi7 | Do#m"
+   },
+   {
+    "tramo": "agarrate_catalina_2019_presentacion",
+    "t": "1:32",
+    "de": "La mayor",
+    "a": "Sib mayor",
+    "clave": "MM1",
+    "donde": null,
+    "contexto": "Rem La7 Fa#m Si7 Lab7 | Sib | Mib"
+   },
+   {
+    "tramo": "agarrate_catalina_2019_retirada",
+    "t": "6:18",
+    "de": "Mib mayor",
+    "a": "Do menor",
+    "clave": "Mm9",
+    "donde": null,
+    "contexto": "Lab7 Do# Sib Dom Sib7 | Dom | Sib | Dom"
+   },
+   {
+    "tramo": "agarrate_catalina_2019_retirada",
+    "t": "7:56",
+    "de": "Do menor",
+    "a": "Lab mayor",
+    "clave": "mM8",
+    "donde": null,
+    "contexto": "Mib Fa7 Sol7 Fam"
+   },
+   {
+    "tramo": "agarrate_catalina_2019_retirada",
+    "t": "8:54",
+    "de": "Lab mayor",
+    "a": "Do menor",
+    "clave": "Mm4",
+    "donde": null,
+    "contexto": "Lab Sib7 Labm Fa#m | Dom | Sol7"
+   },
+   {
+    "tramo": "agarrate_catalina_2020_final_y_retirada",
+    "t": "2:40",
+    "de": "Si menor",
+    "a": "La menor",
+    "clave": "mm10",
+    "donde": null,
+    "contexto": "Sim Fa# Sib | Re7"
+   },
+   {
+    "tramo": "agarrate_catalina_2020_final_y_retirada",
+    "t": "7:48",
+    "de": "La menor",
+    "a": "Fa mayor",
+    "clave": "mM8",
+    "donde": "batería",
+    "contexto": "Si Lam La7 Sibm | Lab | Sol7 | Fa7"
+   },
+   {
+    "tramo": "la_gran_muneca_2016_final_y_retirada",
+    "t": "1:19",
+    "de": "Mi menor",
+    "a": "Do mayor",
+    "clave": "mM8",
+    "donde": null,
+    "contexto": "Fa#7 Si Lab7 Do Sol | Lam | Fa | Do"
+   },
+   {
+    "tramo": "la_gran_muneca_2016_final_y_retirada",
+    "t": "4:04",
+    "de": "Do mayor",
+    "a": "Mi mayor",
+    "clave": "MM4",
+    "donde": "silencio",
+    "contexto": "Do | Si7 | Mi"
+   },
+   {
+    "tramo": "la_gran_muneca_2016_presentacion",
+    "t": "1:50",
+    "de": "Mib mayor",
+    "a": "Mib menor",
+    "clave": "Mm0",
+    "donde": null,
+    "contexto": "Mib Sib7 | Labm"
+   },
+   {
+    "tramo": "la_gran_muneca_2020_presentacion",
+    "t": "1:26",
+    "de": "Si mayor",
+    "a": "Sol mayor",
+    "clave": "MM8",
+    "donde": null,
+    "contexto": "Mi Si Mim | Do | Do# | Dom"
+   },
+   {
+    "tramo": "la_gran_muneca_2020_presentacion",
+    "t": "1:48",
+    "de": "Sol mayor",
+    "a": "Fa# mayor",
+    "clave": "MM11",
+    "donde": null,
+    "contexto": "Sol7 Si7 | La | Do#7 | Fa7 | Sib7"
+   },
+   {
+    "tramo": "la_gran_muneca_2020_retirada",
+    "t": "1:29",
+    "de": "Sol mayor",
+    "a": "Lab mayor",
+    "clave": "MM1",
+    "donde": null,
+    "contexto": "Sol Do7 Mi7 | Si | Mib7 | Lab"
+   },
+   {
+    "tramo": "la_gran_muneca_2020_retirada",
+    "t": "3:38",
+    "de": "Lab mayor",
+    "a": "Mib mayor",
+    "clave": "MM7",
+    "donde": null,
+    "contexto": "Mib Lab Mib7 Do# Do7 Fam | Dom | Sib7 | Mib7"
+   },
+   {
+    "tramo": "la_gran_muneca_2020_retirada",
+    "t": "6:07",
+    "de": "Mib mayor",
+    "a": "Mi menor",
+    "clave": "Mm1",
+    "donde": null,
+    "contexto": "Sib7 Labm Si Lab7 | Mim | Si | Lam"
+   },
+   {
+    "tramo": "la_trasnochada_2017_final_y_retirada",
+    "t": "2:19",
+    "de": "Fa# mayor",
+    "a": "Lab menor",
+    "clave": "Mm2",
+    "donde": null,
+    "contexto": "Fa# Mib7 Mi Sib7 Fa7 | Labm"
+   },
+   {
+    "tramo": "la_trasnochada_2017_final_y_retirada",
+    "t": "2:32",
+    "de": "Lab menor",
+    "a": "Sib menor",
+    "clave": "mm2",
+    "donde": "batería",
+    "contexto": "Labm Do#7 | Sibm"
+   },
+   {
+    "tramo": "la_trasnochada_2017_final_y_retirada",
+    "t": "3:17",
+    "de": "Sib menor",
+    "a": "Si menor",
+    "clave": "mm1",
+    "donde": null,
+    "contexto": "Sibm Mib7 Fa#7 | Sim | La | Sol"
+   },
+   {
+    "tramo": "la_trasnochada_2017_presentacion",
+    "t": "0:32",
+    "de": "Mi menor",
+    "a": "Fa menor",
+    "clave": "mm1",
+    "donde": "batería",
+    "contexto": "Mim Fa#7 Mi | Sibm | Mib | Do# | Do7"
+   },
+   {
+    "tramo": "la_trasnochada_2017_presentacion",
+    "t": "1:45",
+    "de": "Fa menor",
+    "a": "Sib menor",
+    "clave": "mm5",
+    "donde": null,
+    "contexto": "Sibm Lab Sibm Fam | Sibm | Sib7"
+   },
+   {
+    "tramo": "la_trasnochada_2017_presentacion",
+    "t": "2:06",
+    "de": "Sib menor",
+    "a": "Fa# menor",
+    "clave": "mm8",
+    "donde": null,
+    "contexto": "Sib7 Sibm Fa# Mib7 Fa7 | Fa# | Lab7"
+   },
+   {
+    "tramo": "la_trasnochada_2019_final_y_retirada",
+    "t": "10:10",
+    "de": "Do menor",
+    "a": "Do# menor",
+    "clave": "mm1",
+    "donde": null,
+    "contexto": "Do# Mib Sib Dom | Fa#7 | Fa#m"
+   },
+   {
+    "tramo": "la_trasnochada_2019_presentacion",
+    "t": "0:32",
+    "de": "Fa# menor",
+    "a": "Sol menor",
+    "clave": "mm1",
+    "donde": null,
+    "contexto": "Fa#m Do#7 Fa#m La7 Re Sol7 Fa7 | Rem"
+   },
+   {
+    "tramo": "la_trasnochada_2019_presentacion",
+    "t": "2:38",
+    "de": "Lab mayor",
+    "a": "Lab menor",
+    "clave": "Mm0",
+    "donde": "batería",
+    "contexto": "Lab Sibm Lab7 Do# | Labm | Sibm | Do#7 | Labm"
+   },
+   {
+    "tramo": "la_trasnochada_2020_retirada",
+    "t": "3:31",
+    "de": "Mi mayor",
+    "a": "Fa mayor",
+    "clave": "MM1",
+    "donde": null,
+    "contexto": "Lam Mim Lam Re7 | Sib | Sibm | Fa"
+   },
+   {
+    "tramo": "la_trasnochada_2020_retirada",
+    "t": "4:38",
+    "de": "Fa mayor",
+    "a": "Fa# menor",
+    "clave": "Mm1",
+    "donde": "batería",
+    "contexto": "Sol7 Sibm Fa La7 Fam | Lab7"
+   },
+   {
+    "tramo": "la_trasnochada_2020_retirada",
+    "t": "4:59",
+    "de": "Fa# menor",
+    "a": "Fa mayor",
+    "clave": "mM11",
+    "donde": null,
+    "contexto": "Si7 Sib Lam Fa# La7 | Fa | Solm | Fa"
+   },
+   {
+    "tramo": "la_trasnochada_2020_retirada",
+    "t": "6:05",
+    "de": "Fa mayor",
+    "a": "Fa menor",
+    "clave": "Mm0",
+    "donde": null,
+    "contexto": "Re7 Fa Sib7 Sibm | Fam"
+   },
+   {
+    "tramo": "la_trasnochada_2020_retirada",
+    "t": "7:14",
+    "de": "Fa menor",
+    "a": "Fa# menor",
+    "clave": "mm1",
+    "donde": "batería",
+    "contexto": "Fam Fa#7 Sibm | Do#7"
+   },
+   {
+    "tramo": "la_trasnochada_2022_final_y_retirada",
+    "t": "3:09",
+    "de": "La mayor",
+    "a": "Mi mayor",
+    "clave": "MM7",
+    "donde": "silencio",
+    "contexto": "Mim | Si7 | Mi"
+   },
+   {
+    "tramo": "la_trasnochada_2022_presentacion",
+    "t": "0:54",
+    "de": "Si menor",
+    "a": "Do menor",
+    "clave": "mm1",
+    "donde": null,
+    "contexto": "Sibm Sol La7 Sim Mim Fa | Dom | Sol7 | Fa7"
+   },
+   {
+    "tramo": "la_trasnochada_2023_final_y_retirada",
+    "t": "4:30",
+    "de": "Sib mayor",
+    "a": "La menor",
+    "clave": "Mm11",
+    "donde": "silencio",
+    "contexto": "Sib | Re7 | Do | Re7"
+   },
+   {
+    "tramo": "la_trasnochada_2023_final_y_retirada",
+    "t": "7:49",
+    "de": "La menor",
+    "a": "Fa mayor",
+    "clave": "mM8",
+    "donde": null,
+    "contexto": "Mi7 Do Mi7 Re7 | Sol7 | Fa"
+   },
+   {
+    "tramo": "la_trasnochada_2023_presentacion",
+    "t": "3:55",
+    "de": "Lab mayor",
+    "a": "Re mayor",
+    "clave": "MM6",
+    "donde": null,
+    "contexto": "Do# Si7 Mi Do#m | La | Mi | Re"
+   },
+   {
+    "tramo": "la_trasnochada_2024_final_y_retirada",
+    "t": "8:54",
+    "de": "Fa# mayor",
+    "a": "Mib menor",
+    "clave": "Mm9",
+    "donde": null,
+    "contexto": "Fa# Si | Sib7"
+   },
+   {
+    "tramo": "la_trasnochada_2025_final_y_retirada",
+    "t": "4:00",
+    "de": "Mib menor",
+    "a": "Re mayor",
+    "clave": "mM11",
+    "donde": null,
+    "contexto": "Fa# Fa7 Sol7 | Solm | Re"
+   },
+   {
+    "tramo": "la_trasnochada_2025_final_y_retirada",
+    "t": "4:28",
+    "de": "Re mayor",
+    "a": "Mib mayor",
+    "clave": "MM1",
+    "donde": null,
+    "contexto": "Re Sol Re Mim Re7 | Sib7 | Do7"
+   },
+   {
+    "tramo": "la_trasnochada_2025_final_y_retirada",
+    "t": "5:39",
+    "de": "Mib mayor",
+    "a": "Sib mayor",
+    "clave": "MM7",
+    "donde": null,
+    "contexto": "Labm Mib Fam Sib7 | Lab | Sib"
+   },
+   {
+    "tramo": "la_trasnochada_2025_final_y_retirada",
+    "t": "6:18",
+    "de": "Sib mayor",
+    "a": "Do menor",
+    "clave": "Mm2",
+    "donde": null,
+    "contexto": "Do7 Sib Lab"
+   },
+   {
+    "tramo": "la_trasnochada_2025_final_y_retirada",
+    "t": "7:49",
+    "de": "Do menor",
+    "a": "Do# menor",
+    "clave": "mm1",
+    "donde": null,
+    "contexto": "Sib7 Dom Do | Do#"
+   },
+   {
+    "tramo": "la_trasnochada_2026_cancion_final",
+    "t": "2:01",
+    "de": "Do# menor",
+    "a": "Mi mayor",
+    "clave": "mM3",
+    "donde": null,
+    "contexto": "Lab7 Do#m Lab7 La Mi7 | La | Mi"
+   },
+   {
+    "tramo": "la_trasnochada_2026_presentacion",
+    "t": "1:49",
+    "de": "La menor",
+    "a": "Do mayor",
+    "clave": "mM3",
+    "donde": null,
+    "contexto": "Lam Sol7 Lam | Sol7 | Lam"
+   },
+   {
+    "tramo": "la_trasnochada_2026_presentacion",
+    "t": "3:05",
+    "de": "Do mayor",
+    "a": "Re menor",
+    "clave": "Mm2",
+    "donde": null,
+    "contexto": "Sol7 Do Rem Lam | La7 | Rem"
+   },
+   {
+    "tramo": "la_trasnochada_2026_retirada",
+    "t": "6:08",
+    "de": "Sol mayor",
+    "a": "Sol menor",
+    "clave": "Mm0",
+    "donde": null,
+    "contexto": "Sim La7 Fa# Do Re7 Solm | Lam | Solm"
+   },
+   {
+    "tramo": "la_trasnochada_2026_retirada",
+    "t": "6:47",
+    "de": "Sol menor",
+    "a": "Si menor",
+    "clave": "mm4",
+    "donde": null,
+    "contexto": "Solm Mib Do7 La7 | Sol"
+   },
+   {
+    "tramo": "metele_que_son_pasteles_2020_presentacion",
+    "t": "3:20",
+    "de": "Fa# mayor",
+    "a": "Si mayor",
+    "clave": "MM5",
+    "donde": "batería",
+    "contexto": "Fa# Lab7 Do# | Labm"
+   },
+   {
+    "tramo": "metele_que_son_pasteles_2020_presentacion",
+    "t": "4:18",
+    "de": "Si mayor",
+    "a": "Fa# mayor",
+    "clave": "MM7",
+    "donde": null,
+    "contexto": "Si7 Labm Fa# | Labm | Fa#7 | Si"
+   },
+   {
+    "tramo": "metele_que_son_pasteles_2020_retirada",
+    "t": "4:26",
+    "de": "Mib mayor",
+    "a": "Si mayor",
+    "clave": "MM8",
+    "donde": null,
+    "contexto": "Solm Do7 Lab | Si"
+   },
+   {
+    "tramo": "metele_que_son_pasteles_2020_retirada",
+    "t": "5:30",
+    "de": "Si mayor",
+    "a": "Lab mayor",
+    "clave": "MM9",
+    "donde": null,
+    "contexto": "Mib7 Labm Mi Si Mib7 Labm | Do7"
+   },
+   {
+    "tramo": "metele_que_son_pasteles_2023_final_y_retirada",
+    "t": "4:17",
+    "de": "Si mayor",
+    "a": "Mi mayor",
+    "clave": "MM5",
+    "donde": "silencio",
+    "contexto": "Si Mi Si | Do#m | Fa#m | Labm | Do#"
+   },
+   {
+    "tramo": "metele_que_son_pasteles_2023_final_y_retirada",
+    "t": "8:31",
+    "de": "Mi mayor",
+    "a": "La menor",
+    "clave": "Mm5",
+    "donde": null,
+    "contexto": "Do#m Do Sim Mi Fa#7 | Lam | Fa | Mi7"
+   },
+   {
+    "tramo": "metele_que_son_pasteles_2023_final_y_retirada",
+    "t": "9:27",
+    "de": "La menor",
+    "a": "Fa menor",
+    "clave": "mm8",
+    "donde": null,
+    "contexto": "Lam | Lab7"
+   },
+   {
+    "tramo": "metele_que_son_pasteles_2023_presentacion",
+    "t": "1:07",
+    "de": "Sib menor",
+    "a": "Si menor",
+    "clave": "mm1",
+    "donde": null,
+    "contexto": "Fa# Mib Sol Sib | Dom | Lam | Sib | Sim | La | Sim"
+   },
+   {
+    "tramo": "metele_que_son_pasteles_2023_presentacion",
+    "t": "1:20",
+    "de": "Si menor",
+    "a": "Lab menor",
+    "clave": "mm9",
+    "donde": null,
+    "contexto": "Sim La Sim | Mi7 | Labm"
+   },
+   {
+    "tramo": "metele_que_son_pasteles_2023_presentacion",
+    "t": "1:39",
+    "de": "Lab menor",
+    "a": "Re mayor",
+    "clave": "mM6",
+    "donde": null,
+    "contexto": "Lab Mi7 Re Sol Mim | La | Re"
+   }
+  ]
+ },
+ "antes": {
+  "todos": {
+   "otro": 47,
+   "tónica del viejo": 40,
+   "dominante del nuevo": 15,
+   "tónica del nuevo (ya)": 11,
+   "dominante del viejo": 10,
+   "IV del nuevo": 10,
+   "iv menor del nuevo": 2
+  },
+  "paralelos": {
+   "tónica del viejo": 4,
+   "dominante del nuevo": 2,
+   "IV del nuevo": 2,
+   "otro": 1
+  }
+ },
+ "vuelve": 3
+}
