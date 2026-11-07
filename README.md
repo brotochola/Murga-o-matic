@@ -1,10 +1,12 @@
 # Murga-o-matic
 
-Generador de murga uruguaya en el navegador. Elegís presentación o retirada, murga, tonalidad y largo, y compone una pieza nueva a partir de lo que canta el coro en grabaciones reales de La Trasnochada y Agarrate Catalina.
+Generador de murga uruguaya en el navegador: **https://brotochola.github.io/Murga-o-matic/**
 
-- **Batería:** siempre loops reales, del video [17 ritmos fundamentales de murga](https://www.youtube.com/watch?v=0DSJVulzDYw), de La Tríada: Pablo "Lolito" Iribarne (bombo), Raúl García (redoblante) y Gerardo "Batata" Cánepa (platillos).
-- **Composición:** recombina gestos reales de dos compases, con su melodía, sus voces y sus acordes, según la forma: pregunta, respuesta, contraste y vuelta. Ningún pasaje copia más de un par de compases, y cada pocas notas hay una variación.
-- **Voces:** cada golpe se canta con un recorte real de un golpe con el mismo acorde, afinado con precisión. Sin el banco de recortes, canta con muestras "aah" de FluidR3 y MusyngKite, tomadas de [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts).
+Elegís presentación o retirada, murga, tono y largo, y compone una pieza nueva con lo que aprendió del coro en grabaciones reales de La Trasnochada y Agarrate Catalina.
+
+- **Batería:** siempre loops reales, del video [17 ritmos fundamentales de murga](https://www.youtube.com/watch?v=0DSJVulzDYw), de La Tríada: Pablo "Lolito" Iribarne (bombo), Raúl García (redoblante) y Gerardo "Batata" Cánepa (platillos). Para cambiar de tempo, cada golpe del loop se corta y se pone en su lugar nuevo, así la afinación no cambia.
+- **Composición:** recombina gestos reales de dos compases, con su melodía, sus voces y sus acordes, según la forma: pregunta, respuesta, contraste y vuelta. Cada pocas notas cambia una nota débil, y los gestos seguidos vienen de temas distintos: el pasaje igual a un tema real más largo tiene, en la mediana, 9 notas.
+- **Coro:** cinco cuerdas (bajos, segundos, primos, sobreprimos y tercia) con muestras "aah" de FluidR3 y MusyngKite, tomadas de [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts). Cada cuerda tiene de dos a cuatro cantores (la tercia es una voz sola), y el timbre se ecualiza hacia el de un coro de murga medido.
 
 Desde la página podés mezclar en vivo, ver el piano-roll y descargar un ZIP con la mezcla en WAV, el coro en MIDI y la estructura.
 
@@ -13,22 +15,39 @@ Desde la página podés mezclar en vivo, ver el piano-roll y descargar un ZIP co
     node herramientas/servir.js
     # abrir http://localhost:8123
 
-Si se abre `index.html` como archivo, sin servidor, el navegador no deja cargar los audios.
+Si se abre `index.html` como archivo, sin servidor, el navegador no deja cargar los audios. La página no usa nada de `murga_trabajo/`.
 
 ## Cómo está hecho
 
 | Paso | Qué hace | Dónde |
 |---|---|---|
 | 1 | Baja los videos, corta los tramos, separa voces y transcribe | `transcripcion/murga_lote.py`, `transcripcion/videos.csv` |
-| 2 | Limpia y analiza cada MIDI: grilla, golpes, acordes, compás | `herramientas/analizar.js` |
-| 3 | Controla cada tramo | `herramientas/revisar.js`, `docs/revision_de_los_midis.md` |
-| 4 | Aprende los gestos y las tablas | `herramientas/aprender.js`, `motor/modelo.js` |
-| 5 | Arma el banco de voces | `transcripcion/banco.py` |
-| 6 | Compone y canta | `motor/compositor.js`, `motor/voz_real.js`, `motor/app.js` |
-| 7 | Juzga lo generado contra lo real | `herramientas/jurado.js`, `herramientas/copia.js` |
+| 2 | Limpia y analiza cada MIDI: grilla, golpes, acordes, compás y qué loop toca la batería | `herramientas/analizar.js` |
+| 3 | Controla cada tramo | `herramientas/revisar.js` → `docs/revision_de_los_midis.md` |
+| 4 | Mide la pureza y el unísono de cada golpe | `transcripcion/pureza.py` |
+| 5 | Aprende los gestos y las tablas | `herramientas/aprender.js` → `motor/modelo.js` |
+| 6 | Mide el timbre del coro real | `herramientas/timbre.js` → `motor/timbre.js` |
+| 7 | Compone y canta | `motor/compositor.js`, `motor/app.js` |
+| 8 | Juzga lo generado contra lo real y elige las demos | `herramientas/jurado.js`, `herramientas/copia.js`, `herramientas/demos.js` → `motor/demos.js` |
+| 9 | Escribe el análisis | `herramientas/informe.js` → `docs/analisis_de_los_midis.md` |
 
 El análisis completo, con todos los números, está en [docs/analisis_de_los_midis.md](docs/analisis_de_los_midis.md). Las fuentes sobre el coro, en [INVESTIGACION.md](INVESTIGACION.md).
 
-## Lo que no está en el repositorio
+## Para cambiar el motor
 
-`murga_trabajo/` queda fuera de git: los audios, las voces separadas y el banco de recortes son grabaciones ajenas, para uso personal. Sin esa carpeta la página funciona igual, con las muestras de coro.
+En `murga_trabajo/` están los datos de la investigación:
+
+- `midis/`: el MIDI de voces de cada tramo, con su `.json` (tempo, energía de cada parte separada y veces que se cortó la cadena del transcriptor). En `midis/rotos/` quedan las transcripciones que salieron mal.
+- `analisis/`: el análisis de cada tramo.
+- `revision/`: un piano-roll por tramo.
+- `jurado.json`, `copia.json`, `pureza.json` y `lote.log`: los resultados y el registro del lote.
+
+Con eso, sin volver a transcribir, se puede cambiar el aprendizaje, el compositor, el jurado y el informe:
+
+    node herramientas/aprender.js
+    node herramientas/jurado.js --ver --sin-espiar
+    node herramientas/copia.js
+    node herramientas/demos.js
+    node herramientas/informe.js
+
+El audio no está en el repositorio: son grabaciones ajenas y pesan más de 2 GB. `transcripcion/murga_lote.py` lo rehace desde `transcripcion/videos.csv` (ver [transcripcion/LEEME.md](transcripcion/LEEME.md)). Hace falta para transcribir otra vez, para `analizar.js`, que escucha la batería separada, y para `pureza.py` y `timbre.js`. `timbre.js` y `ritmo_loops.js` usan el ffmpeg de imageio-ffmpeg del entorno de Python: la ruta está al principio de cada archivo.

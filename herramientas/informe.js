@@ -139,9 +139,7 @@ const quit = {}; for (const a of L) for (const [k, v] of Object.entries(a.quitad
 const totalQuit = suma(quit);
 const jurado = existsSync(join(TRABAJO, 'jurado.json')) ? JSON.parse(readFileSync(join(TRABAJO, 'jurado.json'), 'utf8')) : null;
 const copia = existsSync(join(TRABAJO, 'copia.json')) ? JSON.parse(readFileSync(join(TRABAJO, 'copia.json'), 'utf8')) : null;
-const canto = existsSync(join(TRABAJO, 'canto.json')) ? JSON.parse(readFileSync(join(TRABAJO, 'canto.json'), 'utf8')) : null;
 const pureza = existsSync(join(TRABAJO, 'pureza.json')) ? JSON.parse(readFileSync(join(TRABAJO, 'pureza.json'), 'utf8')) : null;
-const banco = existsSync(join(TRABAJO, 'banco', 'banco.json')) ? JSON.parse(readFileSync(join(TRABAJO, 'banco', 'banco.json'), 'utf8')) : null;
 
 const pres = FO.filter(f => esPres(f.an)), ret = FO.filter(f => !esPres(f.an) && f.an.parte !== 'cancion_final');
 const saltoRet = ret.filter(f => f.t1 && f.tN).map(f => f.tN / f.t1);
@@ -213,7 +211,7 @@ P(`Se quitaron ${totalQuit.toLocaleString('es-AR')} notas. Por motivo: ${topH(qu
 P('');
 P('- **La cadena de notas abiertas.** MuScriptor le pasa al pedazo siguiente las notas que quedaron sonando. Si un pedazo sale mal, arrastra la basura hasta el final: tres tramos llegaron a más de 60 notas abiertas, y el peor dio 55 511 notas donde hay unas 5 000. En los tramos sanos nunca hubo más de 6. Con un tope de 8 que corta la cadena (`murga_lote.py`) bastó un solo corte en cada uno para rehacerlos, y el pedazo que explotó se descarta entero (`limpiar.js`).');
 P('- **Las trabas.** Cuando el modelo no entiende el audio repite un acorde a tiempo fijo, hasta 140 veces. Una línea silábica real sobre un acorde dura unos 10 golpes y tiene ritmo. Las trabas caen en recitados y en pasajes casi inaudibles: en Agarrate Catalina 2019, "Recitado y Retirada", aparecen justo al principio.');
-P('- **El falso acorde.** Durante el análisis los golpes de una voz daban tan poca energía en sus parciales que parecían acordes mal transcriptos. No lo eran. La prueba: se compara la energía en las fundamentales consonantes alrededor de la nota (tercera, cuarta, quinta) con la de las disonantes; el ruido llena las dos por igual y una voz real sólo las consonantes. Controlada contra golpes que sí tienen voces, dio que no hay otra voz: es un unísono de trece personas, con los parciales anchos. Esto importó para el banco de voces, que estaba descartando los unísonos.');
+P('- **El falso acorde.** Durante el análisis los golpes de una voz daban tan poca energía en sus parciales que parecían acordes mal transcriptos. No lo eran. La prueba: se compara la energía en las fundamentales consonantes alrededor de la nota (tercera, cuarta, quinta) con la de las disonantes; el ruido llena las dos por igual y una voz real sólo las consonantes. Controlada contra golpes que sí tienen voces, dio que no hay otra voz: es un unísono de trece personas, con los parciales anchos. Lo mide `transcripcion/pureza.py`.');
 P('- **Voces perdidas.** En un video de Catalina 2011 Demucs perdió las voces y el modelo inventó notas eternas: el video se reemplazó por otro.');
 P('');
 P('## 2. El ritmo');
@@ -332,7 +330,9 @@ P('1. **Gestos reales.** Aprende celdas de dos compases, de una respiración a l
 P("2. **Forma.** Pide las celdas según lo que la forma necesita: `a` pregunta y termina en la dominante, `a'` repite la cabeza y responde en la tónica, `b` contrasta, `a''` vuelve. Con la densidad, el tempo y el momento de la pieza pedidos.");
 P('3. **Costuras.** Elige el gesto siguiente por el acorde, la nota y que cada voz de abajo tenga a dónde ir sin saltar.');
 P('4. **Variación.** Cada pocas notas cambia una nota débil, como cambia la melodía entre dos versos. Los apoyos no se tocan, y las voces de abajo acompañan en paralelo o se quedan.');
-P('5. **Voces.** Cada golpe se canta con un recorte real de un golpe con el mismo acorde a una altura cercana, afinado con su medida. Las sílabas no dicen nada; el timbre es el de la murga.');
+P('5. **Voces.** Canta con muestras de coro "aah", con dos a cuatro cantores por cuerda (la tercia es una voz sola), cada uno con su desafinación, su retraso y su lugar en el estéreo. El timbre se ecualiza hacia el espectro medido de las voces reales (`herramientas/timbre.js`).');
+P('');
+P('También se probó cantar cada golpe con el recorte de un golpe real con el mismo acorde. Se descartó: el objetivo es el coro en MIDI, con la batería real. Ese código (`motor/voz_real.js` y `transcripcion/banco.py`) quedó en el commit 9f48010.');
 P('');
 P('## 9. Cómo saber si suena creíble');
 P('');
@@ -368,19 +368,6 @@ if (copia) {
   P(`Se busca el pasaje más largo de cada pieza generada igual a uno del corpus, con los mismos intervalos y el mismo ritmo, en ${copia.piezas} piezas. Mediana ${copia.mediana} notas, máximo ${copia.maximo}. Con celdas de cuatro compases y casi sin variación llegaba a 32 notas: era un collage. Por eso la unidad es de dos compases, y hay un tope de notas seguidas sin cambiar. Las rachas de notas iguales no cuentan: repetir una nota no es copiar.`);
   P('');
 }
-if (canto) {
-  P('### 9.4 Las voces');
-  P('');
-  P(`Medido en ${canto.medido}:`);
-  P('');
-  P(`- **Espectro.** Contra el coro real queda a ${canto.espectro}. Las muestras "aah" quedaban a ${canto.muestras}.`);
-  P(`- **Sílabas.** El espectro de modulación (cuánto late el volumen) queda a ${canto.modulacion}. No suena picado.`);
-  P(`- **Ida y vuelta.** Se le pasa el coro generado al mismo transcriptor: oye la nota de arriba en su lugar en el ${canto.idaYVuelta[0]} a ${canto.idaYVuelta[1]} % de los golpes. Corriendo el tiempo, es decir, por azar y por las notas repetidas, da ${canto.azar[0]} a ${canto.azar[1]} %.`);
-  P(`- **Armonía.** Ningún recorte trae una nota ajena al acorde que suena (${canto.ajenas} %): se permite que traiga otra nota del mismo acorde, porque suena bien, pero no una ajena.`);
-  P(`- **Una sala por frase.** Cada frase se canta con una sola grabación, y sólo el ${100 - canto.fuente} % de los golpes sale a buscar otra.`);
-  P('');
-}
-if (banco) P(`El banco tiene ${Object.entries(banco).map(([k, v]) => `${v.recortes.toLocaleString('es-AR')} recortes de ${NOMBRE_ESTILO[k] || k} (${Math.round(v.segundos / 60)} min)`).join(', ')}.\n`);
 P('Lo que los números no pueden decir lo dice el oído: si suena a murga lo juzga quien la conoce.');
 P('');
 P('## 10. Lo que falta medir');
@@ -396,7 +383,7 @@ P('```');
 P('node herramientas/analizar.js        # de los MIDI a murga_trabajo/analisis/*.json, con un PNG por tramo');
 P('node herramientas/revisar.js         # el control de cada tramo: docs/revision_de_los_midis.md');
 P('node herramientas/aprender.js        # motor/modelo.js');
-P('python transcripcion/banco.py        # los recortes de voz');
+P('python transcripcion/pureza.py       # pureza y unísono de cada golpe (regla 12)');
 P('node herramientas/jurado.js --ver --sin-espiar');
 P('node herramientas/copia.js');
 P('node herramientas/informe.js         # este documento');

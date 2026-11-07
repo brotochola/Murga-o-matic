@@ -1,6 +1,5 @@
 // La página: controles, sonido, dibujo y exportación. El compositor está en compositor.js.
 import { componer, RANGOS, PB, acorde } from './compositor.js';
-import { cantar, cargarBanco, hayBanco } from './voz_real.js';
 import { DEMOS } from './demos.js';
 import { MODELO } from './modelo.js';
 import { TIMBRE } from './timbre.js';
@@ -22,7 +21,6 @@ const TEXTO_TIPO={clarinada:"a capela, en bloque",coro:"coro en bloque",pleno:"c
 
 // ============================================================ audio
 const SR=44100;
-const CTX_BANCO=()=>new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,1,44100);
 const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;
 const decodeCtx=new OAC(1,1,SR);
 const MUDO=new Audio("data:audio/wav;base64,UklGRvQHAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YdAHAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==");MUDO.setAttribute("playsinline","");
@@ -30,6 +28,8 @@ const cache=new Map();
 function cargar(url){if(!cache.has(url))cache.set(url,fetch(url).then(r=>{if(!r.ok)throw new Error(`no se pudo bajar ${url} (error ${r.status})`);return r.arrayBuffer()})
   .then(b=>new Promise((ok,mal)=>{const p=decodeCtx.decodeAudioData(b,ok,()=>mal(new Error(`no se pudo leer ${url}`)));if(p&&p.catch)p.catch(()=>{})})).catch(e=>{cache.delete(url);throw e}));return cache.get(url)}
 const BANCOS=["musyng","fluid"];
+// Hay muestras de mi2 a mi5 (40 a 76): una nota más allá se canta con la última, corrida unos semitonos
+const muestraDe=m=>Math.max(40,Math.min(76,m));
 
 // El timbre: las muestras son un "aah" oscuro; el coro de murga es parejo y filoso. Esta curva sale de medir
 // el espectro de las voces reales (herramientas/timbre.js) y se aplica con un filtro de fase lineal.
@@ -65,7 +65,7 @@ async function renderCuerda(k,eventos,P,muestras){
     for(const[ini,d,m,vel,solo]of eventos){if(solo&&cantor>0)continue;const buf=muestras[banco][m];if(!buf)continue;const x=buf.getChannelData(0);
       const t0=P.T(ini),largo=P.T(ini+d)-t0;
       const dur=largo*(d>=3?.97:.84);const i0=Math.round((t0+rng.uni(0,.022))*SR);
-      const g=Math.pow(vel/127,1.6)*rng.uni(.85,1)/(solo?1.1:Math.sqrt(cfg.cantores));const rate=Math.pow(2,(desaf+rng.uni(-4,4))/1200);
+      const g=Math.pow(vel/127,1.6)*rng.uni(.85,1)/(solo?1.1:Math.sqrt(cfg.cantores));const rate=Math.pow(2,(desaf+rng.uni(-4,4))/1200+(m-muestraDe(m))/12);
       const n=Math.min(Math.round(dur*SR)+caida,len-i0);const ls=Math.round(.8*SR),le=x.length-Math.round(.15*SR),per=le-ls;
       const at=i=>{const j=Math.floor(i),f=i-j;return x[j]+(x[j+1]-x[j])*f};
       let pos=ataque;
@@ -133,7 +133,7 @@ function salaIR(ctx){const sr=ctx.sampleRate,n=Math.floor(.7*sr),ir=ctx.createBu
 // ============================================================ estado
 const ORDEN=["bajos","segundos","primos","sobreprimos","tercia"];
 const LLAMADAS=Object.fromEntries(DATOS.ritmos.map(r=>{const a=DATOS.acompana[r.id];if(!a||!a[0])return[r.id,0];const c4=r.compas*4/r.tpc;return[r.id,Math.ceil((DATOS.frases[a[0]].ultimo+.05)/c4)]}));
-const S={voz:"real",hayBanco:null,recita:0,forma:"retirada",estilo:"todas",tonica:9,modo:"menor",ritmo:0,tempo:0,largo:"normal",seed:1,brillo:1,clarinada:true,cancionFinal:true,modula:true,tercia:.35,mix:{bajos:1,segundos:1,primos:1,sobreprimos:1,tercia:1,bateria:.42},mute:{},
+const S={recita:0,forma:"retirada",estilo:"todas",tonica:9,modo:"menor",ritmo:0,tempo:0,largo:"normal",seed:1,brillo:1,clarinada:true,cancionFinal:true,modula:true,tercia:0,mix:{bajos:1,segundos:1,primos:1,sobreprimos:1,tercia:1,bateria:.42},mute:{},
   pieza:null,stems:null,P:null,ac:null,nodos:null,inicio:0,offset:0,tocando:false,gen:0};
 const $=id=>document.getElementById(id);
 
@@ -142,40 +142,20 @@ function estadoTexto(t,err){$("status").textContent=t;$("status").className="sta
 async function muestrasPara(ev){
   const notas=new Set();for(const k in ev)for(const e of ev[k])notas.add(e[2]);
   const out={musyng:{},fluid:{}};
-  await Promise.all([...notas].flatMap(m=>BANCOS.map(async b=>{if(m<40||m>76)return;out[b][m]=await cargar(`coro/${b}/${m}.mp3`)})));
+  await Promise.all([...notas].flatMap(m=>BANCOS.map(async b=>{out[b][m]=await cargar(`coro/${b}/${muestraDe(m)}.mp3`)})));
   return out;
 }
 
 async function generar(){
   const gen=++S.gen;detener(true);$("play").disabled=true;$("play").textContent="Componiendo…";estadoTexto("Componiendo y cantando…");
   try{
-    if(S.hayBanco===null){S.hayBanco=await hayBanco()||false;$("campoVoz").style.display=S.hayBanco?"":"none";
-      // Con voces reales la tercia arranca callada: es la única voz que no es real
-      if(S.hayBanco){S.tercia=0;$("tercia").value=0}}
     const pieza=componer(MODELO,{forma:S.forma,estilo:S.estilo,tonica:S.tonica,modo:S.modo,semilla:S.seed,largo:S.largo,tempo:S.tempo||null,ritmo:S.ritmo||null,clarinada:S.clarinada,cancionFinal:S.cancionFinal,modula:S.modula,tercia:S.tercia,recita:S.recita,llamadas:LLAMADAS});
     const{T,fin}=mapaTiempo(pieza);const total=fin+2.5;
     const P={T,total,seed:S.seed,brillo:S.brillo};
-    const conBanco=S.voz==="real"&&S.hayBanco;
-    let voces;
-    if(conBanco){
-      estadoTexto("Buscando las voces…");
-      const quienes=(S.estilo==="todas"?["trasnochada","catalina"]:[S.estilo]).filter(e=>S.hayBanco[e]);
-      const ctx=CTX_BANCO();const bancos=await Promise.all((quienes.length?quienes:Object.keys(S.hayBanco)).map(e=>cargarBanco(e,ctx)));if(gen!==S.gen)return;
-      estadoTexto("Cantando…");await new Promise(r=>setTimeout(r,30));
-      const{L,R,datos}=cantar(pieza.golpes,T,total,bancos,S.seed,SR);S.datosVoz=datos;
-      const len=L.length;const coro=new OAC(2,len,SR).createBuffer(2,len,SR);coro.copyToChannel(L,0);coro.copyToChannel(R,1);
-      const vacio=()=>new OAC(2,len,SR).createBuffer(2,len,SR);
-      // La tercia es una voz sola: de eso no hay recortes (el coro siempre suena en bloque), va con la muestra
-      const conTercia=S.tercia>0&&pieza.ev.tercia.length;
-      let ter=vacio();if(conTercia){const m=await muestrasPara({tercia:pieza.ev.tercia});if(gen!==S.gen)return;ter=await renderCuerda("tercia",pieza.ev.tercia,P,m)}
-      voces=ORDEN.map(k=>k==="primos"?coro:k==="tercia"?ter:vacio());S.conTercia=!!conTercia;
-    }else{
-      const muestras=await muestrasPara(pieza.ev);if(gen!==S.gen)return;
-      voces=[];for(const k of ORDEN){voces.push(await renderCuerda(k,pieza.ev[k],P,muestras));if(gen!==S.gen)return}
-    }
-    mostrarMezcla(!!conBanco);
+    const muestras=await muestrasPara(pieza.ev);if(gen!==S.gen)return;
+    const voces=[];for(const k of ORDEN){voces.push(await renderCuerda(k,pieza.ev[k],P,muestras));if(gen!==S.gen)return}
     const perc=await renderPercusion(P,pieza.secs);if(gen!==S.gen)return;
-    const pv=picoDe(voces);const drive=conBanco?1.25:1+.8*S.brillo;voces.forEach(b=>procesar(b,1/pv,drive));
+    const pv=picoDe(voces);const drive=1+.8*S.brillo;voces.forEach(b=>procesar(b,1/pv,drive));
     const pp=picoDe([perc]);procesar(perc,1/pp,1.05);
     window.murga={S};S.pieza=pieza;S.P=P;S.stems={...Object.fromEntries(ORDEN.map((k,i)=>[k,voces[i]])),bateria:perc};S.offset=0;rollCache=null;
     dibujarTodo();$("play").disabled=false;$("play").textContent="Tocar";
@@ -277,7 +257,6 @@ $("tempo").onchange=e=>{S.tempo=Math.max(0,Math.round(+e.target.value||0));e.tar
 $("semilla").onchange=e=>{S.seed=Math.max(1,Math.floor(+e.target.value||1));e.target.value=S.seed;regen()};
 $("otra").onclick=()=>{S.seed=1+Math.floor(Math.random()*99998);$("semilla").value=S.seed;regen()};
 $("brillo").onchange=e=>{S.brillo=+e.target.value;regen()};
-$("voz").onchange=e=>{S.voz=e.target.value;regen()};
 $("recita").onchange=e=>{S.recita=+e.target.value;regen()};
 // Demos: las semillas que mejor le caen al jurado
 {const caja=$("demos");const NOM={trasnochada:"La Trasnochada",catalina:"Agarrate Catalina"};
@@ -296,10 +275,6 @@ for(const k of[...ORDEN,"bateria"]){const row=document.createElement("div");row.
   mixer.appendChild(row);
   row.querySelector("input").oninput=e=>{S.mix[k]=+e.target.value;aplicarMix(k)};
   row.querySelector("button").onclick=e=>{S.mute[k]=!S.mute[k];e.target.setAttribute("aria-pressed",S.mute[k]);aplicarMix(k);rollCache=null;if(S.P)pintarCursor()}}
-// Con las voces reales el coro es una sola pista: los recortes traen el acorde adentro
-function mostrarMezcla(real){for(const k of ORDEN){const fila=$("vol-"+k).closest(".ch");fila.style.display=real&&k!=="primos"&&!(k==="tercia"&&S.conTercia)?"none":"";}
-  const f=$("vol-primos").closest(".ch");f.querySelector("b").textContent=real?"Coro":NOMBRES_CUERDA.primos;f.querySelector(".rng").textContent=real?"voces reales":CUERDAS.primos.rango;
-  $("campoBrillo").style.display=real?"none":""}
 function aplicarMix(k){if(S.nodos&&S.ac)S.nodos.gains[k].gain.setTargetAtTime(S.mute[k]?0:S.mix[k]*(k==="bateria"?1:.9),S.ac.currentTime,.02)}
 $("legend").innerHTML=ORDEN.map(k=>`<span><i style="background:var(--${k})"></i>${NOMBRES_CUERDA[k]}</span>`).join("")+`<span>Tocá el coro o las secciones para saltar.</span>`;
 

@@ -156,17 +156,14 @@ a{color:var(--sobreprimos)}
         <input id="recita" type="range" min="-1" max="1" step="0.25" value="0">
         <div class="hint" style="display:flex;justify-content:space-between"><span>más cantado</span><span>como el corpus</span><span>más recitado</span></div>
       </div>
-      <div class="field" id="campoTercia"><label class="lbl" for="tercia">Cuánto adorna la tercia</label>
-        <input id="tercia" type="range" min="0" max="1" step="0.05" value="0.35">
+      <div class="field"><label class="lbl" for="tercia">Cuánto adorna la tercia</label>
+        <input id="tercia" type="range" min="0" max="1" step="0.05" value="0">
       </div>
       <div class="field"><label class="lbl" for="semilla">Semilla</label>
         <div class="seed"><input id="semilla" type="number" min="1" max="99999" value="1" inputmode="numeric"><button class="btn" id="otra">Otra</button></div>
         <p class="hint">Cada número da otra melodía y otra armonía.</p>
       </div>
-      <div class="field" id="campoVoz"><label class="lbl" for="voz">Voces</label>
-        <select id="voz"><option value="real">Recortes de murgas reales</option><option value="muestras">Muestras de coro</option></select>
-      </div>
-      <div class="field" id="campoBrillo"><label class="lbl" for="brillo">Timbre del coro</label>
+      <div class="field"><label class="lbl" for="brillo">Timbre del coro</label>
         <input id="brillo" type="range" min="0" max="1.5" step="0.1" value="1">
         <div class="hint" style="display:flex;justify-content:space-between"><span>muestra pura</span><span>murga medida</span><span>más filoso</span></div>
       </div>
@@ -197,12 +194,12 @@ a{color:var(--sobreprimos)}
         <li>La forma pide los gestos: una pregunta que termina en la dominante, una respuesta con la misma cabeza que termina en la tónica, un contraste, y vuelve. Cada verso repite el anterior con alguna nota cambiada, como cuando cambia la letra.</li>
         <li>Cada pocas notas cambia una nota débil, y los gestos vienen de temas distintos: es música nueva en el idioma de la murga, no un collage.</li>
         <li>La presentación entra a capela y sigue con un bloque largo de batería. La retirada tiene canción final, dos velocidades, un puente a capela y la bajada que se apaga. Las duraciones y los tempos son los medidos.</li>
-        <li>Las voces son recortes de golpes reales con el mismo acorde, afinados al centésimo. Las sílabas no dicen nada: son las que estaban ahí.</li>
+        <li>Canta con muestras de coro "aah": cada cuerda tiene de dos a cuatro cantores (la tercia es una voz sola), cada uno con su desafinación, su retraso y su lugar en el estéreo, y el timbre se ecualiza hacia el de un coro de murga medido.</li>
       </ul>
     </div>
     <div>
       <h3>De dónde sale</h3>
-      <p>Del análisis de presentaciones, canciones finales y retiradas: voces separadas con Demucs y transcriptas con MuScriptor. Los números están en <a href="docs/analisis_de_los_midis.md">el análisis</a>.</p>
+      <p>Del análisis de presentaciones, canciones finales y retiradas: voces separadas con Demucs y transcriptas con MuScriptor. Los números están en <a href="https://github.com/brotochola/Murga-o-matic/blob/main/docs/analisis_de_los_midis.md" target="_blank" rel="noopener">el análisis</a>.</p>
       <p>Registros según "Sin Disfraz" (Lamolle y Lombardo, 1998): segundos do3–do4, primos sol3–sol4, sobreprimos mi4–la4 hasta re5.</p>
       <p>Batería: Pablo "Lolito" Iribarne (bombo), Raúl García (redoblante) y Gerardo "Batata" Cánepa (platillos), del video <a href="https://www.youtube.com/watch?v=0DSJVulzDYw" target="_blank" rel="noopener">17 ritmos fundamentales de murga</a>. Muestras de coro: FluidR3 y MusyngKite.</p>
     </div>

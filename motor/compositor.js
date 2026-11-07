@@ -472,8 +472,9 @@ function tercia(rng, sec, compuesto, ev, cuanto) {
 // ── La pieza ───────────────────────────────────────────────────────
 const LOOP_DEFECTO = 6;   // Base de murga: lo que más suena en el corpus
 
-// Los loops se aceleran por remuestreo, que también les sube la afinación: conviene el que queda cerca de su tempo.
-// Tempo nativo de cada loop de murga, y cuánto pesa cada uno (la Base de murga es lo que más suena en el corpus).
+// Para cambiar de tempo, la página corta los loops golpe por golpe: conviene el que queda cerca de su tempo, que suena
+// casi como fue grabado. Tempo nativo de cada loop de murga, y cuánto pesa cada uno (la Base de murga es lo que más
+// suena en el corpus).
 const NATIVO = { 3: 134.2, 4: 85.7, 6: 119.7, 8: 125.5, 9: 112.3 };
 const PESO_LOOP = { 3: 1, 4: 1, 6: 3, 8: 1, 9: 1 };
 

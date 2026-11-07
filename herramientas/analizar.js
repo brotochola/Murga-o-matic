@@ -113,7 +113,7 @@ function guardar(A) {
     libre: g.libre.map(x => (x ? 1 : 0)),
     notas: N.map(n => [Math.round(n.b * 1000) / 1000, Math.round(n.fin * 1000) / 1000, n.p, Math.round(n.t * 100) / 100]),
     golpes: G.map(x => [x.q, x.d, x.ps, x.lin]),
-    // cuándo suena cada golpe en el audio, en segundos: de acá salen los recortes de voz
+    // cuándo suena cada golpe en el audio, en segundos: con esto transcripcion/pureza.py mide cada golpe en las voces
     segs: G.map(x => { const t = x.ns.map(n => n.t).sort((a, b) => a - b), f = x.ns.map(n => n.tf).sort((a, b) => a - b); return [Math.round(t[t.length >> 1] * 1000) / 1000, Math.round(f[f.length >> 1] * 1000) / 1000]; }),
     acordes: ac.map((a, i) => [a.r, a.q, tn[i].t, tn[i].modo === 'mayor' ? 1 : 0, fase[i]]),
     base,

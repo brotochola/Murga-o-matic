@@ -88,7 +88,7 @@ Se quitaron 9.342 notas. Por motivo: trabas del transcriptor 70 %, choque a un s
 
 - **La cadena de notas abiertas.** MuScriptor le pasa al pedazo siguiente las notas que quedaron sonando. Si un pedazo sale mal, arrastra la basura hasta el final: tres tramos llegaron a más de 60 notas abiertas, y el peor dio 55 511 notas donde hay unas 5 000. En los tramos sanos nunca hubo más de 6. Con un tope de 8 que corta la cadena (`murga_lote.py`) bastó un solo corte en cada uno para rehacerlos, y el pedazo que explotó se descarta entero (`limpiar.js`).
 - **Las trabas.** Cuando el modelo no entiende el audio repite un acorde a tiempo fijo, hasta 140 veces. Una línea silábica real sobre un acorde dura unos 10 golpes y tiene ritmo. Las trabas caen en recitados y en pasajes casi inaudibles: en Agarrate Catalina 2019, "Recitado y Retirada", aparecen justo al principio.
-- **El falso acorde.** Durante el análisis los golpes de una voz daban tan poca energía en sus parciales que parecían acordes mal transcriptos. No lo eran. La prueba: se compara la energía en las fundamentales consonantes alrededor de la nota (tercera, cuarta, quinta) con la de las disonantes; el ruido llena las dos por igual y una voz real sólo las consonantes. Controlada contra golpes que sí tienen voces, dio que no hay otra voz: es un unísono de trece personas, con los parciales anchos. Esto importó para el banco de voces, que estaba descartando los unísonos.
+- **El falso acorde.** Durante el análisis los golpes de una voz daban tan poca energía en sus parciales que parecían acordes mal transcriptos. No lo eran. La prueba: se compara la energía en las fundamentales consonantes alrededor de la nota (tercera, cuarta, quinta) con la de las disonantes; el ruido llena las dos por igual y una voz real sólo las consonantes. Controlada contra golpes que sí tienen voces, dio que no hay otra voz: es un unísono de trece personas, con los parciales anchos. Lo mide `transcripcion/pureza.py`.
 - **Voces perdidas.** En un video de Catalina 2011 Demucs perdió las voces y el modelo inventó notas eternas: el video se reemplazó por otro.
 
 ## 2. El ritmo
@@ -363,7 +363,9 @@ La primera versión sorteaba nota por nota con tablas aprendidas y sacaba buenos
 2. **Forma.** Pide las celdas según lo que la forma necesita: `a` pregunta y termina en la dominante, `a'` repite la cabeza y responde en la tónica, `b` contrasta, `a''` vuelve. Con la densidad, el tempo y el momento de la pieza pedidos.
 3. **Costuras.** Elige el gesto siguiente por el acorde, la nota y que cada voz de abajo tenga a dónde ir sin saltar.
 4. **Variación.** Cada pocas notas cambia una nota débil, como cambia la melodía entre dos versos. Los apoyos no se tocan, y las voces de abajo acompañan en paralelo o se quedan.
-5. **Voces.** Cada golpe se canta con un recorte real de un golpe con el mismo acorde a una altura cercana, afinado con su medida. Las sílabas no dicen nada; el timbre es el de la murga.
+5. **Voces.** Canta con muestras de coro "aah", con dos a cuatro cantores por cuerda (la tercia es una voz sola), cada uno con su desafinación, su retraso y su lugar en el estéreo. El timbre se ecualiza hacia el espectro medido de las voces reales (`herramientas/timbre.js`).
+
+También se probó cantar cada golpe con el recorte de un golpe real con el mismo acorde. Se descartó: el objetivo es el coro en MIDI, con la batería real. Ese código (`motor/voz_real.js` y `transcripcion/banco.py`) quedó en el commit 9f48010.
 
 ## 9. Cómo saber si suena creíble
 
@@ -406,18 +408,6 @@ Se saca un espectáculo entero, se genera con el resto y se mide la distancia a 
 
 Se busca el pasaje más largo de cada pieza generada igual a uno del corpus, con los mismos intervalos y el mismo ritmo, en 300 piezas. Mediana 9 notas, máximo 17. Con celdas de cuatro compases y casi sin variación llegaba a 32 notas: era un collage. Por eso la unidad es de dos compases, y hay un tope de notas seguidas sin cambiar. Las rachas de notas iguales no cuentan: repetir una nota no es copiar.
 
-### 9.4 Las voces
-
-Medido en 2026-11-07, una presentación de La Trasnochada y una retirada de Agarrate Catalina:
-
-- **Espectro.** Contra el coro real queda a ±5 dB en casi todo el rango, con 3 a 8 dB de más entre 130 y 210 Hz. Las muestras "aah" quedaban a 15 a 25 dB.
-- **Sílabas.** El espectro de modulación (cuánto late el volumen) queda a 0 a 4 dB por encima del coro real en la frecuencia de las sílabas (2 a 8 Hz), según la pieza. No suena picado.
-- **Ida y vuelta.** Se le pasa el coro generado al mismo transcriptor: oye la nota de arriba en su lugar en el 66 a 71 % de los golpes. Corriendo el tiempo, es decir, por azar y por las notas repetidas, da 8 a 31 %.
-- **Armonía.** Ningún recorte trae una nota ajena al acorde que suena (0 %): se permite que traiga otra nota del mismo acorde, porque suena bien, pero no una ajena.
-- **Una sala por frase.** Cada frase se canta con una sola grabación, y sólo el 12 % de los golpes sale a buscar otra.
-
-El banco tiene 1.947 recortes de Agarrate Catalina (22 min), 590 recortes de La Gran Muñeca (6 min), 2.020 recortes de La Trasnochada (21 min), 648 recortes de Metele que son Pasteles (7 min).
-
 Lo que los números no pueden decir lo dice el oído: si suena a murga lo juzga quien la conoce.
 
 ## 10. Lo que falta medir
@@ -433,7 +423,7 @@ Lo que los números no pueden decir lo dice el oído: si suena a murga lo juzga 
 node herramientas/analizar.js        # de los MIDI a murga_trabajo/analisis/*.json, con un PNG por tramo
 node herramientas/revisar.js         # el control de cada tramo: docs/revision_de_los_midis.md
 node herramientas/aprender.js        # motor/modelo.js
-python transcripcion/banco.py        # los recortes de voz
+python transcripcion/pureza.py       # pureza y unísono de cada golpe (regla 12)
 node herramientas/jurado.js --ver --sin-espiar
 node herramientas/copia.js
 node herramientas/informe.js         # este documento

@@ -8,7 +8,7 @@
 4. Separa voces y todo lo demás con Demucs (`htdemucs_ft`).
 5. Transcribe sólo las voces con MuScriptor. Cada MIDI es sólo voces.
 
-Lo ya hecho no se repite. Todo queda en `murga_trabajo/`, fuera de git.
+Lo ya hecho no se repite. Todo queda en `murga_trabajo/`. Al repositorio van los MIDI, los análisis y los resultados; el audio no, porque son grabaciones ajenas y pesan más de 2 GB.
 
 ## Una sola vez
 
@@ -36,7 +36,7 @@ Después:
 node ../herramientas/analizar.js          # limpia y analiza
 node ../herramientas/revisar.js           # control de cada tramo
 node ../herramientas/aprender.js          # el modelo del generador
-python banco.py                           # los recortes de voz
+python pureza.py                          # pureza y unísono de cada golpe, sobre las voces
 ```
 
 ## Qué mirar
