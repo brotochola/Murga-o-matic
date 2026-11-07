@@ -1,7 +1,7 @@
 // exportar_voces.mjs — compone una pieza, le pone letra y guarda cada cantor sintético por separado (seco, sin sala),
 // la batería aparte y un manifiesto. Es la entrada de transcripcion/convertir_coro.py, que pasa cada voz por Seed-VC.
 //
-//   node cantada/herramientas/exportar_voces.mjs [opciones]
+//   node herramientas/exportar_voces.mjs [opciones]
 //     --forma presentacion|retirada   --estilo trasnochada|catalina|todas|muneca|pasteles
 //     --semilla 4  --tonica 9 (0 = Do … 11 = Si)  --modo menor|mayor  --largo corta|normal|larga
 //     --tema "la plata no alcanza"    --letra-semilla 1
@@ -11,19 +11,19 @@
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { componer } from '../../motor/compositor.js';
-import { MODELO } from '../../motor/modelo.js';
-import { tiempos, metrica, silabear, cantores } from '../cantor/coro.js';
-import { cantar } from '../cantor/cantor.js';
-import { ecualizar } from '../cantor/eq.js';
-import { renderBateria } from '../cantor/bateria.js';
-import { partesAEscribir } from '../cantor/letrista.js';
-import { escribirLetraLocal } from '../cantor/letrista_local.js';
-import { medir } from '../cantor/letra.js';
-import { DATOS } from '../cantor/datos.js';
-import { CURVA } from '../cantor/timbre.js';
+import { componer } from '../motor/compositor.js';
+import { MODELO } from '../motor/modelo.js';
+import { tiempos, metrica, silabear, cantores } from '../motor/cantor/coro.js';
+import { cantar } from '../motor/cantor/cantor.js';
+import { ecualizar } from '../motor/cantor/eq.js';
+import { renderBateria } from '../motor/cantor/bateria.js';
+import { partesAEscribir } from '../motor/cantor/letrista.js';
+import { escribirLetraLocal } from '../motor/cantor/letrista_local.js';
+import { medir } from '../motor/cantor/letra.js';
+import { DATOS } from '../motor/cantor/datos.js';
+import { CURVA } from '../motor/cantor/timbre.js';
 
-const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const arg = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : d; };
 const op = {

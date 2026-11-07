@@ -1,17 +1,19 @@
-# Murga cantada: cantores sintéticos y letras
+# Cantores sintéticos y letras
 
-`cantada/` es una página aparte del Murga-o-matic. Usa el mismo compositor (`motor/`) y los mismos loops de batería. Le agrega dos cosas: una letra que entra en la melodía y un coro que la canta. Todo corre en el navegador, sin red ni modelos.
+En el Murga-o-matic, «Voces: Cantores sintéticos» cambia las muestras de coro por dos cosas: una letra que entra en la melodía y un coro sintético que la canta. Usa el mismo compositor y los mismos loops de batería, y todo corre en el navegador, sin red ni modelos.
 
 | Archivo | Qué hace |
 |---|---|
-| `cantada/cantor/letra.js` | Separa en sílabas, encuentra la tónica, junta sinalefas y pasa la letra a fonemas rioplatenses. De la melodía saca los versos y reparte las sílabas en las notas. |
-| `cantada/cantor/lexico.js` | Frases de murga, todas originales, etiquetadas por tema y por qué sujeto le cabe a cada acción. |
-| `cantada/cantor/letrista_local.js` | El letrista: plantillas, búsqueda por métrica, rima y acentos, y diagnóstico de cada verso. |
-| `cantada/cantor/coro.js` | De la pieza y la letra a lo que canta cada uno de los 13 cantores. |
-| `cantada/cantor/cantor.js` | El cantor sintético: fuente glótica y formantes. |
-| `cantada/cantor/eq.js`, `timbre.js` | Ecualizador de fase lineal y la curva medida contra un coro real. |
-| `cantada/cantor/bateria.js`, `mezcla.js` | Loops cortados golpe por golpe, sala y mezcla. |
-| `cantada/vista.js` | La partitura sincronizada y el panel "Cómo se hace". |
+| `motor/cantor/letra.js` | Separa en sílabas, encuentra la tónica, junta sinalefas y pasa la letra a fonemas rioplatenses. De la melodía saca los versos y reparte las sílabas en las notas. |
+| `motor/cantor/lexico.js` | Frases de murga, todas originales, etiquetadas por tema y por qué sujeto le cabe a cada acción. |
+| `motor/cantor/letrista_local.js` | El letrista: plantillas, búsqueda por métrica, rima y acentos, y diagnóstico de cada verso. |
+| `motor/cantor/coro.js` | De la pieza y la letra a lo que canta cada uno de los 13 cantores. |
+| `motor/cantor/cantor.js` | El cantor sintético: fuente glótica y formantes. |
+| `motor/cantor/eq.js`, `timbre.js` | Ecualizador de fase lineal y la curva medida contra un coro real. |
+| `motor/cantor/bateria.js`, `mezcla.js` | Loops cortados golpe por golpe, sala y mezcla. |
+| `motor/vista.js` | La partitura sincronizada y el panel "Cómo se hace". |
+| `motor/papeles.js` | La partitura coral en ABC (dibujada con abcjs y pasada a PDF con jsPDF y svg2pdf.js) y la letra con los acordes. |
+| `motor/cantor/obrero.js` | Canta cada cantor en un hilo aparte, así cantan varios a la vez y la página no se traba. |
 
 ## 1. De la melodía a los versos
 
@@ -76,11 +78,11 @@ La letra de la despedida y el audio no están en el repositorio: se usaron sólo
 
 ## 4. Voces de verdad, con Seed-VC (fuera de la página)
 
-La página canta con el sintetizador de formantes y así va a seguir: anda en cualquier navegador y sin red. Para que suene a murguistas de verdad hay un camino aparte, que corre en tu computadora: cada cantor sintético pasa por [Seed-VC](https://github.com/Plachtaa/seed-vc), un conversor de voz cantada. Seed-VC conserva la altura y el ritmo de la entrada y le cambia el timbre por el de una voz de referencia de 1 a 25 segundos. La música, la letra y el reparto de sílabas no cambian.
+Los cantores sintéticos de la página usan el sintetizador de formantes y así va a seguir: anda en cualquier navegador y sin red. Para que suene a murguistas de verdad hay un camino aparte, que corre en tu computadora: cada cantor sintético pasa por [Seed-VC](https://github.com/Plachtaa/seed-vc), un conversor de voz cantada. Seed-VC conserva la altura y el ritmo de la entrada y le cambia el timbre por el de una voz de referencia de 1 a 25 segundos. La música, la letra y el reparto de sílabas no cambian.
 
 | Archivo | Qué hace |
 |---|---|
-| `cantada/herramientas/exportar_voces.mjs` | Compone la pieza como la página y escribe la letra con el letrista. Guarda cada cantor seco y ecualizado, la batería y un `manifiesto.json` con paneo, ganancia y sala. |
+| `herramientas/exportar_voces.mjs` | Compone la pieza y escribe la letra con el letrista, como la página. Guarda cada cantor seco y ecualizado, la batería y un `manifiesto.json` con paneo, ganancia y sala. |
 | `transcripcion/convertir_coro.py` | Instala Seed-VC, elige las referencias, hace el ajuste fino si se pide, convierte cada voz y vuelve a mezclar. |
 
 ### Pasos
@@ -88,7 +90,7 @@ La página canta con el sintetizador de formantes y así va a seguir: anda en cu
 Desde la raíz del repositorio, con las voces separadas de `murga_lote.py` en `murga_trabajo/voces/`:
 
 ```bash
-node cantada/herramientas/exportar_voces.mjs --forma retirada --estilo trasnochada --semilla 47 --por-cuerda
+node herramientas/exportar_voces.mjs --forma retirada --estilo trasnochada --semilla 47 --por-cuerda
 uv run transcripcion/convertir_coro.py instalar                      # una vez: Seed-VC y su Python 3.10
 uv run transcripcion/convertir_coro.py referencias --murga "La Trasnochada"
 uv run transcripcion/convertir_coro.py entrenar --murga "La Trasnochada"   # opcional
@@ -120,13 +122,13 @@ Cada voz convertida se corrige antes de mezclar:
 2. **Se silencia** donde la sintética calla, con 40 ms de margen, porque el conversor a veces inventa ruido en los silencios.
 3. **Se lleva al mismo nivel** que la sintética, así se mantiene el balance entre cuerdas.
 
-La mezcla es la de la página: la misma sala de Schroeder, los mismos paneos y ganancias, y la batería con el pico en 0,55 del pico del coro.
+La mezcla es la de `motor/cantor/mezcla.js`: sala de Schroeder, los mismos paneos y ganancias que en la página, y la batería con el pico en 0,55 del pico del coro. La página mezcla parecido, con su propia sala y un compresor.
 
 ### Qué está probado y qué no
 
 | Prueba | Resultado |
 |---|---|
-| Mezcla en Python de las voces exportadas contra la mezcla de la página, misma pieza, 13 cantores | Diferencia a −72 dB de la señal: el ruido de 16 bits |
+| Mezcla en Python de las voces exportadas contra la de `motor/cantor/mezcla.js`, misma pieza, 13 cantores | Diferencia a −72 dB de la señal: el ruido de 16 bits |
 | Elegir referencias en un tramo de 10 minutos de La Trasnochada, con la grabación completa en lugar de las voces separadas | 15 pasajes sin pisarse, en 2 s |
 | Alineación ante corrimientos de −37 a +90 ms | Los encuentra con un error de 5 ms o menos |
 | Compuerta sobre ruido agregado en los silencios | El ruido baja de −32 dB a −62 dB respecto de la voz |

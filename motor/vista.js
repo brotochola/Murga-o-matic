@@ -2,27 +2,23 @@
 // que muestra paso a paso cómo se hizo el verso elegido.
 
 export const CUERDAS = [
-  { k: 'bajos', nombre: 'Bajos', token: '--c-bajos' },
-  { k: 'segundos', nombre: 'Segundos', token: '--c-segundos' },
-  { k: 'primos', nombre: 'Primos', token: '--c-primos' },
-  { k: 'sobreprimos', nombre: 'Sobreprimos', token: '--c-sobre' },
-  { k: 'tercia', nombre: 'Tercia', token: '--c-tercia' },
+  { k: 'bajos', nombre: 'Bajos', token: '--bajos' },
+  { k: 'segundos', nombre: 'Segundos', token: '--segundos' },
+  { k: 'primos', nombre: 'Primos', token: '--primos' },
+  { k: 'sobreprimos', nombre: 'Sobreprimos', token: '--sobreprimos' },
+  { k: 'tercia', nombre: 'Tercia', token: '--tercia' },
 ];
 const NOMBRE_NOTA = ['Do', 'Do#', 'Re', 'Mib', 'Mi', 'Fa', 'Fa#', 'Sol', 'Lab', 'La', 'Sib', 'Si'];
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
 // ───────────────────────── Partitura ─────────────────────────
 export function crearPartitura({ lienzo, mapa, leyenda, alBuscar, alElegir }) {
-  const E = { datos: null, t: 0, vista0: 0, pps: 110, seguir: true, ocultas: new Set(), sel: null, arrastre: null };
+  const E = { datos: null, t: 0, vista0: 0, pps: 70, seguir: true, mudas: {}, sel: null, arrastre: null };
   const css = () => getComputedStyle(document.documentElement);
   const color = tok => css().getPropertyValue(tok).trim() || '#888';
 
-  // leyenda: cada cuerda se puede esconder
-  leyenda.innerHTML = CUERDAS.map(c => `<button type="button" class="chip-cuerda" data-k="${c.k}" aria-pressed="true"><span class="punto" style="background:var(${c.token})"></span>${c.nombre}</button>`).join('');
-  leyenda.querySelectorAll('button').forEach(b => b.onclick = () => {
-    const k = b.dataset.k; if (E.ocultas.has(k)) E.ocultas.delete(k); else E.ocultas.add(k);
-    b.setAttribute('aria-pressed', String(!E.ocultas.has(k))); dibujar();
-  });
+  // leyenda: los colores de las cuerdas (las silenciadas en la mezcla se ven apagadas)
+  if (leyenda) leyenda.innerHTML = CUERDAS.map(c => `<span><i style="background:var(${c.token})"></i>${c.nombre}</span>`).join('');
 
   function medidas(cv) {
     const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
@@ -35,9 +31,9 @@ export function crearPartitura({ lienzo, mapa, leyenda, alBuscar, alElegir }) {
     const D = E.datos; if (!D) return;
     const { W, H, dpr } = medidas(lienzo);
     const g = lienzo.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-    const C = css(), tinta = C.getPropertyValue('--tinta').trim(), tenue = C.getPropertyValue('--tenue').trim(), linea = C.getPropertyValue('--linea').trim(), acento = C.getPropertyValue('--acento').trim(), suave = C.getPropertyValue('--acento-suave').trim(), papel = C.getPropertyValue('--papel').trim();
-    const fLetra = C.getPropertyValue('--f-letra').trim(), fUi = C.getPropertyValue('--f-ui').trim();
-    const ARRIBA = 24, LETRA = 46, IZQ = 34, H_roll = H - ARRIBA - LETRA;
+    const C = css(), tinta = C.getPropertyValue('--ink').trim(), tenue = C.getPropertyValue('--muted').trim(), linea = C.getPropertyValue('--line').trim(), acento = C.getPropertyValue('--accent').trim(), suave = C.getPropertyValue('--accent-soft').trim(), papel = C.getPropertyValue('--panel').trim();
+    const fLetra = C.getPropertyValue('--body').trim(), fUi = C.getPropertyValue('--body').trim();
+    const ARRIBA = 24, LETRA = D.silabas.length ? 46 : 0, IZQ = 34, H_roll = H - ARRIBA - LETRA;
     const span = (W - IZQ) / E.pps, t0 = E.vista0, t1 = t0 + span;
     const X = t => IZQ + (t - t0) * E.pps;
     const pMin = D.pMin - 1, pMax = D.pMax + 1, alto = H_roll / (pMax - pMin + 1);
@@ -61,20 +57,20 @@ export function crearPartitura({ lienzo, mapa, leyenda, alBuscar, alElegir }) {
     // notas
     const ahora = E.t;
     for (const c of CUERDAS) {
-      if (E.ocultas.has(c.k)) continue;
+      const muda = !!E.mudas[c.k];
       const col = color(c.token);
       for (const n of D.notas) {
         if (n.cuerda !== c.k || n.t1 < t0 || n.t0 > t1) continue;
         const x = X(n.t0), w = Math.max(2, (n.t1 - n.t0) * E.pps - 1.5), y = Y(n.p) + 1, h = Math.max(3, alto - 2);
         const suena = ahora >= n.t0 && ahora < n.t1;
-        g.globalAlpha = suena ? 1 : .78; g.fillStyle = col;
+        g.globalAlpha = muda ? .16 : suena ? 1 : .8; g.fillStyle = col;
         g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, Math.min(3, h / 2)) : g.rect(x, y, w, h); g.fill();
-        if (suena) { g.globalAlpha = 1; g.strokeStyle = tinta; g.lineWidth = 1.5; g.stroke(); }
+        if (suena && !muda) { g.globalAlpha = 1; g.strokeStyle = tinta; g.lineWidth = 1.5; g.stroke(); }
       }
     }
     g.globalAlpha = 1;
     // la letra, abajo, cada sílaba donde cae
-    g.fillStyle = papel; g.fillRect(0, H - LETRA, W, LETRA);
+    if (LETRA) { g.fillStyle = papel; g.fillRect(0, H - LETRA, W, LETRA); }
     g.strokeStyle = linea; g.beginPath(); g.moveTo(0, H - LETRA + .5); g.lineTo(W, H - LETRA + .5); g.stroke();
     g.textBaseline = 'middle';
     let ultimoX = -1e9;
@@ -85,8 +81,8 @@ export function crearPartitura({ lienzo, mapa, leyenda, alBuscar, alElegir }) {
       const w = g.measureText(s.texto).width;
       const fila = x < ultimoX + 3 ? 1 : 0;              // si se pisa con la anterior, baja una fila
       const y = H - LETRA + 15 + fila * 18;
-      if (suena) { g.fillStyle = acento; g.globalAlpha = .18; g.fillRect(x - 3, y - 10, w + 6, 20); g.globalAlpha = 1; }
-      g.fillStyle = suena ? acento : elegida ? tinta : tenue;
+      if (suena) { g.fillStyle = acento; g.globalAlpha = .35; g.fillRect(x - 3, y - 10, w + 6, 20); g.globalAlpha = 1; }
+      g.fillStyle = suena || elegida ? tinta : tenue;
       g.fillText(s.texto, x, y);
       if (elegida) { g.fillRect(x, y + 9, w, 1.5); }
       if (s.melisma) { g.strokeStyle = g.fillStyle; g.beginPath(); g.moveTo(x + w + 2, y + 4); g.lineTo(Math.max(x + w + 4, X(s.t1) - 2), y + 4); g.stroke(); }
@@ -104,11 +100,11 @@ export function crearPartitura({ lienzo, mapa, leyenda, alBuscar, alElegir }) {
     const D = E.datos; if (!D || !mapa) return;
     const { W, H, dpr } = medidas(mapa);
     const g = mapa.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-    const C = css(), linea = C.getPropertyValue('--linea').trim(), acento = C.getPropertyValue('--acento').trim(), tinta = C.getPropertyValue('--tinta').trim();
+    const C = css(), linea = C.getPropertyValue('--line').trim(), acento = C.getPropertyValue('--accent').trim(), tinta = C.getPropertyValue('--ink').trim();
     const k = W / D.total, pr = D.pMax - D.pMin + 1;
     for (const s of D.secciones) { g.fillStyle = linea; g.globalAlpha = s.bateria ? .55 : .2; g.fillRect(s.t0 * k, 0, (s.t1 - s.t0) * k, H); }
     g.globalAlpha = .75;
-    for (const c of CUERDAS) { if (E.ocultas.has(c.k)) continue; g.fillStyle = color(c.token); for (const n of D.notas) if (n.cuerda === c.k) g.fillRect(n.t0 * k, H - 2 - (n.p - D.pMin) / pr * (H - 4), Math.max(1, (n.t1 - n.t0) * k), 1.5); }
+    for (const c of CUERDAS) { if (E.mudas[c.k]) continue; g.fillStyle = color(c.token); for (const n of D.notas) if (n.cuerda === c.k) g.fillRect(n.t0 * k, H - 2 - (n.p - D.pMin) / pr * (H - 4), Math.max(1, (n.t1 - n.t0) * k), 1.5); }
     g.globalAlpha = 1;
     const span = (lienzo.getBoundingClientRect().width - 34) / E.pps;
     g.strokeStyle = tinta; g.lineWidth = 1.5; g.strokeRect(E.vista0 * k + .75, .75, Math.max(4, span * k) - 1.5, H - 1.5);
@@ -152,7 +148,8 @@ export function crearPartitura({ lienzo, mapa, leyenda, alBuscar, alElegir }) {
       if (E.seguir && sonando && !pausado && (t < E.vista0 + span * .1 || t > E.vista0 + span * .7)) { E.vista0 = t - span * .25; limitar(); }
       dibujar();
     },
-    elegir(i, k) { E.sel = { i, k }; dibujar(); },
+    elegir(i, k) { E.sel = i == null ? null : { i, k }; dibujar(); },
+    silenciar(m) { E.mudas = { ...m }; dibujar(); },
     irA(t) { const span = (lienzo.getBoundingClientRect().width - 34) / E.pps; E.vista0 = t - span * .15; limitar(); dibujar(); },
     zoom(f) { const span = (lienzo.getBoundingClientRect().width - 34) / E.pps, centro = E.vista0 + span / 2; E.pps = Math.max(25, Math.min(400, E.pps * f)); const s2 = (lienzo.getBoundingClientRect().width - 34) / E.pps; E.vista0 = centro - s2 / 2; limitar(); dibujar(); },
     seguir(v) { E.seguir = v; },

@@ -3,7 +3,7 @@
 # dependencies = ["numpy", "soundfile", "scipy"]
 # ///
 """
-convertir_coro.py — pasa el coro sintético de la Murga cantada por Seed-VC, para que cada voz suene a un murguista
+convertir_coro.py — pasa el coro sintético del Murga-o-matic por Seed-VC, para que cada voz suene a un murguista
 de verdad, y lo vuelve a mezclar con la batería.
 
 Seed-VC (https://github.com/Plachtaa/seed-vc) convierte voz cantada sin entrenar: le alcanza un pedazo de 1 a 25 s de
@@ -16,7 +16,7 @@ cada cuerda. Con --tipo solista (lo normal) se prefieren los pasajes de una sola
 el coro lo arma la mezcla. Con --tipo coro, los de todo el coro.
 
 Pasos, desde la raíz del repositorio:
-  1. node cantada/herramientas/exportar_voces.mjs --forma retirada --estilo trasnochada --semilla 47
+  1. node herramientas/exportar_voces.mjs --forma retirada --estilo trasnochada --semilla 47
   2. uv run transcripcion/convertir_coro.py instalar          (una vez: baja Seed-VC y le arma su Python)
   3. uv run transcripcion/convertir_coro.py referencias --murga "La Trasnochada"
   4. uv run transcripcion/convertir_coro.py entrenar --murga "La Trasnochada"      (opcional, con GPU)
@@ -305,7 +305,7 @@ def compuerta(x, y, umbral_db=-45):
 
 # ───────────────────────── mezcla ─────────────────────────
 def sala(L, R, mezcla=.24, largo=1.7):
-    """La misma sala de cantada/cantor/mezcla.js (Schroeder: seis peines con pasabajos y tres pasatodos),
+    """La misma sala de motor/cantor/mezcla.js (Schroeder: seis peines con pasabajos y tres pasatodos),
     escrita como filtros para que numpy la haga rápido."""
     g = 10 ** (-3 * (1100 / SR) / largo)
     out = []
@@ -460,7 +460,7 @@ def main():
     e.add_argument("--lote", type=int, default=2)
     e.add_argument("--minutos", type=float, default=40, help="cuánta voz usar como máximo")
     c = sub.add_parser("convertir", help="convierte cada voz de una pieza exportada y la vuelve a mezclar")
-    c.add_argument("pieza", help="carpeta que dejó cantada/herramientas/exportar_voces.mjs")
+    c.add_argument("pieza", help="carpeta que dejó herramientas/exportar_voces.mjs")
     c.add_argument("--murga", default="La Trasnochada")
     c.add_argument("--pasos", type=int, default=30)
     c.add_argument("--referencia", default=None)

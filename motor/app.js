@@ -1,8 +1,18 @@
-// La página: controles, sonido, dibujo y exportación. El compositor está en compositor.js.
+// La página: controles, sonido, dibujo y exportación. El compositor está en compositor.js; los cantores sintéticos
+// y el letrista, en cantor/; la partitura con letra, en vista.js; la partitura coral, el PDF y la letra con acordes, en papeles.js.
 import { componer, RANGOS, PB, acorde } from './compositor.js';
 import { DEMOS } from './demos.js';
 import { MODELO } from './modelo.js';
 import { TIMBRE } from './timbre.js';
+import { metrica, silabear, cantores } from './cantor/coro.js';
+import { cantar } from './cantor/cantor.js';
+import { disenar } from './cantor/eq.js';
+import { medir, versosDe } from './cantor/letra.js';
+import { partesAEscribir } from './cantor/letrista.js';
+import { escribirLetraLocal } from './cantor/letrista_local.js';
+import { CURVA } from './cantor/timbre.js';
+import { crearPartitura, mostrarProceso } from './vista.js';
+import { nombreAcorde, textoConAcordes, mostrarPartitura, pdfPartitura, cargarScript, escritas } from './papeles.js';
 
 const DATOS = {"ritmos":[{"id":3,"nombre":"Marcha camión 2/4","tpc":2,"compas":0.894,"compases":2,"bpm":134.2,"archivo":"loops/03.wav"},{"id":4,"nombre":"Marcha camión 4/4","tpc":4,"compas":2.7999,"compases":2,"bpm":85.7,"archivo":"loops/04.wav"},{"id":6,"nombre":"Base de murga","tpc":4,"compas":2.0055,"compases":2,"bpm":119.7,"archivo":"loops/06.wav"},{"id":8,"nombre":"Candombe","tpc":4,"compas":1.9122,"compases":2,"bpm":125.5,"archivo":"loops/08.wav"},{"id":9,"nombre":"Pa'l costado","tpc":4,"compas":2.1376,"compases":2,"bpm":112.3,"archivo":"loops/09.wav"},{"id":10,"nombre":"Plena","tpc":4,"compas":1.7264,"compases":2,"bpm":139.0,"archivo":"loops/10.wav"},{"id":11,"nombre":"Bossa nova","tpc":4,"compas":2.8521,"compases":2,"bpm":84.1,"archivo":"loops/11.wav"},{"id":13,"nombre":"Conga","tpc":4,"compas":1.7319,"compases":2,"bpm":138.6,"archivo":"loops/13.wav"},{"id":14,"nombre":"Beat","tpc":4,"compas":1.7248,"compases":2,"bpm":139.1,"archivo":"loops/14.wav"},{"id":15,"nombre":"Bolero moderno","tpc":4,"compas":2.5466,"compases":2,"bpm":94.2,"archivo":"loops/15.wav"},{"id":17,"nombre":"Son cubano","tpc":4,"compas":1.9632,"compases":2,"bpm":122.2,"archivo":"loops/17.wav"},{"id":18,"nombre":"Montuno cubano","tpc":4,"compas":2.4945,"compases":2,"bpm":96.2,"archivo":"loops/18.wav"},{"id":19,"nombre":"Rumba cubana","tpc":4,"compas":2.4165,"compases":2,"bpm":99.3,"archivo":"loops/19.wav"},{"id":20,"nombre":"Miles Davis","tpc":4,"compas":2.6557,"compases":2,"bpm":90.4,"archivo":"loops/20.wav"}],"frases":{"1":{"archivo":"frases/01.wav","ultimo":5.6657,"seg":6.553},"5":{"archivo":"frases/05.wav","ultimo":2.798,"seg":3.999},"7":{"archivo":"frases/07.wav","ultimo":3.6629,"seg":4.196}},"acompana":{"3":[1,null],"4":[1,null],"6":[5,7]}};
 
@@ -130,14 +140,65 @@ function picoDe(bufs){let p=1e-9;const n=bufs[0].length;for(let ch=0;ch<2;ch++){
 function procesar(buf,escala,drive){const k=Math.tanh(drive);for(let ch=0;ch<buf.numberOfChannels;ch++){const d=buf.getChannelData(ch);for(let i=0;i<d.length;i++)d[i]=Math.tanh(drive*d[i]*escala)/k}}
 function salaIR(ctx){const sr=ctx.sampleRate,n=Math.floor(.7*sr),ir=ctx.createBuffer(2,n,sr);const r=new Rng(5);for(let ch=0;ch<2;ch++){const d=ir.getChannelData(ch);for(let i=0;i<n;i++)d[i]=(r.rand()*2-1)*Math.exp(-7*i/n)}return ir}
 
+// ============================================================ cantores sintéticos
+// Trece voces de fuente glótica y formantes (cantor/cantor.js). Cantan en obreros, varios a la vez; cada cuerda
+// se suma en estéreo y su voz pasa por la curva medida contra La Trasnochada (las consonantes no, así no se inflan).
+const pausa=()=>new Promise(r=>setTimeout(r,0));
+let obreros=null,idObrero=0;
+function losObreros(){if(obreros)return obreros;obreros=[];
+  try{const n=Math.max(1,Math.min(4,(navigator.hardwareConcurrency||2)-1));for(let i=0;i<n;i++)obreros.push(new Worker(new URL("./cantor/obrero.js",import.meta.url),{type:"module"}))}catch(e){console.warn("sin obreros",e);obreros=[]}
+  return obreros}
+function enObrero(w,msg){return new Promise((ok,mal)=>{const id=++idObrero;
+  const fin=()=>{w.removeEventListener("message",alMsg);w.removeEventListener("error",alErr)};
+  const alMsg=e=>{if(e.data?.id!==id)return;fin();e.data.error?mal(new Error(e.data.error)):ok(e.data)};
+  const alErr=e=>{fin();e.preventDefault?.();mal(new Error(e.message||"el obrero no arrancó"))};
+  w.addEventListener("message",alMsg);w.addEventListener("error",alErr);w.postMessage({id,...msg})})}
+async function cantarLista(lista,alListo,sigue){
+  let i=0;const ws=losObreros();
+  const enHilo=async c=>{await pausa();return cantar(c.notas,{sr:SR,tipo:c.tipo,semilla:c.semilla,separar:true})};
+  const tarea=async w=>{while(i<lista.length&&sigue()){const j=i++,c=lista[j];let r;
+    if(w){try{r=await enObrero(w,{notas:c.notas,opc:{sr:SR,tipo:c.tipo,semilla:c.semilla}})}catch(e){console.warn("canta la página:",e.message);w=null;r=await enHilo(c)}}
+    else r=await enHilo(c);
+    if(sigue())alListo(j,r)}};
+  await Promise.all(ws.length?ws.map(tarea):[tarea(null)]);
+}
+let IR_CANTOR=null;
+async function cantarCuerdas(pieza,P,gen){
+  const L=S.letra,letras=letrasPorSeccion();
+  L.sil=silabear(pieza,letras);
+  const lista=cantores(pieza,L.sil.porQ,{semilla:S.seed});
+  const len=Math.ceil(P.total*SR),acum={};for(const k of ORDEN)acum[k]={VL:new Float32Array(len),VR:new Float32Array(len),NL:new Float32Array(len),NR:new Float32Array(len)};
+  let hechos=0;
+  avance(0,`Cantando: 0 de ${lista.length} cantores…`);
+  await cantarLista(lista,(j,{voz,ruido})=>{const c=lista[j],a=acum[c.cuerda];
+    const gl=Math.cos((c.pan+1)*Math.PI/4)*c.ganancia,gr=Math.sin((c.pan+1)*Math.PI/4)*c.ganancia,m=Math.min(len,voz.length);
+    for(let s=0;s<m;s++){a.VL[s]+=voz[s]*gl;a.VR[s]+=voz[s]*gr;a.NL[s]+=ruido[s]*gl;a.NR[s]+=ruido[s]*gr}
+    hechos++;avance(hechos/(lista.length+1),`Cantando: ${hechos} de ${lista.length} cantores (${NOMBRES_CUERDA[c.cuerda].toLowerCase()})…`)},()=>gen===S.gen);
+  if(gen!==S.gen)return null;
+  avance(lista.length/(lista.length+1),"Dándole el color del coro real…");
+  if(!IR_CANTOR)IR_CANTOR=disenar(CURVA,SR,2048);
+  const voces=[];
+  for(const k of ORDEN){const a=acum[k],ctx=new OAC(2,len,SR);
+    const bv=ctx.createBuffer(2,len,SR);bv.copyToChannel(a.VL,0);bv.copyToChannel(a.VR,1);
+    const bn=ctx.createBuffer(2,len,SR);bn.copyToChannel(a.NL,0);bn.copyToChannel(a.NR,1);
+    const conv=ctx.createConvolver();conv.normalize=false;const ir=ctx.createBuffer(1,IR_CANTOR.length,SR);ir.copyToChannel(IR_CANTOR,0);conv.buffer=ir;
+    const sv=ctx.createBufferSource();sv.buffer=bv;sv.connect(conv).connect(ctx.destination);sv.start(0,IR_CANTOR.length/2/SR);
+    const sn=ctx.createBufferSource();sn.buffer=bn;sn.connect(ctx.destination);sn.start(0);
+    voces.push(await ctx.startRendering());if(gen!==S.gen)return null}
+  return voces;
+}
+
 // ============================================================ estado
 const ORDEN=["bajos","segundos","primos","sobreprimos","tercia"];
 const LLAMADAS=Object.fromEntries(DATOS.ritmos.map(r=>{const a=DATOS.acompana[r.id];if(!a||!a[0])return[r.id,0];const c4=r.compas*4/r.tpc;return[r.id,Math.ceil((DATOS.frases[a[0]].ultimo+.05)/c4)]}));
 const S={recita:0,forma:"retirada",estilo:"todas",tonica:9,modo:"menor",ritmo:0,tempo:0,largo:"normal",seed:1,brillo:1,clarinada:true,cancionFinal:true,modula:true,tercia:0,mix:{bajos:1,segundos:1,primos:1,sobreprimos:1,tercia:1,bateria:.42},mute:{},
-  pieza:null,stems:null,P:null,ac:null,nodos:null,inicio:0,offset:0,tocando:false,gen:0};
+  voces:"muestras",pieza:null,stems:null,P:null,ac:null,nodos:null,inicio:0,offset:0,tocando:false,gen:0,mp3:null,
+  letra:{partes:[],textos:[],diags:null,temas:null,editados:new Set(),sel:{i:0,k:0},sil:null,marcas:[],semLetra:1,pendiente:false,cantada:null}};
 const $=id=>document.getElementById(id);
+const sint=()=>S.voces==="sintetizadas";
 
 function estadoTexto(t,err){$("status").textContent=t;$("status").className="status"+(err?" err":"")}
+function avance(x,t){const a=$("avance");if(x==null){a.hidden=true}else{a.hidden=false;a.value=x}if(t!=null)estadoTexto(t)}
 
 async function muestrasPara(ev){
   const notas=new Set();for(const k in ev)for(const e of ev[k])notas.add(e[2]);
@@ -146,22 +207,52 @@ async function muestrasPara(ev){
   return out;
 }
 
+function ocupado(texto){$("play").disabled=true;$("play").textContent=texto;for(const id of["mp3","pdf","txt","exportar","recantar","otraLetra","lailareo"])$(id).disabled=true}
+function listo(){$("play").disabled=false;$("play").textContent=S.tocando?"Pausa":"Tocar";for(const id of["mp3","pdf","txt","exportar","recantar","otraLetra","lailareo"])$(id).disabled=false;avance(null)}
+function resumen(){const c=S.pieza.secs.find(s=>s.tipo!=="clarinada"&&s.bateria)||S.pieza.secs[0];
+  let t=`${S.forma==="presentacion"?"Presentación":"Retirada"} en ${NOTAS[S.tonica]} ${S.modo} · ${ESTILOS[S.estilo]} · ${c.tempo} BPM · ${fmt(S.P.total)}`;
+  if(sint()){const L=S.letra,v=L.partes.reduce((a,p)=>a+p.versos.length,0),ok=L.partes.reduce((a,p,i)=>a+p.versos.filter((x,k)=>L.textos[i][k].trim()&&medir(L.textos[i][k]).n===x.silabas).length,0);t+=` · ${v} versos, ${ok} justos en la música`}
+  estadoTexto(t)}
+function normalizarVoces(voces){const pv=picoDe(voces);const drive=sint()?1.02:1+.8*S.brillo;voces.forEach(b=>procesar(b,1/pv,drive))}
+
 async function generar(){
-  const gen=++S.gen;detener(true);$("play").disabled=true;$("play").textContent="Componiendo…";estadoTexto("Componiendo y cantando…");
+  const gen=++S.gen;detener(true);S.mp3=null;ocupado("Componiendo…");avance(.02,"Componiendo…");
   try{
     const pieza=componer(MODELO,{forma:S.forma,estilo:S.estilo,tonica:S.tonica,modo:S.modo,semilla:S.seed,largo:S.largo,tempo:S.tempo||null,ritmo:S.ritmo||null,clarinada:S.clarinada,cancionFinal:S.cancionFinal,modula:S.modula,tercia:S.tercia,recita:S.recita,llamadas:LLAMADAS});
     const{T,fin}=mapaTiempo(pieza);const total=fin+2.5;
     const P={T,total,seed:S.seed,brillo:S.brillo};
-    const muestras=await muestrasPara(pieza.ev);if(gen!==S.gen)return;
-    const voces=[];for(const k of ORDEN){voces.push(await renderCuerda(k,pieza.ev[k],P,muestras));if(gen!==S.gen)return}
-    const perc=await renderPercusion(P,pieza.secs);if(gen!==S.gen)return;
-    const pv=picoDe(voces);const drive=1+.8*S.brillo;voces.forEach(b=>procesar(b,1/pv,drive));
+    const percP=renderPercusion(P,pieza.secs);
+    let voces;
+    if(sint()){
+      avance(.04,"Escribiendo la letra…");await pausa();if(gen!==S.gen)return;
+      armarLetra(pieza,T);escribirLetra(pieza);
+      voces=await cantarCuerdas(pieza,P,gen);if(!voces)return;
+      S.letra.cantada=S.letra.textos.map(t=>t.slice());S.letra.pendiente=false;
+    }else{
+      avance(.1,"Cargando las muestras del coro…");
+      const muestras=await muestrasPara(pieza.ev);if(gen!==S.gen)return;
+      voces=[];for(const[i,k]of ORDEN.entries()){avance(.2+.6*i/ORDEN.length,`Cantando: ${NOMBRES_CUERDA[k].toLowerCase()}…`);voces.push(await renderCuerda(k,pieza.ev[k],P,muestras));if(gen!==S.gen)return}
+    }
+    avance(.95,"Sumando la batería de La Tríada…");
+    const perc=await percP;if(gen!==S.gen)return;
+    normalizarVoces(voces);
     const pp=picoDe([perc]);procesar(perc,1/pp,1.05);
-    window.murga={S};S.pieza=pieza;S.P=P;S.stems={...Object.fromEntries(ORDEN.map((k,i)=>[k,voces[i]])),bateria:perc};S.offset=0;rollCache=null;
-    dibujarTodo();$("play").disabled=false;$("play").textContent="Tocar";
-    const c=pieza.secs.find(s=>s.tipo!=="clarinada"&&s.bateria)||pieza.secs[0];
-    estadoTexto(`${S.forma==="presentacion"?"Presentación":"Retirada"} en ${NOTAS[S.tonica]} ${S.modo} · ${ESTILOS[S.estilo]} · ${c.tempo} BPM · ${fmt(total)}`);
-  }catch(e){console.error(e);estadoTexto(`No se pudieron preparar los sonidos: ${e&&e.message||e}. Recargá la página para reintentar.`,true);$("play").textContent="Tocar"}
+    window.murga={S};S.pieza=pieza;S.P=P;S.stems={...Object.fromEntries(ORDEN.map((k,i)=>[k,voces[i]])),bateria:perc};S.offset=0;
+    dibujarTodo();listo();resumen();
+  }catch(e){if(gen!==S.gen)return;console.error(e);avance(null);estadoTexto(`No se pudieron preparar los sonidos: ${e&&e.message||e}. Recargá la página para reintentar.`,true);$("play").textContent="Tocar"}
+}
+
+// Otra letra o la letra editada: se vuelven a cantar las voces; la música y la batería quedan
+async function cantarDeNuevo(){
+  if(!S.pieza||!sint())return;
+  const gen=++S.gen;const t=posicion();detener();S.mp3=null;ocupado("Cantando…");
+  try{
+    const voces=await cantarCuerdas(S.pieza,S.P,gen);if(!voces)return;
+    normalizarVoces(voces);
+    S.stems={...Object.fromEntries(ORDEN.map((k,i)=>[k,voces[i]])),bateria:S.stems.bateria};S.offset=t;
+    S.letra.cantada=S.letra.textos.map(x=>x.slice());S.letra.pendiente=false;$("avisoLetra").hidden=true;
+    actualizarVistas();listo();resumen();
+  }catch(e){if(gen!==S.gen)return;console.error(e);avance(null);estadoTexto(`No se pudo cantar: ${e&&e.message||e}`,true);listo()}
 }
 
 // ============================================================ reproducción
@@ -194,9 +285,13 @@ $("play").onclick=()=>{try{S.tocando?detener():tocar()}catch(e){console.error(e)
 
 // ============================================================ dibujo
 const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
-const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const unicos=l=>l.filter((a,i)=>i===0||a!==l[i-1]);
 function nomTono(s){return `${NOTAS[s.tonica]} ${s.modo}`}
+const partitura=crearPartitura({lienzo:$("roll"),mapa:$("mapa"),leyenda:$("legend"),
+  alBuscar:t=>{if(S.P)saltar(t)},
+  alElegir:(i,k)=>{if(sint())elegir(i,k,false,true)}});
+$("zoomMas").onclick=()=>partitura.zoom(1.4);$("zoomMenos").onclick=()=>partitura.zoom(1/1.4);$("seguir").onchange=e=>partitura.seguir(e.target.checked);
+
 function dibujarTodo(){
   const P=S.P,secs=S.pieza.secs,tl=$("timeline");tl.innerHTML="";
   const add=(nombre,t0,t1,cap)=>{const d=document.createElement("div");d.className="sec"+(cap?" cap":"");d.style.flex=`${t1-t0} 0 0`;d.textContent=nombre;d.title=`${nombre} · ${fmt(t0)}`;tl.appendChild(d)};
@@ -208,38 +303,119 @@ function dibujarTodo(){
     const ritmo=DATOS.ritmos.find(r=>r.id===s.loop);
     const tex=`${TEXTO_TIPO[s.tipo]||"coro"} · ${nomTono(s)} · ${s.tempo} BPM${s.bateria&&ritmo?" · "+ritmo.nombre:""}`;
     tr.innerHTML=`<td class="t">${fmt(s.t0)}</td><td>${s.nombre}</td><td><span class="pill${s.bateria||s.tipo==="llamada"?"":" cap"}">${tex}</span></td><td class="ac"></td>`;
-    tr.querySelector(".ac").textContent=s.acordes?.length?unicos(s.acordes).join("  "):"—";tr.style.cursor="pointer";tr.onclick=()=>saltar(s.t0);tb.appendChild(tr)}
-  dibujarRoll();pintarCursor();
+    tr.querySelector(".ac").textContent=s.acordes?.length?unicos(s.acordes.map(g=>nombreAcorde(g,s.tonica,s.modo))).join("  "):"—";tr.style.cursor="pointer";tr.onclick=()=>saltar(s.t0);tb.appendChild(tr)}
+  $("cantada").hidden=!sint();
+  $("notaRoll").textContent=sint()?"Cada color es una cuerda; abajo va la letra, cada sílaba donde se canta, en negrita las acentuadas. Tocá para escuchar desde ahí y ver cómo se hizo ese verso; arrastrá para moverte.":"Cada color es una cuerda. Tocá las notas o las secciones para escuchar desde ahí; arrastrá para moverte.";
+  if(sint()){libreto();chips()}
+  actualizarVistas();pintarCursor();
+  if(!$("grabada").hidden)verPartitura(true);
 }
-function dibujarRoll(){
-  const cv=$("roll"),dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;cv.width=w*dpr;cv.height=h*dpr;const g=cv.getContext("2d");g.scale(dpr,dpr);
-  const P=S.P,lo=38,hi=78,X=t=>t/P.total*w,Y=m=>h-(m-lo+1)/(hi-lo+1)*h;
-  g.fillStyle=css("--well");g.fillRect(0,0,w,h);
-  g.strokeStyle=css("--line");g.lineWidth=1;for(const m of[48,60,72]){g.beginPath();g.moveTo(0,Y(m)+.5);g.lineTo(w,Y(m)+.5);g.stroke()}
-  g.fillStyle=css("--muted");g.font=`11px ${css("--mono")}`;for(const[m,n]of[[48,"do3"],[60,"do4"],[72,"do5"]])g.fillText(n,4,Y(m)-3);
-  let ultAc=-1e9;for(const s of S.pieza.secs){const x=X(s.t0);g.fillStyle=css("--line");g.fillRect(x,0,1,h);
-    (s.acordes||[]).forEach((ac,c,l)=>{if(c&&l[c-1]===ac)return;const q=s.pasoAcorde?s.pasoAcorde[c]:c*8;const xx=X(P.T(s.inicio+q))+3;if(xx-ultAc<g.measureText(ac).width+8)return;ultAc=xx;g.fillStyle=css("--muted");g.fillText(ac,xx,h-5)})}
-  for(const k of ORDEN){if(S.mute[k])g.globalAlpha=.18;g.fillStyle=css("--"+k);
-    for(const[ini,d,m]of S.pieza.ev[k]){const t0=P.T(ini),x=X(t0),ww=Math.max(2,X(P.T(ini+d)-t0)-1),y=Y(m);g.fillRect(x,y-(h/(hi-lo+1))+1,ww,h/(hi-lo+1)-1)}g.globalAlpha=1}
+function datosPartitura(){
+  const P=S.P,T=P.T,pieza=S.pieza,L=S.letra;
+  const notas=[];for(const k of ORDEN)for(const[q,d,p]of pieza.ev[k])notas.push({t0:T(q),t1:T(q+d),p,cuerda:k});
+  const silabas=[];
+  if(sint()&&L.sil)for(const s of pieza.secs){const i=L.partes.findIndex(p=>p.secciones.includes(s.nombre));if(i<0)continue;
+    for(let k=0;L.sil.detalle.has(s.nombre+"|"+k);k++){const det=L.sil.detalle.get(s.nombre+"|"+k),esc=escritas(L.textos[i][k],det.reparto);
+      det.reparto.forEach((r,j)=>{const a=r.notas[0],b=r.notas[r.notas.length-1];silabas.push({t0:T(a.q),t1:T(b.q+b.d),texto:esc?.[j]?.replace(/\s+/g,"‿")||r.texto,acento:r.acento,melisma:r.notas.length>1,p:a.p,i,k,j})})}}
+  silabas.sort((a,b)=>a.t0-b.t0);
+  const compases=[];for(const s of pieza.secs)for(let q=s.inicio;q<s.inicio+s.largo;q+=16)compases.push(T(q));
+  return{notas,silabas,compases,secciones:pieza.secs.map(s=>({t0:s.t0,t1:s.t1,nombre:s.nombre,bateria:s.bateria,llamada:s.tipo==="llamada"})),total:P.total};
 }
+function actualizarVistas(){
+  if(!S.pieza)return;
+  if(sint())S.letra.sil=silabear(S.pieza,letrasPorSeccion());
+  partitura.datos(datosPartitura());partitura.silenciar(S.mute);
+  if(sint()){partitura.elegir(S.letra.sel.i,S.letra.sel.k);proceso();estadoLetra()}else partitura.elegir(null);
+}
+let temporizador=null;
+function actualizarLuego(){clearTimeout(temporizador);temporizador=setTimeout(actualizarVistas,350)}
 
 function pintarCursor(){if(!S.P)return;const t=posicion();$("time").textContent=`${fmt(t)} / ${fmt(S.P.total)}`;const ph=$("ph");if(ph)ph.style.left=`calc(${t/S.P.total*100}% - 1px)`;
-  dibujarRollCursor(t)}
-let rollCache=null;
-function dibujarRollCursor(t){const cv=$("roll");const dpr=window.devicePixelRatio||1;const g=cv.getContext("2d",{willReadFrequently:true});
-  if(!rollCache||rollCache.w!==cv.width||rollCache.h!==cv.height||rollCache.v!==S.gen+":"+JSON.stringify(S.mute)){dibujarRoll();rollCache={img:g.getImageData(0,0,cv.width,cv.height),w:cv.width,h:cv.height,v:S.gen+":"+JSON.stringify(S.mute)}}
-  else g.putImageData(rollCache.img,0,0);
-  g.setTransform(dpr,0,0,dpr,0,0);g.fillStyle=css("--ink");g.fillRect(t/S.P.total*cv.clientWidth-1,0,2,cv.clientHeight)}
+  partitura.tiempo(t,S.tocando);if(sint())seguirVerso(t)}
 function clickSeek(el,ev){const r=el.getBoundingClientRect();saltar((ev.clientX-r.left)/r.width*S.P.total)}
-$("timeline").onclick=e=>S.P&&clickSeek($("timeline"),e);$("roll").onclick=e=>S.P&&clickSeek($("roll"),e);
-window.addEventListener("resize",()=>{if(S.P){rollCache=null;pintarCursor()}});
-matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",()=>{rollCache=null;if(S.P)pintarCursor()});
+$("timeline").onclick=e=>S.P&&clickSeek($("timeline"),e);
+
+// ============================================================ la letra (cantores sintéticos)
+const TEMAS={
+  presentacion:["el barrio que resiste","la plata no alcanza","el carnaval de antes","todos mirando el celular"],
+  retirada:["la despedida del barrio","lo que nos llevamos","el último tablado","volver el año que viene"]};
+function armarLetra(pieza,T){
+  const L=S.letra;L.partes=partesAEscribir(metrica(pieza),S.forma);L.sel={i:0,k:0};
+  L.marcas=[];
+  for(const s of pieza.secs){const i=L.partes.findIndex(p=>p.secciones.includes(s.nombre));if(i<0||!(s.golpes||[]).length)continue;
+    versosDe(s.golpes.map(g=>({q:g.q-s.inicio,d:g.d,p:g.top}))).forEach((v,k)=>L.marcas.push({t:T(s.inicio+v.golpes[0].q),i,k}))}
+  L.marcas.sort((a,b)=>a.t-b.t);
+}
+function escribirLetra(pieza){
+  const L=S.letra,r=escribirLetraLocal({forma:S.forma,tema:$("tema").value.trim(),metrica:metrica(pieza),semilla:S.seed*1000+L.semLetra});
+  L.textos=r.textos.map(t=>t.slice());L.diags=r.diags;L.temas=r.temas;L.editados.clear();
+}
+function letrasPorSeccion(){const L={};S.letra.partes.forEach((p,i)=>{for(const s of p.secciones)L[s]=S.letra.textos[i].map(t=>t.trim())});return L}
+function chips(){$("temas").innerHTML=TEMAS[S.forma].map(t=>`<button type="button" class="chip-tema">${t}</button>`).join("");
+  $("temas").querySelectorAll("button").forEach(b=>b.onclick=()=>{$("tema").value=b.textContent;otraLetra()})}
+function libreto(){
+  const L=S.letra,box=$("libreto");box.innerHTML="";
+  L.partes.forEach((p,i)=>{
+    const sec=document.createElement("section");sec.className="parte";
+    const otras=p.secciones.length>1?`<p class="se-canta">Se canta ${p.secciones.length} veces: ${p.secciones.join(" · ")}</p>`:"";
+    sec.innerHTML=`<header><h3></h3><p class="funcion"></p>${otras}</header><ol class="versos"></ol>`;
+    sec.querySelector("h3").textContent=p.nombre;sec.querySelector(".funcion").textContent=p.funcion;
+    const ol=sec.querySelector("ol");
+    p.versos.forEach((v,k)=>{const li=document.createElement("li");li.className="verso";li.dataset.i=i;li.dataset.k=k;const id=`v-${i}-${k}`;
+      li.innerHTML=`<label class="sr" for="${id}">Verso ${k+1} de ${p.nombre}</label><input id="${id}" type="text" autocomplete="off" spellcheck="false" placeholder="${v.silabas} sílaba${v.silabas===1?"":"s"}${v.silabas>1?", "+v.tipo:""}"><span class="cuenta" title="sílabas cantadas / notas del verso"></span>`;
+      const inp=li.querySelector("input");inp.value=L.textos[i][k];
+      inp.addEventListener("input",()=>{L.textos[i][k]=inp.value;L.editados.add(i+"|"+k);cuenta(li,inp.value,v.silabas);marcarPendiente();actualizarLuego()});
+      inp.addEventListener("focus",()=>elegir(i,k,true));
+      if(L.sel.i===i&&L.sel.k===k)li.classList.add("elegido");
+      cuenta(li,inp.value,v.silabas);ol.append(li)});
+    box.append(sec)});
+  estadoLetra();
+}
+function cuenta(li,texto,quiere){const c=li.querySelector(".cuenta");
+  if(!texto.trim()){c.textContent=`–/${quiere}`;c.dataset.estado="vacio";return}
+  const n=medir(texto).n;c.textContent=`${n}/${quiere}`;c.dataset.estado=n===quiere?"ok":Math.abs(n-quiere)<=2?"cerca":"mal";
+  c.title=n===quiere?"Entra justo: una sílaba por nota":Math.abs(n-quiere)<=2?"Entra con algún melisma o nota partida":"No entra bien en la música"}
+function estadoLetra(){const L=S.letra;let ok=0,tot=0,vacios=0;
+  L.partes.forEach((p,i)=>p.versos.forEach((v,k)=>{tot++;const t=L.textos[i][k];if(!t.trim())vacios++;else if(medir(t).n===v.silabas)ok++}));
+  $("estadoLetra").textContent=!tot?"":vacios===tot?"Sin letra: el coro canta «la la la».":`${ok} de ${tot} versos entran justo en la música${vacios?` · ${vacios} vacíos (se cantan con «la»)`:""}. Podés editar cualquier verso.`}
+function marcarPendiente(){const L=S.letra;L.pendiente=JSON.stringify(L.textos)!==JSON.stringify(L.cantada);$("avisoLetra").hidden=!L.pendiente;S.mp3=null}
+function otraLetra(){if(!S.pieza||!sint())return;S.letra.semLetra++;escribirLetra(S.pieza);libreto();actualizarVistas();cantarDeNuevo()}
+function lailareo(){if(!S.pieza||!sint())return;const s=["la","ra","la","la","ra","lai","la","ra"];const L=S.letra;
+  L.textos=L.partes.map(p=>p.versos.map(v=>Array.from({length:v.silabas},(_,j)=>s[j%s.length]).join(" ")));L.diags=null;L.editados.clear();
+  libreto();actualizarVistas();cantarDeNuevo()}
+function seguirVerso(t){let m=null;for(const x of S.letra.marcas){if(x.t<=t+.05)m=x;else break}
+  document.querySelectorAll(".verso.sonando").forEach(e=>e.classList.remove("sonando"));
+  if(!m||(!S.tocando&&t===0))return;
+  document.querySelector(`.verso[data-i="${m.i}"][data-k="${m.k}"]`)?.classList.add("sonando")}
+function proceso(){const L=S.letra,{i,k}=L.sel,p=L.partes[i];if(!p){$("proceso").innerHTML="";return}
+  const texto=L.textos[i]?.[k]||"";
+  mostrarProceso($("proceso"),{P:S.pieza,partes:L.partes,i,k,texto,n:medir(texto).n,diag:L.diags?.[i]?.[k],det:L.sil?.detalle.get(p.secciones[0]+"|"+k),temas:L.temas,editado:L.editados.has(i+"|"+k),forma:S.forma});
+  $("proceso").querySelectorAll("[data-ir]").forEach(b=>b.onclick=()=>{
+    const lista=L.partes.flatMap((pp,ii)=>pp.versos.map((_,kk)=>[ii,kk]));
+    const pos=lista.findIndex(([ii,kk])=>ii===i&&kk===k),sig=lista[Math.max(0,Math.min(lista.length-1,pos+ +b.dataset.ir))];
+    elegir(sig[0],sig[1],false,false,true)})}
+function elegir(i,k,desdeLetra,desdePartitura,mover){
+  S.letra.sel={i,k};
+  document.querySelectorAll(".verso.elegido").forEach(e=>e.classList.remove("elegido"));
+  document.querySelector(`.verso[data-i="${i}"][data-k="${k}"]`)?.classList.add("elegido");
+  partitura.elegir(i,k);
+  if(desdeLetra||mover){const m=S.letra.marcas.find(x=>x.i===i&&x.k===k);if(m)partitura.irA(m.t)}
+  proceso()}
+$("otraLetra").onclick=otraLetra;$("lailareo").onclick=lailareo;$("recantar").onclick=cantarDeNuevo;
+$("tema").addEventListener("keydown",e=>{if(e.key==="Enter")otraLetra()});
 
 // Se arranca por la mejor presentación: la clarinada a capela y la entrada de la batería
 {const d=DEMOS.filter(x=>x.forma==="presentacion").sort((a,b)=>b.nota-a.nota)[0];
  if(d){S.forma=d.forma;S.estilo=d.estilo;S.tonica=d.tonica;S.modo=d.modo;S.seed=d.semilla}}
+// Las voces: lo que diga la dirección (la vieja /cantada manda acá), si no la última elección
+{let v=new URLSearchParams(location.search).get("voces");if(!v)try{v=localStorage.getItem("murga.voces")}catch(e){}
+ if(v==="sintetizadas"||v==="muestras")S.voces=v}
 
 // ============================================================ controles
+const HINT_VOCES={muestras:"Muestras «aah» de coro: suena a coro, sin palabras.",sintetizadas:"Trece cantores sintéticos cantan una letra escrita para esta melodía. Tarda unos segundos más."};
+function mostrarVoces(){$("voces").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===S.voces));$("vocesHint").textContent=HINT_VOCES[S.voces];$("campoBrillo").hidden=sint()}
+$("voces").querySelectorAll("button").forEach(b=>b.onclick=()=>{if(S.voces===b.dataset.v)return;S.voces=b.dataset.v;try{localStorage.setItem("murga.voces",S.voces)}catch(e){}mostrarVoces();generar()});
+mostrarVoces();
 $("tonica").innerHTML=NOTAS.map((n,i)=>`<option value="${i}">${n}</option>`).join("");$("tonica").value=S.tonica;$("modo").value=S.modo;
 $("estilo").innerHTML=Object.entries(ESTILOS).filter(([k])=>MODELO.estilos[k]).map(([k,n])=>`<option value="${k}">${n}</option>`).join("");$("estilo").value=S.estilo;
 $("ritmo").innerHTML=`<option value="0">Como el corpus (Base de murga, sobre todo)</option>`+DATOS.ritmos.map(r=>`<option value="${r.id}">${r.nombre} · ${r.bpm} BPM</option>`).join("");$("ritmo").value=S.ritmo;
@@ -274,9 +450,8 @@ for(const k of[...ORDEN,"bateria"]){const row=document.createElement("div");row.
    <input type="range" min="0" max="1.5" step="0.05" value="${S.mix[k]}" id="vol-${k}" aria-label="Volumen ${k}"><button class="mute" aria-pressed="false" id="mute-${k}" aria-label="Silenciar ${k}">M</button>`;
   mixer.appendChild(row);
   row.querySelector("input").oninput=e=>{S.mix[k]=+e.target.value;aplicarMix(k)};
-  row.querySelector("button").onclick=e=>{S.mute[k]=!S.mute[k];e.target.setAttribute("aria-pressed",S.mute[k]);aplicarMix(k);rollCache=null;if(S.P)pintarCursor()}}
+  row.querySelector("button").onclick=e=>{S.mute[k]=!S.mute[k];e.target.setAttribute("aria-pressed",S.mute[k]);aplicarMix(k);partitura.silenciar(S.mute)}}
 function aplicarMix(k){if(S.nodos&&S.ac)S.nodos.gains[k].gain.setTargetAtTime(S.mute[k]?0:S.mix[k]*(k==="bateria"?1:.9),S.ac.currentTime,.02)}
-$("legend").innerHTML=ORDEN.map(k=>`<span><i style="background:var(--${k})"></i>${NOMBRES_CUERDA[k]}</span>`).join("")+`<span>Tocá el coro o las secciones para saltar.</span>`;
 
 // ============================================================ exportar
 function wav(buf){const n=buf.length,ch=2,ab=new ArrayBuffer(44+n*ch*2),v=new DataView(ab);const w=(o,s)=>[...s].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));
@@ -288,10 +463,14 @@ function midi(){const tpq=480,t16=120;const pistas=[];
   const txt=(t,tipo,s)=>{const b=[...new TextEncoder().encode(s)];return[t,0,[0xFF,tipo,...vlq(b.length),...b]]};
   const meta=[[0,0,[0xFF,0x58,4,4,2,24,8]]];
   for(const s of S.pieza.secs){const us=Math.round(60e6/s.tempo);meta.push([s.inicio*t16,0,[0xFF,0x51,3,us>>16&255,us>>8&255,us&255]]);meta.push(txt(s.inicio*t16,6,s.nombre));
-    (s.acordes||[]).forEach((g,c,l)=>{if(c&&l[c-1]===g)return;const a=acorde(g);const q=s.pasoAcorde?s.pasoAcorde[c]:c*8;meta.push(txt((s.inicio+q)*t16,1,`${g} (${NOTAS[mod(s.tonica+a.raiz,12)]})`))})}
+    (s.acordes||[]).forEach((g,c,l)=>{if(c&&l[c-1]===g)return;const a=acorde(g);const q=s.pasoAcorde?s.pasoAcorde[c]:c*8;meta.push(txt((s.inicio+q)*t16,1,`${nombreAcorde(g,s.tonica,s.modo)} (${g})`))})}
+  // con letra: cada sílaba como evento de letra en la pista de los primos
+  const sil=sint()?silabasPorQ():null;
   pistas.push(pista(meta));
   ORDEN.forEach((k,ch)=>{const e=[txt(0,3,NOMBRES_CUERDA[k]),[0,0,[0xC0|ch,52]],[0,0,[0xB0|ch,10,Math.round(64+63*CUERDAS[k].pan)]]];
-    for(const[ini,d,m,vel]of S.pieza.ev[k]){const on=ini*t16;e.push([on,1,[0x90|ch,m,Math.min(127,vel)]],[on+d*t16-10,0,[0x80|ch,m,0]])}pistas.push(pista(e))});
+    for(const[ini,d,m,vel]of S.pieza.ev[k]){const on=ini*t16;e.push([on,1,[0x90|ch,m,Math.min(127,vel)]],[on+d*t16-10,0,[0x80|ch,m,0]])}
+    if(sil&&k==="primos")for(const[q,x]of sil)if(x.primera)e.push(txt(q*t16,5,x.texto.replace(/‿/g," ")+(x.fin?" ":"-")));
+    pistas.push(pista(e))});
   const head=[..."MThd"].map(c=>c.charCodeAt(0)).concat([0,0,0,6,0,1,0,pistas.length,tpq>>8,tpq&255]);
   const body=pistas.flatMap(p=>[..."MTrk"].map(c=>c.charCodeAt(0)).concat([p.length>>>24&255,p.length>>>16&255,p.length>>>8&255,p.length&255],p));
   return new Uint8Array(head.concat(body))}
@@ -299,25 +478,96 @@ function midi(){const tpq=480,t16=120;const pistas=[];
 const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return d=>{let c=0xFFFFFFFF;for(let i=0;i<d.length;i++)c=t[(c^d[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0}})();
 function zip(files){const parts=[],central=[];let off=0;const enc=new TextEncoder();
   for(const[name,data]of files){const nb=enc.encode(name),crc=CRC(data);const h=new DataView(new ArrayBuffer(30));
-    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(8,0,true);h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,nb.length,true);
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,nb.length,true);
     parts.push(new Uint8Array(h.buffer),nb,data);
-    const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,nb.length,true);c.setUint32(42,off,true);
+    const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,nb.length,true);c.setUint32(42,off,true);
     central.push(new Uint8Array(c.buffer),nb);off+=30+nb.length+data.length}
   const csize=central.reduce((a,b)=>a+b.length,0);const e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,csize,true);e.setUint32(16,off,true);
   return new Blob([...parts,...central,new Uint8Array(e.buffer)],{type:"application/zip"})}
+function titulo(){return `${S.forma==="presentacion"?"Presentación":"Retirada"} en ${NOTAS[S.tonica]} ${S.modo}`}
+function subtitulo(){return `Murga-o-matic · ${ESTILOS[S.estilo]} · semilla ${S.seed}${sint()&&$("tema").value.trim()?` · tema: ${$("tema").value.trim()}`:""}`}
 function estructuraTxt(){const P=S.P;const l=[`Murga-o-matic · ${S.forma} · ${NOTAS[S.tonica]} ${S.modo} · ${ESTILOS[S.estilo]} · semilla ${S.seed}`,""];
-  for(const s of S.pieza.secs)l.push(`${fmt(s.t0)}  ${s.nombre} · ${TEXTO_TIPO[s.tipo]||"coro"} · ${nomTono(s)} · ${s.tempo} BPM${s.acordes?.length?" · "+unicos(s.acordes).join(" "):""}`);
-  l.push("",`Duración: ${fmt(P.total)}`,"Batería: La Tríada (Iribarne, García, Cánepa). Coro: muestras FluidR3 y MusyngKite.");return l.join("\n")}
+  for(const s of S.pieza.secs)l.push(`${fmt(s.t0)}  ${s.nombre} · ${TEXTO_TIPO[s.tipo]||"coro"} · ${nomTono(s)} · ${s.tempo} BPM${s.acordes?.length?" · "+unicos(s.acordes.map(g=>nombreAcorde(g,s.tonica,s.modo))).join(" "):""}`);
+  l.push("",`Duración: ${fmt(P.total)}`,`Batería: La Tríada (Iribarne, García, Cánepa). Coro: ${sint()?"cantores sintéticos del Murga-o-matic":"muestras FluidR3 y MusyngKite"}.`);return l.join("\n")}
+const base=()=>`murga_${S.forma}_${S.estilo}_${NOTAS[S.tonica].replace("#","s")}${S.modo==="menor"?"m":""}_semilla${S.seed}${sint()?"_cantada":""}`;
+async function guardar(blob,nombre){
+  const dl=window.claude?.use?await window.claude.use("downloads").catch(()=>null):null;
+  if(dl){await dl.save({filename:nombre,data:blob});return"Guardado."}
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nombre;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),60000);return"Descargado."}
+function avisoExport(t){$("expStatus").textContent=t}
+function errorExport(e){console.error(e);avisoExport(e?.code==="declined"?"Descarga cancelada.":`No se pudo: ${e?.message||e}`)}
+// La mezcla tal como suena: con los volúmenes y los silencios de la mezcla
+async function mezclaFinal(pico=.95){const ctx=new OAC(2,Math.ceil(S.P.total*SR),SR);grafo(ctx,ctx.destination,0,0);const mix=await ctx.startRendering();
+  let p=1e-9;for(let ch=0;ch<2;ch++){const d=mix.getChannelData(ch);for(let i=0;i<d.length;i++)p=Math.max(p,Math.abs(d[i]))}for(let ch=0;ch<2;ch++){const d=mix.getChannelData(ch);for(let i=0;i<d.length;i++)d[i]*=pico/p}
+  return mix}
+function letraTxt(){if(!sint())return null;const L=S.letra;
+  return [titulo(),subtitulo(),""].concat(L.partes.flatMap((p,i)=>[p.nombre.toUpperCase()+(p.secciones.length>1?`  (se canta ${p.secciones.length} veces)`:""),...L.textos[i].map(t=>t||"(la la la)"),""])).join("\n")}
 
-$("exportar").onclick=async()=>{if(!S.stems)return;const st=$("expStatus");st.textContent="Mezclando…";
-  try{const ctx=new OAC(2,Math.ceil(S.P.total*SR),SR);grafo(ctx,ctx.destination,0,0);const mix=await ctx.startRendering();
-    let p=1e-9;for(let ch=0;ch<2;ch++){const d=mix.getChannelData(ch);for(let i=0;i<d.length;i++)p=Math.max(p,Math.abs(d[i]))}for(let ch=0;ch<2;ch++){const d=mix.getChannelData(ch);for(let i=0;i<d.length;i++)d[i]*=.95/p}
-    const base=`murga_${S.forma}_${NOTAS[S.tonica].replace("#","s")}${S.modo==="menor"?"m":""}_semilla${S.seed}`;
-    const blob=zip([[base+"/mezcla.wav",wav(mix)],[base+"/coro.mid",midi()],[base+"/estructura.txt",new TextEncoder().encode(estructuraTxt())]]);
-    const dl=window.claude?.use?await window.claude.use("downloads"):null;
-    if(dl){await dl.save({filename:base+".zip",data:blob});st.textContent="Guardado.";return}
-    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=base+".zip";document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(a.href),60000);st.textContent="Descargado.";
-  }catch(e){st.textContent=e?.code==="declined"?"Descarga cancelada.":"No se pudo descargar. Probá de nuevo.";console.error(e)}};
+$("exportar").onclick=async()=>{if(!S.stems)return;avisoExport("Mezclando…");
+  try{const mix=await mezclaFinal();const b=base();
+    const files=[[b+"/mezcla.wav",wav(mix)],[b+"/coro.mid",midi()],[b+"/estructura.txt",new TextEncoder().encode(estructuraTxt())]];
+    const lt=letraTxt();if(lt)files.push([b+"/letra.txt",new TextEncoder().encode(lt)]);
+    avisoExport(await guardar(zip(files),b+".zip"))}catch(e){errorExport(e)}};
+
+// MP3: la mezcla codificada con lamejs (LAME) en el navegador, a 192 kbps, de a pedazos para no trabar la página
+let lameCarga=null;
+function cargarLame(){if(window.lamejs)return Promise.resolve();if(!lameCarga)lameCarga=cargarScript(new URL("./vendor/lame.min.js",import.meta.url).href).catch(e=>{lameCarga=null;throw e});return lameCarga}
+async function codificarMp3(mix,alAvanzar){
+  await cargarLame();
+  const enc=new window.lamejs.Mp3Encoder(2,SR,192),L=mix.getChannelData(0),R=mix.getChannelData(1),n=L.length,B=1152*32;
+  const l16=new Int16Array(B),r16=new Int16Array(B),partes=[];let t=performance.now();
+  for(let i=0;i<n;i+=B){const m=Math.min(B,n-i);
+    for(let j=0;j<m;j++){const a=Math.max(-1,Math.min(1,L[i+j])),b=Math.max(-1,Math.min(1,R[i+j]));l16[j]=a<0?a*32768:a*32767;r16[j]=b<0?b*32768:b*32767}
+    const buf=enc.encodeBuffer(l16.subarray(0,m),r16.subarray(0,m));if(buf.length)partes.push(new Uint8Array(buf));
+    if(performance.now()-t>30){alAvanzar(i/n);await pausa();t=performance.now()}}
+  const fin=enc.flush();if(fin.length)partes.push(new Uint8Array(fin));
+  return new Blob(partes,{type:"audio/mpeg"})}
+async function bajarMp3(){
+  if(!S.stems)return;const btn=$("mp3"),clave=S.gen+JSON.stringify(S.mix)+JSON.stringify(S.mute);
+  try{
+    if(!S.mp3||S.mp3.clave!==clave){btn.disabled=true;btn.textContent="Mezclando…";
+      const mix=await mezclaFinal(.9);
+      const blob=await codificarMp3(mix,x=>{btn.textContent=`MP3… ${Math.round(x*100)} %`});
+      S.mp3={clave,blob}}
+    const r=await guardar(S.mp3.blob,base()+".mp3");estadoTexto(`MP3 ${r.toLowerCase()} ${(S.mp3.blob.size/1048576).toFixed(1)} MB.`)
+  }catch(e){console.error(e);estadoTexto(e?.code==="declined"?"Descarga cancelada.":`No se pudo hacer el MP3: ${e?.message||e}`,true)}
+  finally{btn.disabled=!S.stems;btn.textContent="Descargar MP3"}}
+$("mp3").onclick=bajarMp3;
+
+// Letra con acordes (o el cifrado por compases, si no hay letra)
+$("txt").onclick=async()=>{if(!S.pieza)return;
+  try{const txt=textoConAcordes({pieza:S.pieza,titulo:titulo(),subtitulo:subtitulo(),versos:sint()?versosPorSeccion():null});
+    avisoExport(await guardar(new Blob([txt],{type:"text/plain;charset=utf-8"}),base()+(sint()?"_letra_y_acordes":"_acordes")+".txt"))}catch(e){errorExport(e)}};
+
+// Partitura coral: a la vista y en PDF
+function datosPapeles(){return{pieza:S.pieza,titulo:titulo(),subtitulo:subtitulo(),silabas:sint()?silabasPorQ():null}}
+async function verPartitura(forzar){
+  const caja=$("grabada");
+  if(!forzar&&!caja.hidden){caja.hidden=true;$("verPartitura").setAttribute("aria-expanded","false");$("verPartitura").textContent="Ver la partitura";return}
+  if(!S.pieza)return;
+  caja.hidden=false;$("verPartitura").setAttribute("aria-expanded","true");$("verPartitura").textContent="Ocultar la partitura";
+  $("grabadaNota").textContent=sint()?"Cinco pentagramas, de la tercia a los bajos, con la letra debajo de cada nota y los acordes arriba.":"Cinco pentagramas, de la tercia a los bajos, con los acordes arriba. Con cantores sintéticos aparece también la letra.";
+  $("hoja").textContent="Escribiendo la partitura…";
+  try{await mostrarPartitura($("hoja"),datosPapeles());if(!forzar)caja.scrollIntoView({behavior:"smooth",block:"start"})}
+  catch(e){console.error(e);$("hoja").textContent=`No se pudo dibujar la partitura: ${e?.message||e}`}}
+$("verPartitura").onclick=()=>verPartitura(false);
+async function bajarPdf(){if(!S.pieza)return;avisoExport("Armando el PDF…");
+  try{const blob=await pdfPartitura(datosPapeles());avisoExport(await guardar(blob,base()+"_partitura.pdf"))}catch(e){errorExport(e)}}
+$("pdf").onclick=bajarPdf;$("pdf2").onclick=bajarPdf;
+
+// Sílabas por semicorchea y versos por sección, para la partitura y la letra con acordes
+function silabasPorQ(){const m=new Map(),L=S.letra;if(!L.sil)return m;
+  for(const s of S.pieza.secs){const i=L.partes.findIndex(p=>p.secciones.includes(s.nombre));
+    for(let k=0;L.sil.detalle.has(s.nombre+"|"+k);k++){const det=L.sil.detalle.get(s.nombre+"|"+k);
+      const esc=i>=0?escritas(L.textos[i][k],det.reparto):null;   // como está escrita: con su h y sus mayúsculas
+      det.reparto.forEach((r,j)=>r.notas.forEach((n,x)=>m.set(n.q,{texto:esc?.[j]||r.texto,primera:x===0,fin:r.fin,acento:r.acento,inicioVerso:j===0&&x===0,parte:n.parte,d:n.d})))}}
+  return m}
+function versosPorSeccion(){const L=S.letra,out=new Map();if(!L.sil)return out;
+  for(const s of S.pieza.secs){const i=L.partes.findIndex(p=>p.secciones.includes(s.nombre));if(i<0)continue;const vs=[];
+    for(let k=0;L.sil.detalle.has(s.nombre+"|"+k);k++){const det=L.sil.detalle.get(s.nombre+"|"+k);
+      vs.push({texto:L.textos[i][k]||"",silabas:det.reparto.map(r=>({texto:r.texto,fin:r.fin,q0:r.notas[0].q,q1:r.notas[r.notas.length-1].q+r.notas[r.notas.length-1].d}))})}
+    out.set(s.nombre,vs)}
+  return out}
 
 generar();

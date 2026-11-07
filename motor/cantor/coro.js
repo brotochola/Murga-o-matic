@@ -46,7 +46,7 @@ export function silabear(P, letras) {
       }
       informe.push({ seccion: s.nombre, verso: i, texto, silabas: sils.length, notas: v.golpes.length, costo: +r.costo.toFixed(2) });
       detalle.set(s.nombre + '|' + i, { golpes: v.golpes.map(g => ({ q: s.inicio + g.q, d: g.d, p: g.p })), acentos: v.acentos.map(a => a + 1), tipo: v.tipo,
-        reparto: r.reparto.map(({ sil, notas }) => ({ texto: sil.texto, acento: sil.acento, fon: partes(sil.fon), notas: notas.map(g => ({ q: s.inicio + g.q, d: g.d, p: g.p, parte: !!g.parte })) })) });
+        reparto: r.reparto.map(({ sil, notas }) => ({ texto: sil.texto, acento: sil.acento, fin: sil.fin !== false, fon: partes(sil.fon), notas: notas.map(g => ({ q: s.inicio + g.q, d: g.d, p: g.p, parte: !!g.parte })) })) });
       for (const { sil, notas } of r.reparto) {
         const p = partes(sil.fon);
         notas.forEach((g, k) => {

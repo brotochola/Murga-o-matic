@@ -43,12 +43,12 @@ python pureza.py                          # pureza y unísono de cada golpe, sob
 
 `revisar.js` avisa cuando un tramo tiene muchas notas quitadas o fuera de la escala, o cuando Demucs perdió las voces. El sidecar `.json` de cada MIDI trae `cadenas_cortadas`: las veces que MuScriptor se trabó y hubo que cortarle la cadena de notas abiertas. La explicación está en `docs/analisis_de_los_midis.md`, sección 1.2.
 
-## Voces convertidas para la Murga cantada
+## Voces convertidas para los cantores sintéticos
 
-Con las voces separadas en `murga_trabajo/voces/`, `convertir_coro.py` pasa el coro sintético de la Murga cantada por Seed-VC, para que suene a los murguistas de una murga. Se corre desde la raíz del repositorio:
+Con las voces separadas en `murga_trabajo/voces/`, `convertir_coro.py` pasa el coro sintético del Murga-o-matic por Seed-VC, para que suene a los murguistas de una murga. Se corre desde la raíz del repositorio:
 
 ```bash
-node cantada/herramientas/exportar_voces.mjs --forma retirada --semilla 47 --por-cuerda
+node herramientas/exportar_voces.mjs --forma retirada --semilla 47 --por-cuerda
 uv run transcripcion/convertir_coro.py instalar
 uv run transcripcion/convertir_coro.py referencias --murga "La Trasnochada"
 uv run transcripcion/convertir_coro.py convertir murga_trabajo/cantada/retirada_trasnochada_47

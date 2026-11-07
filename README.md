@@ -6,17 +6,19 @@ Elegís presentación o retirada, murga, tono y largo, y compone una pieza nueva
 
 - **Batería:** siempre loops reales, del video [17 ritmos fundamentales de murga](https://www.youtube.com/watch?v=0DSJVulzDYw), de La Tríada: Pablo "Lolito" Iribarne (bombo), Raúl García (redoblante) y Gerardo "Batata" Cánepa (platillos). Para cambiar de tempo, cada golpe del loop se corta y se pone en su lugar nuevo, así la afinación no cambia.
 - **Composición:** recombina gestos reales de dos compases, con su melodía, sus voces y sus acordes, según la forma: pregunta, respuesta, contraste y vuelta. Cada pocas notas cambia una nota débil, y los gestos seguidos vienen de temas distintos: el pasaje igual a un tema real más largo tiene, en la mediana, 9 notas.
-- **Coro:** cinco cuerdas (bajos, segundos, primos, sobreprimos y tercia) con muestras "aah" de FluidR3 y MusyngKite, tomadas de [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts). Cada cuerda tiene de dos a cuatro cantores (la tercia es una voz sola), y el timbre se ecualiza hacia el de un coro de murga medido.
+- **Voces:** se eligen arriba de todo.
+  - *Muestras de coro:* cinco cuerdas (bajos, segundos, primos, sobreprimos y tercia) con muestras "aah" de FluidR3 y MusyngKite, tomadas de [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts). Cada cuerda tiene de dos a cuatro cantores (la tercia es una voz sola), y el timbre se ecualiza hacia el de un coro de murga medido.
+  - *Cantores sintéticos:* un letrista algorítmico escribe una letra rioplatense que entra en la melodía, sílaba por nota y con rima, y trece voces de fuente glótica y formantes la cantan. No usa muestras ni modelos de lenguaje, y anda sin conexión. La letra se puede editar o pedir otra, y un panel muestra paso a paso cómo se hizo cada verso. La voz se calibró contra La Trasnochada 2020. Detalles y mediciones en [docs/cantores_y_letras.md](docs/cantores_y_letras.md).
 
-Desde la página podés mezclar en vivo, ver el piano-roll y descargar un ZIP con la mezcla en WAV, el coro en MIDI y la estructura.
+Desde la página podés mezclar en vivo y seguir la partitura, con la letra sílaba por sílaba cuando cantan los cantores sintéticos. Se puede bajar:
+- la mezcla en **MP3**, tal como suena con los volúmenes de la mezcla;
+- la **partitura coral en PDF**: cinco pentagramas, la letra debajo de cada nota y los acordes arriba. También se puede ver en la página;
+- la **letra con los acordes** en TXT, o el cifrado por compases si no hay letra;
+- un **ZIP** con la mezcla en WAV, el coro en MIDI (con la letra), la estructura y la letra.
 
-## Murga cantada
+La dirección vieja `/cantada/` lleva a la página principal con los cantores sintéticos elegidos.
 
-**https://brotochola.github.io/Murga-o-matic/cantada/**
-
-La misma música, pero con letra. Un letrista algorítmico escribe una letra rioplatense que entra en la melodía, sílaba por nota y con rima, y un coro sintético de trece voces la canta con la batería real. No usa muestras ni modelos de lenguaje, y anda sin conexión. Tiene una partitura con las cinco cuerdas y la letra sincronizadas con el audio, y un panel que muestra paso a paso cómo se hizo cada verso. La voz se calibró contra La Trasnochada 2020. Detalles y mediciones en [docs/cantores_y_letras.md](docs/cantores_y_letras.md).
-
-Fuera de la página, con una placa de video, cada cantor se puede pasar por [Seed-VC](https://github.com/Plachtaa/seed-vc) para que suene a las voces reales de una murga: `cantada/herramientas/exportar_voces.mjs` exporta las voces y `transcripcion/convertir_coro.py` las convierte y las vuelve a mezclar. Los pasos están en la [sección 4](docs/cantores_y_letras.md#4-voces-de-verdad-con-seed-vc-fuera-de-la-página).
+Fuera de la página, con una placa de video, cada cantor se puede pasar por [Seed-VC](https://github.com/Plachtaa/seed-vc) para que suene a las voces reales de una murga: `herramientas/exportar_voces.mjs` exporta las voces y `transcripcion/convertir_coro.py` las convierte y las vuelve a mezclar. Los pasos están en la [sección 4](docs/cantores_y_letras.md#4-voces-de-verdad-con-seed-vc-fuera-de-la-página).
 
 ## Uso local
 
