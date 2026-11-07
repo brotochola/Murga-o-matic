@@ -16,3 +16,7 @@ murga_trabajo/**/*.webm
 murga_trabajo/**/*.m4a
 murga_trabajo/**/*.opus
 __pycache__/
+# Murga cantada con voces convertidas: Seed-VC (con su entorno y sus modelos), las referencias sacadas de las voces
+# separadas y lo que se exporta y convierte. Se rehace con cantada/herramientas/exportar_voces.mjs y transcripcion/convertir_coro.py.
+murga_trabajo/seed-vc/
+murga_trabajo/cantada/

@@ -16,6 +16,8 @@ Desde la página podés mezclar en vivo, ver el piano-roll y descargar un ZIP co
 
 La misma música, pero con letra. Un letrista algorítmico escribe una letra rioplatense que entra en la melodía, sílaba por nota y con rima, y un coro sintético de trece voces la canta con la batería real. No usa muestras ni modelos de lenguaje, y anda sin conexión. Tiene una partitura con las cinco cuerdas y la letra sincronizadas con el audio, y un panel que muestra paso a paso cómo se hizo cada verso. La voz se calibró contra La Trasnochada 2020. Detalles y mediciones en [docs/cantores_y_letras.md](docs/cantores_y_letras.md).
 
+Fuera de la página, con una placa de video, cada cantor se puede pasar por [Seed-VC](https://github.com/Plachtaa/seed-vc) para que suene a las voces reales de una murga: `cantada/herramientas/exportar_voces.mjs` exporta las voces y `transcripcion/convertir_coro.py` las convierte y las vuelve a mezclar. Los pasos están en la [sección 4](docs/cantores_y_letras.md#4-voces-de-verdad-con-seed-vc-fuera-de-la-página).
+
 ## Uso local
 
     node herramientas/servir.js
