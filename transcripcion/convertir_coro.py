@@ -397,33 +397,53 @@ def convertir(a):
             sys.exit("Primero: uv run transcripcion/convertir_coro.py instalar")
         if ref_de is None:
             sys.exit(f"Faltan las referencias. Corré: uv run transcripcion/convertir_coro.py referencias --murga \"{a.murga}\"")
-    vistos = {}
-    voces_conv, voces_sint, informe = [], [], []
+    vistos, voces, pendientes = {}, [], []
     for i, c in enumerate(man["cantores"]):
         k = vistos.get(c["cuerda"], 0)
         vistos[c["cuerda"]] = k + 1
-        fuente = pieza / c["archivo"]
-        destino = salida / Path(c["archivo"]).name
+        fuente, destino = pieza / c["archivo"], salida / Path(c["archivo"]).name
         ref = ref_de(c["cuerda"], k) if ref_de else None
+        voces.append((c, fuente, destino, ref))
         if not destino.exists():
-            print(f"[{i + 1}/{len(man['cantores'])}] {c['archivo']} ← {ref.name if ref else '(simulado)'}"
-                  + (" con el modelo ajustado" if usar_modelo else ""), flush=True)
             if a.simular:
                 shutil.copy(fuente, destino)
+            elif not ref.exists():
+                sys.exit(f"Falta {ref}")
             else:
-                if not ref.exists():
-                    sys.exit(f"Falta {ref}")
-                tmp = salida / "_tmp"
-                shutil.rmtree(tmp, ignore_errors=True)
-                cmd = [python_seedvc(), "inference.py", "--source", fuente, "--target", ref, "--output", tmp,
-                       "--diffusion-steps", a.pasos, "--length-adjust", "1.0", "--inference-cfg-rate", "0.7",
-                       "--f0-condition", "True", "--auto-f0-adjust", "False", "--semi-tone-shift", "0",
-                       "--fp16", "True" if HAY_NVIDIA and not a.fp32 else "False"]
-                if usar_modelo:
-                    cmd += ["--checkpoint", modelo, "--config", SEEDVC / CONFIG_SVC]
-                correr(cmd, cwd=SEEDVC)
-                shutil.move(str(next(tmp.glob("*.wav"))), destino)
-                shutil.rmtree(tmp)
+                pendientes.append((i, c, fuente, destino, ref))
+    fp16 = HAY_NVIDIA and not a.fp32
+    if pendientes:
+        # todas juntas, con los modelos cargados una sola vez; si eso falla, de a una
+        lote = salida / "_lote"
+        shutil.rmtree(lote, ignore_errors=True)
+        lote.mkdir()
+        trabajos = [{"source": str(f), "target": str(r), "output": str(lote / str(i))} for i, _, f, _, r in pendientes]
+        (lote / "trabajos.json").write_text(json.dumps({"opciones": {"pasos": a.pasos, "fp16": fp16, "checkpoint": str(modelo) if usar_modelo else None,
+                                                                     "config": str(SEEDVC / CONFIG_SVC) if usar_modelo else None}, "trabajos": trabajos}), encoding="utf-8")
+        print(f"Convirtiendo {len(pendientes)} voces{' con el modelo ajustado' if usar_modelo else ''}…", flush=True)
+        try:
+            correr([python_seedvc(), AQUI / "seedvc_lote.py", lote / "trabajos.json"], cwd=SEEDVC)
+        except subprocess.CalledProcessError:
+            print("La conversión en lote falló: sigo de a una voz.", flush=True)
+        for i, c, fuente, destino, ref in pendientes:
+            hecho = next((lote / str(i)).glob("*.wav"), None) if (lote / str(i)).exists() else None
+            if hecho:
+                shutil.move(str(hecho), destino)
+                continue
+            print(f"[{i + 1}/{len(man['cantores'])}] {c['archivo']} ← {ref.name}", flush=True)
+            tmp = salida / "_tmp"
+            shutil.rmtree(tmp, ignore_errors=True)
+            cmd = [python_seedvc(), "inference.py", "--source", fuente, "--target", ref, "--output", tmp,
+                   "--diffusion-steps", a.pasos, "--length-adjust", "1.0", "--inference-cfg-rate", "0.7",
+                   "--f0-condition", "True", "--auto-f0-adjust", "False", "--semi-tone-shift", "0", "--fp16", "True" if fp16 else "False"]
+            if usar_modelo:
+                cmd += ["--checkpoint", modelo, "--config", SEEDVC / CONFIG_SVC]
+            correr(cmd, cwd=SEEDVC)
+            shutil.move(str(next(tmp.glob("*.wav"))), destino)
+            shutil.rmtree(tmp)
+        shutil.rmtree(lote, ignore_errors=True)
+    voces_conv, voces_sint, informe = [], [], []
+    for c, fuente, destino, ref in voces:
         x, y = leer(fuente), leer(destino)
         y = np.concatenate([y, np.zeros(max(0, len(x) - len(y)), np.float32)])[: len(x)]
         y, corrimiento = alinear(x, y)
@@ -438,8 +458,9 @@ def convertir(a):
     coro, mezcla = mezclar(man, voces_conv, bat, n)
     sf.write(pieza / "coro_convertido.wav", coro, SR, subtype="PCM_16")
     sf.write(pieza / "mezcla_convertida.wav", mezcla, SR, subtype="PCM_16")
-    _, sint = mezclar(man, voces_sint, bat, n)
+    coro_s, sint = mezclar(man, voces_sint, bat, n)
     sf.write(pieza / "mezcla_sintetica.wav", sint, SR, subtype="PCM_16")
+    sf.write(pieza / "coro_sintetico.wav", coro_s, SR, subtype="PCM_16")
     (pieza / "conversion.json").write_text(json.dumps({"murga": a.murga, "modelo_ajustado": usar_modelo, "pasos": a.pasos,
                                                        "simulado": a.simular, "voces": informe}, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"\nListo: {mostrar(pieza / 'mezcla_convertida.wav')}\nPara comparar: {mostrar(pieza / 'mezcla_sintetica.wav')}")

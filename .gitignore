@@ -20,3 +20,6 @@ __pycache__/
 # separadas y lo que se exporta y convierte. Se rehace con cantada/herramientas/exportar_voces.mjs y transcripcion/convertir_coro.py.
 murga_trabajo/seed-vc/
 murga_trabajo/cantada/
+# El trabajo nocturno (herramientas/trabajo_nocturno.py): el estado y el registro son de cada compu. El informe sí se puede subir.
+murga_trabajo/plan/estado.json
+murga_trabajo/plan/registro.txt

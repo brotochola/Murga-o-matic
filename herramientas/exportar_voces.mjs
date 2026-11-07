@@ -32,7 +32,8 @@ const op = {
 };
 const tema = arg('tema', ''), semLetra = +arg('letra-semilla', 1), porCuerda = args.includes('--por-cuerda');
 const nombre = `${op.forma}_${op.estilo}_${op.semilla}`;
-const SAL = resolve(arg('salida', join(RAIZ, 'murga_trabajo', 'cantada', nombre)));
+const TRABAJO = resolve(process.env.MURGA_TRABAJO || join(RAIZ, 'murga_trabajo'));
+const SAL = resolve(arg('salida', join(TRABAJO, 'cantada', nombre)));
 const SR = 44100;
 mkdirSync(join(SAL, 'voces'), { recursive: true });
 
@@ -72,7 +73,7 @@ const manifiesto = { sr: SR, largo, pieza: { ...op, tema, total: fin, nombre }, 
 const t0 = Date.now();
 lista.forEach((c, i) => {
   // cada cantor seco, con la ecualización calibrada (voz y consonantes juntas), normalizado a -3 dB
-  const { voz, ruido } = cantar(c.notas, { sr: SR, tipo: c.tipo, semilla: c.semilla, separar: true });
+  const { voz, ruido } = cantar(c.notas, { sr: SR, tipo: c.tipo, semilla: c.semilla, retraso: c.retraso, separar: true });
   const x = new Float32Array(n); x.set(voz.subarray(0, n));
   const e = ecualizar(x, SR, CURVA);
   for (let s = 0; s < Math.min(n, ruido.length); s++) e[s] += ruido[s];

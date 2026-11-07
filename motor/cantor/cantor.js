@@ -5,6 +5,8 @@
 // ── Fonemas: formantes (Hz, voz masculina), sonoridad, fricción, nasalidad, duración (s) ──
 // AV: voz; AF: fricción; AH: aire; N: nasalidad; fc/fb: centro y ancho de la fricción
 const V = (F1, F2, F3) => ({ F: [F1, F2, F3], AV: 1, AF: 0, AH: 0, N: 0 });
+import { VARIACION } from './variacion.js';
+
 export const FONEMAS = {
   a: V(720, 1290, 2500), e: V(470, 1850, 2550), i: V(300, 2250, 2980), o: V(480, 880, 2450), u: V(330, 760, 2350),
   j: { ...V(290, 2250, 3000), AV: .85, dur: .05 }, w: { ...V(320, 700, 2300), AV: .85, dur: .05 },
@@ -83,13 +85,17 @@ export function cantar(notas, opc = {}) {
   const sr = opc.sr || 32000;
   const tipo = TIPOS[opc.tipo || 'tenor'];
   const rng = new Rnd(opc.semilla || 1);
-  const escala = tipo.escala * rng.u(.975, 1.025) * (opc.escalaFormantes || 1);
-  const vibF = rng.u(5.0, 6.0), vibA = rng.u(.08, .17) * (opc.vibrato ?? 1);           // semitonos: el coro de murga casi no vibra
-  const desaf = rng.u(-.09, .09) + (opc.desafinacion || 0);                            // semitonos
-  const retraso = rng.u(0, .03) + (opc.retraso || 0);
-  const oq = tipo.oq * rng.u(.95, 1.05), aire = tipo.aire * rng.u(.8, 1.25);
+  const V = { ...VARIACION, ...(opc.variacion || {}) };                                // cuánto varía cada cantor (variacion.js)
+  const escala = tipo.escala * rng.u(1 - V.garganta, 1 + V.garganta) * (opc.escalaFormantes || 1);
+  const vibF = rng.u(V.vibratoVel[0], V.vibratoVel[1]), vibA = rng.u(V.vibrato[0], V.vibrato[1]) * (opc.vibrato ?? 1);   // semitonos: el coro de murga casi no vibra
+  const desaf = rng.u(-V.desafinacion, V.desafinacion) + (opc.desafinacion || 0);      // semitonos
+  const retraso = rng.u(0, V.retraso) + (opc.retraso || 0);
+  const oq = tipo.oq * rng.u(1 - V.pulso, 1 + V.pulso), aire = tipo.aire * rng.u(V.aire[0], V.aire[1]);
+  // cada cantor dice cada vocal un poco a su manera (con otro azar, para no correr el del resto)
+  const rv = new Rnd((opc.semilla || 1) * 31 + 5), propias = {};
+  for (const v of 'aeiou') propias[v] = [1 + rv.u(-V.vocales, V.vocales), 1 + rv.u(-V.vocales, V.vocales)];
   const nasalBase = opc.nasal ?? .18;                                                 // emisión murguera
-  const ns = notas.map(n => { const j = rng.u(-.014, .014); return { ...n, t0: n.t0 + retraso + j, t1: n.t1 + retraso + j }; });
+  const ns = notas.map(n => { const j = rng.u(-V.desfase, V.desfase); return { ...n, t0: n.t0 + retraso + j, t1: n.t1 + retraso + j }; });
   const seg = planificar(ns, rng);
   if (!seg.length) return opc.separar ? { voz: new Float32Array(0), ruido: new Float32Array(0) } : new Float32Array(0);
   const T = Math.max(...ns.map(n => n.t1)) + .4;
@@ -113,6 +119,7 @@ export function cantar(notas, opc = {}) {
       const F = FONEMAS[s.p] || FONEMAS.a;
       av = F.AV ?? 1; af = (F.AF || 0) * (s.coda && s.p === 's' ? .2 : 1); ah = F.AH || 0; nas = F.N || 0; nz = F.nz || 270; fc = F.fc || 4000; fb = F.fb || 2000;
       fObj = F.F ? [...F.F] : vocalCerca(k);
+      if (V.vocales && propias[s.p]) { fObj[0] *= propias[s.p][0]; fObj[1] *= propias[s.p][1]; }
       const x = (t - s.t0) / Math.max(1e-3, s.t1 - s.t0);
       if (F.tap) { const ph = (x * F.tap) % 1; av *= ph > .3 && ph < .7 ? .25 : 1; }
       if (F.cierre) {

@@ -155,9 +155,9 @@ function enObrero(w,msg){return new Promise((ok,mal)=>{const id=++idObrero;
   w.addEventListener("message",alMsg);w.addEventListener("error",alErr);w.postMessage({id,...msg})})}
 async function cantarLista(lista,alListo,sigue){
   let i=0;const ws=losObreros();
-  const enHilo=async c=>{await pausa();return cantar(c.notas,{sr:SR,tipo:c.tipo,semilla:c.semilla,separar:true})};
+  const enHilo=async c=>{await pausa();return cantar(c.notas,{sr:SR,tipo:c.tipo,semilla:c.semilla,retraso:c.retraso,separar:true})};
   const tarea=async w=>{while(i<lista.length&&sigue()){const j=i++,c=lista[j];let r;
-    if(w){try{r=await enObrero(w,{notas:c.notas,opc:{sr:SR,tipo:c.tipo,semilla:c.semilla}})}catch(e){console.warn("canta la página:",e.message);w=null;r=await enHilo(c)}}
+    if(w){try{r=await enObrero(w,{notas:c.notas,opc:{sr:SR,tipo:c.tipo,semilla:c.semilla,retraso:c.retraso}})}catch(e){console.warn("canta la página:",e.message);w=null;r=await enHilo(c)}}
     else r=await enHilo(c);
     if(sigue())alListo(j,r)}};
   await Promise.all(ws.length?ws.map(tarea):[tarea(null)]);

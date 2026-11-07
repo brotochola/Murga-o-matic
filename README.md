@@ -39,6 +39,7 @@ Si se abre `index.html` como archivo, sin servidor, el navegador no deja cargar 
 | 4 | Mide la pureza y el unísono de cada golpe | `transcripcion/pureza.py` |
 | 5 | Aprende los gestos y las tablas | `herramientas/aprender.js` → `motor/modelo.js` |
 | 5b | Mide cómo cambian de tono y de modo | `herramientas/cambios_de_modo.js` → `motor/modos.js`, [docs/cambios_de_modo.md](docs/cambios_de_modo.md) |
+| 5c | Mide el coro sintético contra el real y ajusta cuánto se diferencian los cantores, sola, en tu compu | `herramientas/trabajo_nocturno.py` → `motor/cantor/variacion.js`, [docs/plan_compu.md](docs/plan_compu.md) |
 | 6 | Mide el timbre del coro real | `herramientas/timbre.js` → `motor/timbre.js` |
 | 7 | Compone y canta | `motor/compositor.js`, `motor/app.js` |
 | 8 | Juzga lo generado contra lo real y elige las demos | `herramientas/jurado.js`, `herramientas/copia.js`, `herramientas/demos.js` → `motor/demos.js` |

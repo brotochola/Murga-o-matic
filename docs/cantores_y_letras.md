@@ -54,7 +54,7 @@ Es síntesis por formantes, tipo Klatt:
 - **Fuente:** un pulso glótico de Rosenberg con polyBLEP, más jitter, shimmer y aire.
 - **Tracto vocal:** cinco formantes en cascada con polo y cero nasal, más una rama paralela de agudos.
 - **Consonantes:** fricción con pasabandas propios y oclusivas con cierre y ráfaga.
-- **Timbre por cantor:** cada uno tiene su largo de tracto, vibrato irregular, desafinación y retraso.
+- **Timbre por cantor:** cada uno tiene su largo de tracto, vibrato irregular, desafinación y retraso. Cuánto varía cada cosa está en `motor/cantor/variacion.js`, y `herramientas/trabajo_nocturno.py` lo ajusta contra el coro real ([docs/plan_compu.md](plan_compu.md)).
 - **Cuerdas:** 13 cantores, cuatro primos y la tercia sola.
 
 Las consonantes del ataque se cantan antes del tiempo, y la vocal cae en el golpe.

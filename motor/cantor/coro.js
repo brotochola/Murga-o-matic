@@ -1,5 +1,6 @@
 // coro.js — de una pieza del Murga-o-matic + una letra a lo que canta cada cantor.
 import { versosDe, silabasCantadas, alinear, partes } from './letra.js';
+import { VARIACION } from './variacion.js';
 
 export const CORO = {
   bajos: { cantores: 2, tipo: 'bajo', pan: -.55, ganancia: .8 },
@@ -101,7 +102,10 @@ export function cantores(P, porQ, { semilla = 1 } = {}) {
       if (!notas.length) return;
       // ligado: el coro de murga no corta entre sílabas seguidas
       for (let i = 0; i + 1 < notas.length; i++) { const hueco = notas[i + 1].t0 - notas[i].t1; if (hueco > 0 && hueco < .25) notas[i].t1 = notas[i + 1].t0; }
-      res.push({ cuerda: k, tipo: cfg.tipo, semilla: semilla * 101 + (n++) * 7, pan: Math.max(-1, Math.min(1, cfg.pan + (c - (cfg.cantores - 1) / 2) * .12)), ganancia: cfg.ganancia / Math.sqrt(cfg.cantores), notas });
+      // el primero de cada cuerda puede llevarla: un poco más fuerte y adelantado (variacion.js)
+      const lider = c === 0 && cfg.cantores > 1;
+      res.push({ cuerda: k, tipo: cfg.tipo, semilla: semilla * 101 + (n++) * 7, pan: Math.max(-1, Math.min(1, cfg.pan + (c - (cfg.cantores - 1) / 2) * .12)),
+        ganancia: cfg.ganancia / Math.sqrt(cfg.cantores) * (lider ? Math.pow(10, VARIACION.liderDb / 20) : 1), retraso: lider ? -VARIACION.liderAdelanto : 0, notas });
     });
   }
   return res;

@@ -27,7 +27,7 @@ export function sala(L, R, sr, { mezcla = .16, largo = 1.0 } = {}) {
 export function mezclarCoro(lista, sr, largo, alAvanzar, { curva = null, ruido = 1 } = {}) {
   const n = Math.ceil(largo * sr), L = new Float32Array(n), R = new Float32Array(n), RL = new Float32Array(n), RR = new Float32Array(n);
   lista.forEach((c, i) => {
-    const { voz, ruido: z } = cantar(c.notas, { sr, tipo: c.tipo, semilla: c.semilla, separar: true });
+    const { voz, ruido: z } = cantar(c.notas, { sr, tipo: c.tipo, semilla: c.semilla, retraso: c.retraso, separar: true });
     const gl = Math.cos((c.pan + 1) * Math.PI / 4) * c.ganancia, gr = Math.sin((c.pan + 1) * Math.PI / 4) * c.ganancia;
     for (let s = 0; s < Math.min(n, voz.length); s++) { L[s] += voz[s] * gl; R[s] += voz[s] * gr; RL[s] += z[s] * gl; RR[s] += z[s] * gr; }
     alAvanzar?.(i + 1, lista.length);
