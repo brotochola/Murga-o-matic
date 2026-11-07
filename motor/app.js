@@ -192,7 +192,7 @@ async function cantarCuerdas(pieza,P,gen){
 const ORDEN=["bajos","segundos","primos","sobreprimos","tercia"];
 const LLAMADAS=Object.fromEntries(DATOS.ritmos.map(r=>{const a=DATOS.acompana[r.id];if(!a||!a[0])return[r.id,0];const c4=r.compas*4/r.tpc;return[r.id,Math.ceil((DATOS.frases[a[0]].ultimo+.05)/c4)]}));
 const S={recita:0,forma:"retirada",estilo:"todas",tonica:9,modo:"menor",ritmo:0,tempo:0,largo:"normal",seed:1,brillo:1,clarinada:true,cancionFinal:true,modula:true,tercia:0,mix:{bajos:1,segundos:1,primos:1,sobreprimos:1,tercia:1,bateria:.42},mute:{},
-  voces:"muestras",pieza:null,stems:null,P:null,ac:null,nodos:null,inicio:0,offset:0,tocando:false,gen:0,mp3:null,
+  voces:"muestras",acordes:{},editando:null,pieza:null,stems:null,P:null,ac:null,nodos:null,inicio:0,offset:0,tocando:false,gen:0,mp3:null,
   letra:{partes:[],textos:[],diags:null,temas:null,editados:new Set(),sel:{i:0,k:0},sil:null,marcas:[],semLetra:1,pendiente:false,cantada:null}};
 const $=id=>document.getElementById(id);
 const sint=()=>S.voces==="sintetizadas";
@@ -215,17 +215,21 @@ function resumen(){const c=S.pieza.secs.find(s=>s.tipo!=="clarinada"&&s.bateria)
   estadoTexto(t)}
 function normalizarVoces(voces){const pv=picoDe(voces);const drive=sint()?1.02:1+.8*S.brillo;voces.forEach(b=>procesar(b,1/pv,drive))}
 
-async function generar(){
+const firmaLetra=()=>JSON.stringify(S.letra.partes.map(p=>[p.nombre,p.versos.map(v=>v.silabas)]));
+async function generar(opc={}){
   const gen=++S.gen;detener(true);S.mp3=null;ocupado("Componiendo…");avance(.02,"Componiendo…");
   try{
-    const pieza=componer(MODELO,{forma:S.forma,estilo:S.estilo,tonica:S.tonica,modo:S.modo,semilla:S.seed,largo:S.largo,tempo:S.tempo||null,ritmo:S.ritmo||null,clarinada:S.clarinada,cancionFinal:S.cancionFinal,modula:S.modula,tercia:S.tercia,recita:S.recita,llamadas:LLAMADAS});
+    const pieza=componer(MODELO,{forma:S.forma,estilo:S.estilo,tonica:S.tonica,modo:S.modo,semilla:S.seed,largo:S.largo,tempo:S.tempo||null,ritmo:S.ritmo||null,clarinada:S.clarinada,cancionFinal:S.cancionFinal,modula:S.modula,tercia:S.tercia,recita:S.recita,llamadas:LLAMADAS,acordes:S.acordes});
     const{T,fin}=mapaTiempo(pieza);const total=fin+2.5;
     const P={T,total,seed:S.seed,brillo:S.brillo};
     const percP=renderPercusion(P,pieza.secs);
     let voces;
     if(sint()){
       avance(.04,"Escribiendo la letra…");await pausa();if(gen!==S.gen)return;
-      armarLetra(pieza,T);escribirLetra(pieza);
+      // si sólo cambiaron acordes, la letra (y lo que editaste) se queda: las notas por verso son las mismas
+      const L=S.letra,antes=opc.mantenerLetra&&L.textos.length?{textos:L.textos,diags:L.diags,temas:L.temas,editados:new Set(L.editados),sel:L.sel,firma:firmaLetra()}:null;
+      armarLetra(pieza,T);
+      if(antes&&antes.firma===firmaLetra()){L.textos=antes.textos;L.diags=antes.diags;L.temas=antes.temas;L.editados=antes.editados;L.sel=antes.sel}else escribirLetra(pieza);
       voces=await cantarCuerdas(pieza,P,gen);if(!voces)return;
       S.letra.cantada=S.letra.textos.map(t=>t.slice());S.letra.pendiente=false;
     }else{
@@ -303,12 +307,39 @@ function dibujarTodo(){
     const ritmo=DATOS.ritmos.find(r=>r.id===s.loop);
     const tex=`${TEXTO_TIPO[s.tipo]||"coro"} · ${nomTono(s)} · ${s.tempo} BPM${s.bateria&&ritmo?" · "+ritmo.nombre:""}`;
     tr.innerHTML=`<td class="t">${fmt(s.t0)}</td><td>${s.nombre}</td><td><span class="pill${s.bateria||s.tipo==="llamada"?"":" cap"}">${tex}</span></td><td class="ac"></td>`;
-    tr.querySelector(".ac").textContent=s.acordes?.length?unicos(s.acordes.map(g=>nombreAcorde(g,s.tonica,s.modo))).join("  "):"—";tr.style.cursor="pointer";tr.onclick=()=>saltar(s.t0);tb.appendChild(tr)}
+    const ac=tr.querySelector(".ac");
+    ac.textContent=s.acordes?.length?unicos(s.acordes.map(g=>nombreAcorde(g,s.tonica,s.modo))).join("  "):"—";
+    if(s.prepara){const n=document.createElement("small");n.className="prep";n.textContent=` · termina en ${nombreAcorde(s.prepara,s.tonica,s.modo)}, la dominante del tono que sigue`;ac.append(n)}
+    if(s.memoria&&s.acordes?.length>1){const b=document.createElement("button");b.className="btn editar";b.textContent=S.editando===s.nombre?"Listo":"Cambiar acordes";b.setAttribute("aria-expanded",S.editando===s.nombre);
+      b.onclick=e=>{e.stopPropagation();S.editando=S.editando===s.nombre?null:s.nombre;dibujarTodo()};ac.append(b)}
+    else if(s.repite){const n=document.createElement("small");n.className="prep";n.textContent=` · los acordes de «${s.repite}»`;ac.append(n)}
+    tr.style.cursor="pointer";tr.onclick=()=>saltar(s.t0);tb.appendChild(tr);
+    if(S.editando===s.nombre)tb.appendChild(editorAcordes(s))}
   $("cantada").hidden=!sint();
   $("notaRoll").textContent=sint()?"Cada color es una cuerda; abajo va la letra, cada sílaba donde se canta, en negrita las acentuadas. Tocá para escuchar desde ahí y ver cómo se hizo ese verso; arrastrá para moverte.":"Cada color es una cuerda. Tocá las notas o las secciones para escuchar desde ahí; arrastrá para moverte.";
   if(sint()){libreto();chips()}
   actualizarVistas();pintarCursor();
   if(!$("grabada").hidden)verPartitura(true);
+}
+// ── cambiar los acordes: de a medio compás; la melodía y las voces se acomodan al acorde nuevo ──
+const OPCIONES_ACORDE={mayor:["I","ii","iii","IV","V","V7","vi","viio","I7","II7","III7","VI7","iv","bVI","bVII","i"],menor:["i","iio","bIII","iv","v","V","V7","bVI","bVII","viio","I7","IV7","bII","I"]};
+function editorAcordes(s){
+  const tr=document.createElement("tr");tr.className="editor";const td=document.createElement("td");td.colSpan=4;tr.append(td);
+  const propios=S.acordes[s.nombre]||{};
+  td.innerHTML=`<p class="hint">Cada compás tiene dos acordes. Al cambiar uno, la melodía se corre a la nota del acorde más cercana en los tiempos fuertes, y las voces de abajo se arman de nuevo sobre él. El resto de la pieza no cambia.</p><div class="grilla"></div><div class="botones"></div>`;
+  const grilla=td.querySelector(".grilla");
+  for(let b=0;b<s.acordes.length;b+=2){const c=document.createElement("div");c.className="compas";c.innerHTML=`<span class="nb">${b/2+1}</span>`;
+    for(const i of[b,b+1]){if(i>=s.acordes.length)break;const g=s.acordes[i],sel=document.createElement("select");sel.setAttribute("aria-label",`Compás ${b/2+1}, ${i%2?"segunda":"primera"} mitad`);
+      const ops=[...new Set([g,...OPCIONES_ACORDE[s.modo]])];
+      sel.innerHTML=ops.map(x=>`<option value="${x}"${x===g?" selected":""}>${nombreAcorde(x,s.tonica,s.modo)} (${x})</option>`).join("");
+      if(i in propios)sel.classList.add("cambiado");else if(s.cambiados?.includes(i))sel.classList.add("auto");
+      sel.onclick=e=>e.stopPropagation();
+      sel.onchange=()=>{S.acordes={...S.acordes,[s.nombre]:{...(S.acordes[s.nombre]||{}),[i]:sel.value}};generar({mantenerLetra:true})};
+      c.append(sel)}
+    grilla.append(c)}
+  if(Object.keys(propios).length){const r=document.createElement("button");r.className="btn";r.textContent="Volver a los acordes originales";r.onclick=e=>{e.stopPropagation();const a={...S.acordes};delete a[s.nombre];S.acordes=a;generar({mantenerLetra:true})};td.querySelector(".botones").append(r)}
+  tr.onclick=e=>e.stopPropagation();
+  return tr;
 }
 function datosPartitura(){
   const P=S.P,T=P.T,pieza=S.pieza,L=S.letra;
@@ -419,7 +450,7 @@ mostrarVoces();
 $("tonica").innerHTML=NOTAS.map((n,i)=>`<option value="${i}">${n}</option>`).join("");$("tonica").value=S.tonica;$("modo").value=S.modo;
 $("estilo").innerHTML=Object.entries(ESTILOS).filter(([k])=>MODELO.estilos[k]).map(([k,n])=>`<option value="${k}">${n}</option>`).join("");$("estilo").value=S.estilo;
 $("ritmo").innerHTML=`<option value="0">Como el corpus (Base de murga, sobre todo)</option>`+DATOS.ritmos.map(r=>`<option value="${r.id}">${r.nombre} · ${r.bpm} BPM</option>`).join("");$("ritmo").value=S.ritmo;
-let deb;const regen=()=>{clearTimeout(deb);deb=setTimeout(generar,250)};
+let deb;const regen=(mantener)=>{if(mantener!==true){S.acordes={};S.editando=null}clearTimeout(deb);deb=setTimeout(generar,250)};
 const DEF={retirada:[9,"menor"],presentacion:[2,"mayor"]};
 // El modo que más usa cada murga en cada parte (en el corpus, la Trasnochada presenta en menor y se retira en mayor)
 const modoDe=(forma,estilo)=>{const h=MODELO.estilos[estilo]?.modo?.[forma];return h?(h.mayor>=h.menor?"mayor":"menor"):DEF[forma][1]};
@@ -432,12 +463,12 @@ $("largo").onchange=e=>{S.largo=e.target.value;regen()};
 $("tempo").onchange=e=>{S.tempo=Math.max(0,Math.round(+e.target.value||0));e.target.value=S.tempo||"";regen()};
 $("semilla").onchange=e=>{S.seed=Math.max(1,Math.floor(+e.target.value||1));e.target.value=S.seed;regen()};
 $("otra").onclick=()=>{S.seed=1+Math.floor(Math.random()*99998);$("semilla").value=S.seed;regen()};
-$("brillo").onchange=e=>{S.brillo=+e.target.value;regen()};
+$("brillo").onchange=e=>{S.brillo=+e.target.value;regen(true)};
 $("recita").onchange=e=>{S.recita=+e.target.value;regen()};
 // Demos: las semillas que mejor le caen al jurado
 {const caja=$("demos");const NOM={trasnochada:"La Trasnochada",catalina:"Agarrate Catalina"};
  for(const d of DEMOS){const b=document.createElement("button");b.className="btn";b.textContent=`${d.forma==="retirada"?"Retirada":"Presentación"} · ${NOM[d.estilo]||d.estilo}`;
-  b.onclick=()=>{S.forma=d.forma;S.estilo=d.estilo;S.tonica=d.tonica;S.modo=d.modo;S.seed=d.semilla;S.largo="normal";S.tempo=0;S.recita=0;$("recita").value=0;
+  b.onclick=()=>{S.acordes={};S.editando=null;S.forma=d.forma;S.estilo=d.estilo;S.tonica=d.tonica;S.modo=d.modo;S.seed=d.semilla;S.largo="normal";S.tempo=0;S.recita=0;$("recita").value=0;
    $("forma").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===d.forma));$("estilo").value=d.estilo;$("tonica").value=d.tonica;$("modo").value=d.modo;$("semilla").value=d.semilla;$("largo").value="normal";$("tempo").value="";$("campoFinal").style.display=d.forma==="retirada"?"":"none";generar()};
   caja.appendChild(b)}
  caja.parentElement.style.display=DEMOS.length?"":"none"}

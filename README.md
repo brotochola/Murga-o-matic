@@ -16,6 +16,8 @@ Desde la página podés mezclar en vivo y seguir la partitura, con la letra síl
 - la **letra con los acordes** en TXT, o el cifrado por compases si no hay letra;
 - un **ZIP** con la mezcla en WAV, el coro en MIDI (con la letra), la estructura y la letra.
 
+Los acordes de cada sección se pueden cambiar desde la tabla de estructura: la melodía y las voces se acomodan solas al acorde nuevo, y el resto de la pieza no cambia. Los cambios de tono siguen lo que hacen las murgas del corpus: casi la mitad cambia también de modo, y de mayor al menor de la misma tónica es de los más comunes ([docs/cambios_de_modo.md](docs/cambios_de_modo.md)).
+
 La dirección vieja `/cantada/` lleva a la página principal con los cantores sintéticos elegidos.
 
 Fuera de la página, con una placa de video, cada cantor se puede pasar por [Seed-VC](https://github.com/Plachtaa/seed-vc) para que suene a las voces reales de una murga: `herramientas/exportar_voces.mjs` exporta las voces y `transcripcion/convertir_coro.py` las convierte y las vuelve a mezclar. Los pasos están en la [sección 4](docs/cantores_y_letras.md#4-voces-de-verdad-con-seed-vc-fuera-de-la-página).
@@ -36,6 +38,7 @@ Si se abre `index.html` como archivo, sin servidor, el navegador no deja cargar 
 | 3 | Controla cada tramo | `herramientas/revisar.js` → `docs/revision_de_los_midis.md` |
 | 4 | Mide la pureza y el unísono de cada golpe | `transcripcion/pureza.py` |
 | 5 | Aprende los gestos y las tablas | `herramientas/aprender.js` → `motor/modelo.js` |
+| 5b | Mide cómo cambian de tono y de modo | `herramientas/cambios_de_modo.js` → `motor/modos.js`, [docs/cambios_de_modo.md](docs/cambios_de_modo.md) |
 | 6 | Mide el timbre del coro real | `herramientas/timbre.js` → `motor/timbre.js` |
 | 7 | Compone y canta | `motor/compositor.js`, `motor/app.js` |
 | 8 | Juzga lo generado contra lo real y elige las demos | `herramientas/jurado.js`, `herramientas/copia.js`, `herramientas/demos.js` → `motor/demos.js` |
