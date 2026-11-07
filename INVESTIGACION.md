@@ -65,7 +65,7 @@ Este documento es de antes de tener corpus. Desde que hay transcripciones propia
 | Bajada con una vuelta a capela | Higuera, 3.2.2.2: es usual en concurso |
 | Batería por loops, con la llamada que corresponde al entrar | video de La Tríada; elección del proyecto |
 
-Lo que el corpus agrega a estas fuentes: las melodías con secuencias y recitado, la textura estable por frase, la diferencia entre La Trasnochada (recita) y Agarrate Catalina (camina) y que el coro casi nunca canta al unísono, lo que coincide con Fornaro: hoy hay tres o más voces en forma permanente.
+Lo que el corpus agrega a estas fuentes: las melodías con secuencias y recitado, la textura estable por frase y la diferencia entre La Trasnochada (recita) y Agarrate Catalina (camina). También matiza a Fornaro: hoy hay tres o más voces casi siempre, pero el unísono sigue vivo. En el 27 % de los golpes el transcriptor anota una sola voz, y en el 81 % de esos no hay rastro de otra: es un unísono real de todo el coro (regla 12 del análisis).
 
 ## Lo que muestran las transcripciones (Higuera, 2019, cap. 3)
 
