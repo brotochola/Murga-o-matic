@@ -10,6 +10,12 @@ Elegís presentación o retirada, murga, tono y largo, y compone una pieza nueva
 
 Desde la página podés mezclar en vivo, ver el piano-roll y descargar un ZIP con la mezcla en WAV, el coro en MIDI y la estructura.
 
+## Murga cantada
+
+**https://brotochola.github.io/Murga-o-matic/cantada/**
+
+La misma música, pero con letra. Un letrista algorítmico escribe una letra rioplatense que entra en la melodía, sílaba por nota y con rima, y un coro sintético de trece voces la canta con la batería real. No usa muestras ni modelos de lenguaje, y anda sin conexión. Tiene una partitura con las cinco cuerdas y la letra sincronizadas con el audio, y un panel que muestra paso a paso cómo se hizo cada verso. La voz se calibró contra La Trasnochada 2020. Detalles y mediciones en [docs/cantores_y_letras.md](docs/cantores_y_letras.md).
+
 ## Uso local
 
     node herramientas/servir.js
