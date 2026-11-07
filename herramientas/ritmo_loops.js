@@ -66,7 +66,7 @@ export function plantillas() {
     const { F, nF, hz } = golpesPorBanda(join(RAIZ, 'loops', String(r.id).padStart(2, '0') + '.wav'));
     const durS = r.tpc === 2 ? 16 : 32;
     const largo = nF / hz; // el archivo trae más de dos compases en algunos loops: se usa lo que dura el compás real
-    const comp = { 3: .894, 4: 2.7999, 6: 2.0055, 8: 1.9122, 9: 2.1376, 10: 1.7264, 11: 2.8521, 13: 1.7319, 14: 1.7248, 15: 2.5466, 17: 1.9632, 18: 2.4945, 19: 2.4165, 20: 2.6557 }[r.id];
+    const comp = { 3: .8931, 4: 2.7963, 6: 2.0109, 8: 1.909, 9: 2.1441, 10: 1.729, 11: 2.856, 13: 1.7225, 14: 1.7239, 15: 2.55, 17: 1.96, 18: 2.4999, 19: 2.4175, 20: 2.6515 }[r.id];
     const seg16 = comp / (r.tpc * 4);
     const V = new Float64Array(3 * 32);
     F.forEach((b, k) => {

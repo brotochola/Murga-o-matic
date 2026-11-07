@@ -23,3 +23,5 @@ murga_trabajo/cantada/
 # El trabajo nocturno (herramientas/trabajo_nocturno.py): el estado y el registro son de cada compu. El informe sí se puede subir.
 murga_trabajo/plan/estado.json
 murga_trabajo/plan/registro.txt
+# El audio del video de La Tríada del que salen los loops de batería (herramientas/recortar_loops.mjs).
+murga_trabajo/loops_originales/
