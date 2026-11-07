@@ -1,0 +1,18 @@
+# El audio bajado y separado no va al repositorio: son grabaciones ajenas, de uso personal, y pesan más de 2 GB
+# (GitHub Pages no publica sitios de más de 1 GB). Se rehace con transcripcion/murga_lote.py y transcripcion/videos.csv.
+# Las transcripciones, los análisis y los resultados de murga_trabajo/ sí van: con ellos se puede cambiar el motor
+# sin volver a transcribir.
+murga_trabajo/audio/
+murga_trabajo/mp3/
+murga_trabajo/voces/
+murga_trabajo/bateria/
+murga_trabajo/banco/
+murga_trabajo/clips/
+murga_trabajo/salida/
+murga_trabajo/**/*.flac
+murga_trabajo/**/*.wav
+murga_trabajo/**/*.mp3
+murga_trabajo/**/*.webm
+murga_trabajo/**/*.m4a
+murga_trabajo/**/*.opus
+__pycache__/

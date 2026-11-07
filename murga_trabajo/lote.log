@@ -1,0 +1,318 @@
+
+[1/41] la_trasnochada_2024_presentacion
+Cargando modelos en cuda…
+   separado en 47 s (172 s de audio)
+   1044 notas, 109.92 BPM, pulso de percusion, 144 s en total
+
+[2/41] agarrate_catalina_2020_presentacion
+   separado en 80 s (295 s de audio)
+   1471 notas, 134.43 BPM, pulso de percusion, 233 s en total
+
+[3/41] la_trasnochada_2024_final_y_retirada
+   separado en 200 s (686 s de audio)
+   3695 notas, 102.91 BPM, pulso de percusion, 605 s en total
+
+[4/41] agarrate_catalina_2020_final_y_retirada
+   separado en 203 s (689 s de audio)
+   3987 notas, 161.37 BPM, pulso de percusion, 630 s en total
+
+[5/41] la_trasnochada_2019_presentacion
+   separado en 72 s (239 s de audio)
+   1351 notas, 95.37 BPM, pulso de mezcla, 216 s en total
+
+[6/41] agarrate_catalina_2008_presentacion
+   separado en 81 s (247 s de audio)
+   1284 notas, 265.49 BPM, pulso de percusion, 219 s en total
+
+[7/41] la_trasnochada_2019_final_y_retirada
+   separado en 218 s (720 s de audio)
+   3539 notas, 105.68 BPM, pulso de percusion, 599 s en total
+
+[8/41] agarrate_catalina_2008_retirada
+   separado en 133 s (450 s de audio)
+   2479 notas, 189.91 BPM, pulso de percusion, 384 s en total
+
+[9/41] la_trasnochada_2017_presentacion
+   separado en 82 s (270 s de audio)
+   1470 notas, 134.36 BPM, pulso de percusion, 234 s en total
+
+[10/41] agarrate_catalina_2010_presentacion
+   separado en 85 s (282 s de audio)
+   1582 notas, 170.16 BPM, pulso de percusion, 243 s en total
+
+[11/41] la_trasnochada_2017_final_y_retirada
+   separado en 186 s (623 s de audio)
+   3016 notas, 119.57 BPM, pulso de percusion, 526 s en total
+
+[12/41] agarrate_catalina_2010_retirada
+   separado en 193 s (648 s de audio)
+   3114 notas, 71.47 BPM, pulso de percusion, 529 s en total
+
+[13/41] la_trasnochada_2020_presentacion
+   separado en 66 s (220 s de audio)
+   1398 notas, 107.96 BPM, pulso de percusion, 200 s en total
+
+[14/41] agarrate_catalina_2011_presentacion
+   separado en 82 s (274 s de audio)
+   835 notas, 144.55 BPM, pulso de percusion, 191 s en total
+
+[15/41] la_trasnochada_2020_cancion_final
+   separado en 59 s (190 s de audio)
+   bajando https://www.youtube.com/watch?v=fHzIp73zrJI
+   1079 notas, 88.73 BPM, pulso de percusion, 172 s en total
+
+[16/41] la_trasnochada_2020_retirada
+   separado en 182 s (591 s de audio)
+   55511 notas, 102.14 BPM, pulso de percusion, 1842 s en total
+
+[17/41] agarrate_catalina_2011_final_y_retirada
+   separado en 192 s (653 s de audio)
+   3229 notas, 143.04 BPM, pulso de percusion, 539 s en total
+
+[18/41] la_trasnochada_2022_presentacion
+   separado en 77 s (254 s de audio)
+   1615 notas, 129.84 BPM, pulso de percusion, 232 s en total
+
+[19/41] agarrate_catalina_2012_presentacion
+   separado en 67 s (226 s de audio)
+   1032 notas, 133.58 BPM, pulso de mezcla, 181 s en total
+
+[20/41] la_trasnochada_2022_final_y_retirada
+   separado en 246 s (770 s de audio)
+   3671 notas, 129.83 BPM, pulso de percusion, 677 s en total
+
+[21/41] agarrate_catalina_2012_retirada
+   separado en 124 s (415 s de audio)
+   2392 notas, 135.81 BPM, pulso de percusion, 352 s en total
+
+[22/41] la_trasnochada_2023_presentacion
+   separado en 76 s (252 s de audio)
+   20770 notas, 130.65 BPM, pulso de percusion, 755 s en total
+
+[23/41] agarrate_catalina_2019_presentacion
+   separado en 93 s (305 s de audio)
+   1400 notas, 131.84 BPM, pulso de percusion, 249 s en total
+
+[24/41] la_trasnochada_2023_final_y_retirada
+   separado en 187 s (603 s de audio)
+   2422 notas, 97.74 BPM, pulso de percusion, 496 s en total
+
+[25/41] agarrate_catalina_2019_retirada
+   separado en 192 s (573 s de audio)
+
+[1/1] la_trasnochada_2020_retirada
+Cargando modelos en cuda…
+   ERROR: RuntimeError: Attempted to access the data pointer on an invalid python storage.
+
+Listo: 0 tramos nuevos, 1 errores, 1 minutos.
+
+[1/1] la_trasnochada_2023_presentacion
+Cargando modelos en cuda…
+   ERROR: OSError: El archivo de paginación es demasiado pequeño para completar la operación. (os error 1455)
+
+Listo: 0 tramos nuevos, 1 errores, 0 minutos.
+   2749 notas, 139.52 BPM, pulso de percusion, 521 s en total
+
+[26/41] la_trasnochada_2025_presentacion
+   separado en 55 s (180 s de audio)
+   1018 notas, 111.65 BPM, pulso de mezcla, 164 s en total
+
+[27/41] agarrate_catalina_2022_presentacion
+   separado en 98 s (310 s de audio)
+   1789 notas, 131.91 BPM, pulso de percusion, 285 s en total
+
+[28/41] la_trasnochada_2025_final_y_retirada
+   separado en 157 s (529 s de audio)
+   2980 notas, 135.54 BPM, pulso de percusion, 474 s en total
+
+[29/41] agarrate_catalina_2022_cancion_final
+   separado en 32 s (99 s de audio)
+   215 notas, 230.81 BPM, pulso de percusion, 74 s en total
+
+[30/41] agarrate_catalina_2022_retirada
+   separado en 141 s (466 s de audio)
+   2764 notas, 148.41 BPM, pulso de percusion, 438 s en total
+
+[31/41] la_trasnochada_2026_presentacion
+   separado en 70 s (224 s de audio)
+   1279 notas, 119.51 BPM, pulso de percusion, 205 s en total
+
+[32/41] la_trasnochada_2026_cancion_final
+   separado en 50 s (156 s de audio)
+   515 notas, 118.22 BPM, pulso de percusion, 128 s en total
+
+[33/41] la_trasnochada_2026_retirada
+   separado en 146 s (479 s de audio)
+   2516 notas, 126.81 BPM, pulso de percusion, 434 s en total
+
+[34/41] la_gran_muneca_2020_presentacion
+   bajando https://www.youtube.com/watch?v=6FbmdmPKuNk
+   separado en 60 s (194 s de audio)
+   1253 notas, 130.7 BPM, pulso de percusion, 184 s en total
+
+[35/41] metele_que_son_pasteles_2023_presentacion
+   bajando https://www.youtube.com/watch?v=avrrLP0BsCw
+   separado en 53 s (172 s de audio)
+   1290 notas, 115.87 BPM, pulso de mezcla, 187 s en total
+
+[36/41] la_gran_muneca_2020_retirada
+   bajando https://www.youtube.com/watch?v=1p6Ufk8zC9M
+   separado en 124 s (409 s de audio)
+   1924 notas, 132.68 BPM, pulso de percusion, 343 s en total
+
+[37/41] metele_que_son_pasteles_2023_final_y_retirada
+   bajando https://www.youtube.com/watch?v=G22ae4kYMFM
+   separado en 207 s (661 s de audio)
+   4548 notas, 129.29 BPM, pulso de percusion, 646 s en total
+
+[38/41] la_gran_muneca_2016_presentacion
+   bajando https://www.youtube.com/watch?v=Kbqa_lLYrvU
+   separado en 54 s (175 s de audio)
+   992 notas, 133.68 BPM, pulso de percusion, 167 s en total
+
+[39/41] metele_que_son_pasteles_2020_presentacion
+   bajando https://www.youtube.com/watch?v=ihxVvIvhPTE
+   separado en 83 s (275 s de audio)
+   33867 notas, 141.79 BPM, pulso de percusion, 1207 s en total
+
+[40/41] la_gran_muneca_2016_final_y_retirada
+   bajando https://www.youtube.com/watch?v=FCjXyrJTE28
+   separado en 168 s (571 s de audio)
+   2970 notas, 192.4 BPM, pulso de percusion, 479 s en total
+
+[41/41] metele_que_son_pasteles_2020_retirada
+   bajando https://www.youtube.com/watch?v=29PuXOqVOaU
+   separado en 145 s (486 s de audio)
+   2669 notas, 130.07 BPM, pulso de percusion, 405 s en total
+
+Listo: 41 tramos nuevos, 0 errores, 281 minutos.
+
+[1/41] la_trasnochada_2024_presentacion
+   ya estaba
+
+[2/41] agarrate_catalina_2020_presentacion
+   ya estaba
+
+[3/41] la_trasnochada_2024_final_y_retirada
+   ya estaba
+
+[4/41] agarrate_catalina_2020_final_y_retirada
+   ya estaba
+
+[5/41] la_trasnochada_2019_presentacion
+   ya estaba
+
+[6/41] agarrate_catalina_2008_presentacion
+   ya estaba
+
+[7/41] la_trasnochada_2019_final_y_retirada
+   ya estaba
+
+[8/41] agarrate_catalina_2008_retirada
+   ya estaba
+
+[9/41] la_trasnochada_2017_presentacion
+   ya estaba
+
+[10/41] agarrate_catalina_2010_presentacion
+   ya estaba
+
+[11/41] la_trasnochada_2017_final_y_retirada
+   ya estaba
+
+[12/41] agarrate_catalina_2010_retirada
+   ya estaba
+
+[13/41] la_trasnochada_2020_presentacion
+   ya estaba
+
+[14/41] agarrate_catalina_2011_presentacion
+Cargando modelos en cuda…
+   separado en 113 s (277 s de audio)
+   1517 notas, 143.77 BPM, pulso de percusion, 281 s en total
+
+[15/41] la_trasnochada_2020_cancion_final
+   ya estaba
+
+[16/41] la_trasnochada_2020_retirada
+   separado en 5 s (591 s de audio)
+   4994 notas, 102.14 BPM, pulso de percusion, 391 s en total
+
+[17/41] agarrate_catalina_2011_final_y_retirada
+   ya estaba
+
+[18/41] la_trasnochada_2022_presentacion
+   ya estaba
+
+[19/41] agarrate_catalina_2012_presentacion
+   ya estaba
+
+[20/41] la_trasnochada_2022_final_y_retirada
+   ya estaba
+
+[21/41] agarrate_catalina_2012_retirada
+   ya estaba
+
+[22/41] la_trasnochada_2023_presentacion
+   separado en 2 s (252 s de audio)
+   3108 notas, 130.65 BPM, pulso de percusion, 173 s en total
+
+[23/41] agarrate_catalina_2019_presentacion
+   ya estaba
+
+[24/41] la_trasnochada_2023_final_y_retirada
+   ya estaba
+
+[25/41] agarrate_catalina_2019_retirada
+   ya estaba
+
+[26/41] la_trasnochada_2025_presentacion
+   ya estaba
+
+[27/41] agarrate_catalina_2022_presentacion
+   ya estaba
+
+[28/41] la_trasnochada_2025_final_y_retirada
+   ya estaba
+
+[29/41] agarrate_catalina_2022_cancion_final
+   ya estaba
+
+[30/41] agarrate_catalina_2022_retirada
+   ya estaba
+
+[31/41] la_trasnochada_2026_presentacion
+   ya estaba
+
+[32/41] la_trasnochada_2026_cancion_final
+   ya estaba
+
+[33/41] la_trasnochada_2026_retirada
+   ya estaba
+
+[34/41] la_gran_muneca_2020_presentacion
+   ya estaba
+
+[35/41] metele_que_son_pasteles_2023_presentacion
+   ya estaba
+
+[36/41] la_gran_muneca_2020_retirada
+   ya estaba
+
+[37/41] metele_que_son_pasteles_2023_final_y_retirada
+   ya estaba
+
+[38/41] la_gran_muneca_2016_presentacion
+   ya estaba
+
+[39/41] metele_que_son_pasteles_2020_presentacion
+   separado en 2 s (275 s de audio)
+   1877 notas, 141.79 BPM, pulso de percusion, 165 s en total
+
+[40/41] la_gran_muneca_2016_final_y_retirada
+   ya estaba
+
+[41/41] metele_que_son_pasteles_2020_retirada
+   ya estaba
+
+Listo: 4 tramos nuevos, 0 errores, 18 minutos.

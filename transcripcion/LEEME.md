@@ -1,33 +1,44 @@
-# murga_lote.py — transcribir las murgas en tu compu
+# De los videos a los MIDI
 
-Hace todo de una:
+`murga_lote.py` hace todo el camino:
 
-1. Busca en YouTube la presentación, la canción final y la retirada de cada espectáculo.
-2. Baja los videos y corta los tramos. Si sólo encuentra el show completo, usa los primeros 14 min y los últimos 20.
-3. Transcribe cada tramo con MuScriptor, sólo voces + batería. La detección de pulsos y compases la hace Beat This!.
-4. Arma `murgas_para_claude.zip`, con los MIDI, un mp3 liviano de cada tramo y `plan.csv`.
+1. `videos.csv` dice qué tramo de qué video es cada parte de cada espectáculo. Los tiempos van en `desde` y `hasta`, en segundos o mm:ss; un `desde` negativo cuenta desde el final; vacío es todo el video.
+2. Baja el audio completo de cada video.
+3. Corta el tramo.
+4. Separa voces y todo lo demás con Demucs (`htdemucs_ft`).
+5. Transcribe sólo las voces con MuScriptor. Cada MIDI es sólo voces.
+
+Lo ya hecho no se repite. Todo queda en `murga_trabajo/`, fuera de git.
 
 ## Una sola vez
 
-1. Instalá **uv**:
-   - Mac/Linux: `curl -LsSf https://astral.sh/uv/install.sh | sh`
-   - Windows: `powershell -c "irm https://astral.sh/uv/install.ps1 | iex"`
-2. Entrá a https://huggingface.co/MuScriptor/muscriptor-medium con tu cuenta y tocá **Agree and access**. Es la licencia no comercial de los pesos.
-3. Iniciá sesión con `uvx hf auth login` y pegá un token de https://huggingface.co/settings/tokens. Alcanza con uno de lectura.
+1. Instalá [uv](https://docs.astral.sh/uv/) y creá un entorno con Python 3.12.
+2. Instalá PyTorch con CUDA y las dependencias que figuran al principio de `murga_lote.py`. En una GTX 1650 de 4 GB entran Demucs y MuScriptor `medium`, a alrededor de 1,2 segundos de cómputo por segundo de audio en total.
+3. Entrá a https://huggingface.co/MuScriptor/muscriptor-medium con tu cuenta y tocá **Agree and access**: es la licencia no comercial de los pesos.
+4. Iniciá sesión con `uvx hf auth login` y un token de lectura.
 
-No hace falta instalar Python, ffmpeg ni nada más: uv baja todo la primera vez (PyTorch pesa ~1-2 GB).
+yt-dlp necesita Node instalado: sin un motor JS, YouTube contesta "not available" en algunos videos.
 
 ## Correr
 
 ```bash
-uv run murga_lote.py                    # todo
-uv run murga_lote.py --solo-buscar      # sólo arma plan.csv para revisar qué videos eligió
-uv run murga_lote.py --modelo small     # si no tenés GPU ni Mac M1/M2/M3/M4, es bastante más rápido
-uv run murga_lote.py --cookies chrome   # si YouTube dice "Sign in to confirm you're not a bot"
+python murga_lote.py                      # todo
+python murga_lote.py --solo-bajar         # sólo baja los audios
+python murga_lote.py --solo 2024          # sólo los tramos cuyo nombre tiene ese texto
+python murga_lote.py --cookies firefox    # si YouTube pide confirmar que no sos un robot
 ```
 
-En Windows, uv instala PyTorch para CPU, así que conviene `--modelo small`.
+Para rehacer un tramo, sacá su `.mid` de `murga_trabajo/midis/`. Si las voces separadas y el `.json` siguen ahí, no repite Demucs.
 
-Si un video quedó mal elegido en `plan.csv`, cambiá la url o los tiempos y volvé a correr. Los tiempos van en `desde`/`hasta`, en segundos o mm:ss; un `desde` negativo cuenta desde el final. Lo que ya bajó o transcribió no se repite. Si encontrás el video de una parte que falta, agregá la fila.
+Después:
 
-Al final subí **murgas_para_claude.zip** al chat.
+```bash
+node ../herramientas/analizar.js          # limpia y analiza
+node ../herramientas/revisar.js           # control de cada tramo
+node ../herramientas/aprender.js          # el modelo del generador
+python banco.py                           # los recortes de voz
+```
+
+## Qué mirar
+
+`revisar.js` avisa cuando un tramo tiene muchas notas quitadas o fuera de la escala, o cuando Demucs perdió las voces. El sidecar `.json` de cada MIDI trae `cadenas_cortadas`: las veces que MuScriptor se trabó y hubo que cortarle la cadena de notas abiertas. La explicación está en `docs/analisis_de_los_midis.md`, sección 1.2.

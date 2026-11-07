@@ -1,0 +1,2 @@
+// Generado por herramientas/demos.js: las semillas que mejor le caen al jurado.
+export const DEMOS = [{"estilo":"trasnochada","forma":"presentacion","modo":"menor","tonica":11,"semilla":20,"nota":9.6},{"estilo":"trasnochada","forma":"retirada","modo":"mayor","tonica":9,"semilla":47,"nota":9.5},{"estilo":"catalina","forma":"presentacion","modo":"mayor","tonica":9,"semilla":12,"nota":9},{"estilo":"catalina","forma":"retirada","modo":"menor","tonica":9,"semilla":3,"nota":9.4}];

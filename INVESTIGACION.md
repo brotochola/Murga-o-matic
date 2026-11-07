@@ -54,26 +54,18 @@ En cifrados de Contrafarsa y Agarrate Catalina (La Cuerda):
 
 ## Cómo lo usa el generador
 
+Este documento es de antes de tener corpus. Desde que hay transcripciones propias, la melodía, las voces, la armonía, los tempos y los largos salen de los datos: están en [docs/analisis_de_los_midis.md](docs/analisis_de_los_midis.md). Lo que el generador sigue tomando de estas fuentes es el plan:
+
 | Regla | Origen |
 |---|---|
-| Primos con la melodía; sobreprimos una tercera arriba y segundos una abajo, corregidas a nota del acorde en tiempo fuerte; bajos en la fundamental | documentado |
-| Una estrofa con la melodía en los segundos y los primos arriba | documentado (melodía repartida); la elección de la estrofa es mía |
-| Tercia con contracanto: ataca donde la melodía no ataca, prefiere el contratiempo, va en sentido contrario y por grado conjunto | documentado ("se separa para contrapuntear", "contramelodías sincopadas"); el algoritmo es mío |
-| Estribillo que arranca al unísono y se abre a voces | documentado (unísono para dar fuerza); la ubicación es mía |
-| Lailareo en pedal sobre la quinta | documentado |
-| Clarinada a capela al inicio de la presentación, con golpes sueltos de batería | documentado |
-| Salpicón: 4 compases de solista y 4 de coro | documentado (pares de cuartetas, solista contra coro) |
-| Bajada: el final del estribillo repetido 3 veces mientras se apaga | documentado |
-| Motivo con forma A A' y secuencia de un grado | interpretación (rasgos de las fuentes populares: marcha, tango, canción) |
-| Rellenos de las tercias en las notas largas | Asaltantes con Patente (1932) |
-| Lailareo en pedal a la octava, blanca con puntillo + negra | Agarrate Catalina (2010) |
-| Contracanto de los segundos en los huecos | Agarrate Catalina (2006) |
-| Recitado en semicorcheas sobre un bajo caminante en negras | Don Timoteo (2017) |
-| Melodía en los graves con golpes de "ah" en contratiempo | Contrafarsa (2002) |
-| Remate melismático de la tercia en los finales de frase | Higuera, 3.1.6.2 |
-| Clarinada a capela con calderones y novena en el penúltimo acorde; también antes de la bajada | Higuera, 3.2.2.1 |
-| Bajada triádica en candombeado, repetida, con una vuelta a capela con contracanto | Higuera, 3.2.2.2 |
-| Rítmica de candombe (corchea con puntillo y semicorchea, anticipaciones) con batería de base de murga; de marcha con marcha camión | Higuera, 3.4; "Aquello" |
+| Registros de las cuerdas | *Sin Disfraz*; se reparte con lo medido (la melodía real vive entre 56 y 69 MIDI) |
+| Clarinada a capela al inicio de la presentación y de la retirada, con calderones | Higuera, 3.2.2.1; el corpus confirma la entrada a capela |
+| Canción final lenta antes de la retirada, con menos voces al principio | fuentes populares e Higuera; la densidad la pide el generador |
+| Retirada sin final formal: la bajada se repite y se apaga | documentado (*Sin Disfraz*, Higuera) |
+| Bajada con una vuelta a capela | Higuera, 3.2.2.2: es usual en concurso |
+| Batería por loops, con la llamada que corresponde al entrar | video de La Tríada; elección del proyecto |
+
+Lo que el corpus agrega a estas fuentes: las melodías con secuencias y recitado, la textura estable por frase, la diferencia entre La Trasnochada (recita) y Agarrate Catalina (camina) y que el coro casi nunca canta al unísono, lo que coincide con Fornaro: hoy hay tres o más voces en forma permanente.
 
 ## Lo que muestran las transcripciones (Higuera, 2019, cap. 3)
 
