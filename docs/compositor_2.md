@@ -10,6 +10,8 @@ La página deja elegir la versión en **Compositor**. La versión 1 viene con su
 - **Repetición.** Para cada ventana de 2 compases, se toma el contorno de la melodía: los intervalos entre notas distintas, sin mirar el ritmo. La ventana cuenta como repetida si a cierta distancia (±2 compases) hay otra con al menos 80 % de los intervalos en común.
 - **Forma por bloques.** Los pasajes con batería y a capela de 4 s o más, como en `herramientas/forma.js`.
 
+Las tres medidas se rehacen con `node herramientas/ab_compositor.mjs <estilo> 40`, `node herramientas/repeticion.mjs` y `node herramientas/bloques_forma.mjs`.
+
 ## 1. Las voces de abajo no se callan
 
 Cada pocas notas, el compositor cambia una nota débil de la melodía, como cambia una melodía entre dos versos. En la versión 1, las voces de abajo acompañaban el cambio corriéndose los mismos semitonos. Si así quedaban fuera de la escala o chocaban, se callaban, y el golpe quedaba en unísono.

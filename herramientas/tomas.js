@@ -105,31 +105,39 @@ export function subDtw(Q, L) {
   return { desde: ini[mj] * HOP / SR, hasta: (mj + 1) * HOP / SR + VENT / SR, costo: prev[mj] / n };
 }
 
-// DTW completo con banda, devuelve el camino como función de tiempo: t de B → t de A
-export function alinear(A, B, banda = .15) {
-  const n = A.n, m = B.n, W = Math.max(50, Math.round(banda * Math.max(n, m)));
-  const INF = 1e30, D = new Float32Array(n * m).fill(INF), P = new Uint8Array(n * m);
+// Alineación local de A contra B (como Smith-Waterman, con pasos de DTW): busca el tramo en común que más se parece,
+// que puede empezar y terminar en cualquier lado de las dos (un video de la tribuna arranca y corta donde quiere, y
+// los shows tienen aplausos y charla). Cada cuadro parecido suma (UMBRAL − distancia); apurar o frenar el tempo
+// cuesta un poco más. Devuelve t de B → t de A y el tramo común en cada una.
+const UMBRAL = .6, FRENO = .3;
+export function alinear(A, B) {
+  const n = A.n, m = B.n;
+  const S = new Float32Array(n * m), P = new Uint8Array(n * m);
+  let mi = 0, mj = 0, mv = -1;
   for (let i = 0; i < n; i++) {
-    const jc = Math.round(i * m / n), j0 = Math.max(0, jc - W), j1 = Math.min(m - 1, jc + W);
-    for (let j = j0; j <= j1; j++) {
-      const d = dist(A.C, i, B.C, j);
-      if (!i && !j) { D[0] = d; continue; }
-      let b = INF, p = 0;
-      if (i && j && D[(i - 1) * m + j - 1] < b) { b = D[(i - 1) * m + j - 1]; p = 0; }
-      if (i && D[(i - 1) * m + j] + .2 < b) { b = D[(i - 1) * m + j] + .2; p = 1; }
-      if (j && D[i * m + j - 1] + .2 < b) { b = D[i * m + j - 1] + .2; p = 2; }
-      D[i * m + j] = b + d; P[i * m + j] = p;
+    for (let j = 0; j < m; j++) {
+      const g = UMBRAL - dist(A.C, i, B.C, j);
+      let b = 0, p = 3;                                           // 3: el tramo empieza acá
+      if (i && j && S[(i - 1) * m + j - 1] + g > b) { b = S[(i - 1) * m + j - 1] + g; p = 0; }
+      if (i && S[(i - 1) * m + j] + g - FRENO > b) { b = S[(i - 1) * m + j] + g - FRENO; p = 1; }
+      if (j && S[i * m + j - 1] + g - FRENO > b) { b = S[i * m + j - 1] + g - FRENO; p = 2; }
+      S[i * m + j] = b; P[i * m + j] = p;
+      if (b > mv) { mv = b; mi = i; mj = j; }
     }
   }
-  const camino = []; let i = n - 1, j = m - 1;
-  while (i > 0 || j > 0) { camino.push([i, j]); const p = P[i * m + j]; if (p === 0) { i--; j--; } else if (p === 1) i--; else j--; if (i < 0 || j < 0) break; }
-  camino.push([0, 0]); camino.reverse();
+  let i = mi, j = mj;
+  const camino = [];
+  let suma = 0;
+  for (;;) { camino.push([i, j]); suma += dist(A.C, i, B.C, j); const p = P[i * m + j]; if (p === 3 || S[i * m + j] <= 0) break; if (p === 0) { i--; j--; } else if (p === 1) i--; else j--; if (i < 0 || j < 0) break; }
+  camino.reverse();
+  const costoFin = suma;
   // de cuadros a segundos, monótono, con interpolación lineal
   const tb = [], ta = [];
   for (const [a, b] of camino) { if (tb.length && b === tb[tb.length - 1]) { ta[ta.length - 1] = (ta[ta.length - 1] + a) / 2; continue; } tb.push(b); ta.push(a); }
   const k = HOP / SR;
   const f = t => { const x = t / k; let lo = 0, hi = tb.length - 1; if (x <= tb[0]) return ta[0] * k; if (x >= tb[hi]) return ta[hi] * k; while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (tb[mid] <= x) lo = mid; else hi = mid; } return (ta[lo] + (ta[hi] - ta[lo]) * (x - tb[lo]) / (tb[hi] - tb[lo])) * k; };
-  return { f, costo: D[n * m - 1] / camino.length };
+  const [a0, b0] = camino[0], [a1, b1] = camino[camino.length - 1];
+  return { f, costo: costoFin / camino.length, comunA: [a0 * k, a1 * k + VENT / SR], comunB: [b0 * k, b1 * k + VENT / SR] };
 }
 
 function cortar() {

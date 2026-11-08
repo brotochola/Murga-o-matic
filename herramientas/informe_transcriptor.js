@@ -1,0 +1,85 @@
+// informe_transcriptor.js — escribe docs/transcriptor.md: cuánto se puede confiar en Demucs + MuScriptor, medido con
+// coros de notas conocidas (herramientas/coro_de_prueba.mjs + transcripcion/banco_pruebas.py) y con varias tomas del
+// mismo espectáculo (herramientas/tomas.js). No se edita a mano.
+//   node herramientas/informe_transcriptor.js
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+import { medir } from './comparar_transcripcion.js';
+
+const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
+const PRUEBAS = join(RAIZ, 'murga_trabajo', 'pruebas');
+const pc = x => (x == null || !Number.isFinite(x) ? '—' : (100 * x).toFixed(1).replace('.', ',') + ' %');
+const nf = (x, d = 2) => (x == null || !Number.isFinite(x) ? '—' : x.toFixed(d).replace('.', ','));
+
+// todos los casos, por pieza
+const piezas = readdirSync(join(PRUEBAS, 'coros')).filter(p => existsSync(join(PRUEBAS, 'coros', p, 'verdad.json')));
+const casos = new Map();
+for (const p of piezas) {
+  const v = JSON.parse(readFileSync(join(PRUEBAS, 'coros', p, 'verdad.json'), 'utf8'));
+  const dir = join(PRUEBAS, 'salidas', p);
+  if (!existsSync(dir)) continue;
+  for (const f of readdirSync(dir).filter(f => f.endsWith('.json'))) {
+    const t = JSON.parse(readFileSync(join(dir, f), 'utf8'));
+    const r = medir(v, t.notas);
+    r.segundos = t.segundos; r.sdr = t.separacion?.sdr ?? null; r.largo = v.largo; r.cadenas = t.cadenas_cortadas || 0;
+    const k = f.replace('.json', '');
+    if (!casos.has(k)) casos.set(k, new Map());
+    casos.get(k).set(p, r);
+  }
+}
+// una tabla sobre un conjunto fijo de piezas, para que los casos se puedan comparar entre sí
+function fila(caso, ps) {
+  const m = casos.get(caso); if (!m) return null;
+  const rs = ps.map(p => m.get(p)).filter(Boolean);
+  if (rs.length < ps.length) return null;
+  const s = f => rs.reduce((a, r) => a + f(r), 0);
+  const nRef = s(r => r.ref), nEst = s(r => r.est), G = s(r => r.golpes);
+  const f1 = k => { const tp = s(r => r[k].r * r.ref); const p = tp / nEst, rr = tp / nRef; return p + rr ? 2 * p * rr / (p + rr) : 0; };
+  const sdrs = rs.filter(r => r.sdr != null);
+  return {
+    caso, f50: f1('f50'), f100: f1('f100'), prec: s(r => r.f100.p * r.est) / nEst, cob: s(r => r.f100.r * r.ref) / nRef,
+    octava: s(r => r.octava * r.ref) / nRef, melodia: s(r => r.melodia * r.golpes) / G, bajo: s(r => r.bajo * r.golpes) / G,
+    vv: s(r => r.vocesVerdad * r.golpes) / G, ve: s(r => r.vocesEscritas * r.golpes) / G, uv: s(r => r.unaVozVerdad * r.golpes) / G, ue: s(r => r.unaVozEscrita * r.golpes) / G,
+    inventadas: s(r => r.inventadas), sdr: sdrs.length ? sdrs.reduce((a, r) => a + r.sdr, 0) / sdrs.length : null,
+    velocidad: s(r => r.segundos) / s(r => r.largo), cadenas: s(r => r.cadenas),
+  };
+}
+const NOMBRE = {
+  entrada: { voces: 'coro solo, seco', voces_mezcla: 'coro con sala', mezcla: 'coro y batería', mezcla_fuerte: 'batería fuerte', tv: 'batería, público y Opus' },
+  sep: { ninguno: 'sin separar', htdemucs_ft: 'htdemucs_ft', htdemucs: 'htdemucs', htdemucs_ft_s4: 'htdemucs_ft ×4', htdemucs_6s: 'htdemucs_6s' },
+};
+const describir = c => { const [e, s, t] = c.split('__'); return `${NOMBRE.entrada[e] || e} · ${NOMBRE.sep[s] || s} · ${t.replace(/_/g, ', ').replace('cfg', 'cfg=').replace('beam', 'haz=').replace('desfase', 'desfase=')}`; };
+function tabla(lista, ps) {
+  const L = ['| Caso | F1 ±100 ms | ±50 ms | Precisión | Cobertura | Octava | Melodía | Bajo | Voces por golpe (verdad → escritas) | Golpes a una voz | Inventadas | SDR voces | Tiempo por s de audio |', '|---|---|---|---|---|---|---|---|---|---|---|---|---|'];
+  for (const c of lista) { const r = fila(c, ps); if (!r) continue; L.push(`| ${describir(c)} | **${pc(r.f100)}** | ${pc(r.f50)} | ${pc(r.prec)} | ${pc(r.cob)} | ${pc(r.octava)} | ${pc(r.melodia)} | ${pc(r.bajo)} | ${nf(r.vv)} → ${nf(r.ve)} | ${pc(r.uv)} → ${pc(r.ue)} | ${r.inventadas} | ${r.sdr == null ? '—' : nf(r.sdr, 1) + ' dB'} | ${nf(r.velocidad)} s |`); }
+  return L.join('\n');
+}
+const sesgo = existsSync(join(PRUEBAS, 'sesgo_tv__htdemucs_ft__medium.json')) ? JSON.parse(readFileSync(join(PRUEBAS, 'sesgo_tv__htdemucs_ft__medium.json'), 'utf8')) : null;
+const base5 = ['p1', 'p2', 'p3', 'p4', 'p5'], var3 = ['p1', 'p2', 'p3'];
+const todos = [...casos.keys()];
+const L = [];
+L.push('# ¿Cuánto se puede confiar en el transcriptor?', '',
+  'Este documento lo escribe `node herramientas/informe_transcriptor.js`: no se edita a mano.', '',
+  'Todo el corpus sale de separar las voces con Demucs y transcribirlas con MuScriptor. Para saber cuánto se equivocan, y si las perillas que nunca se tocaron cambian algo, se hicieron dos cosas:', '',
+  '1. **Un coro con las notas conocidas.** El motor compone cinco piezas (presentaciones y retiradas, mayor y menor) y los trece cantores sintéticos las cantan, con letra. Se guarda cada nota de cada cantor. Las piezas se mezclan como suena una murga: con sala, con la batería real al nivel mediano del corpus (8,7 dB debajo del coro, medido en los 41 tramos) y con público y la compresión de YouTube (Opus a 128 kb/s). Después pasan por la misma cadena que las murgas reales, con distintas perillas, y lo transcripto se compara nota por nota con la verdad (`herramientas/comparar_transcripcion.js`).',
+  '2. **Varias tomas del mismo espectáculo** (sección 4): otras noches, otras cámaras, la tribuna y el disco. Lo que coincide entre noches distintas es la murga; lo que no, es sobre todo el transcriptor.', '',
+  '> Un coro sintético no es un coro de verdad: canta más parejo y su timbre es otro. Los números de la sección 1 a 3 son una cota: lo que el transcriptor pierde con un coro que conoce poco. La sección 4 es con murgas reales.', '');
+L.push('## 1. De dónde sale el error', '', 'Las cinco piezas (13 minutos, ' + piezas.filter(p => base5.includes(p)).length + ' piezas). Una nota está bien si el ataque cae a menos de 100 ms y la nota es la misma. Con trece cantores, cada uno entra hasta 30-50 ms corrido y la consonante va antes del tiempo, así que ±50 ms es muy estricto para un coro: se muestra también.', '',
+  tabla(['voces__ninguno__medium', 'mezcla__ninguno__medium', 'tv__ninguno__medium', 'mezcla__htdemucs_ft__medium', 'tv__htdemucs_ft__medium'], base5), '');
+L.push('## 2. Las perillas', '', 'Sobre tres piezas (' + var3.join(', ') + '), con batería, público y Opus, separado con htdemucs_ft salvo que diga otra cosa.', '',
+  tabla(['voces_mezcla__ninguno__medium', 'tv__htdemucs_ft__medium', ...todos.filter(c => c.startsWith('tv__') && c !== 'tv__htdemucs_ft__medium' && c !== 'tv__ninguno__medium')], var3), '');
+const conVar = todos.filter(c => ['p1b', 'p3b'].every(p => casos.get(c).has(p)));
+if (conVar.length) L.push('Con la variación entre cantores que ajustó `banco_ajustar.py` (más desafinación y retraso entre cantores, como mide el coro real), en dos piezas:', '', tabla(conVar, ['p1b', 'p3b']), '');
+if (sesgo) {
+  L.push('## 3. ¿Qué rasgos del análisis mueve el transcriptor?', '', 'Cada rasgo del jurado se calcula dos veces en las cinco piezas: con las notas verdaderas, en su grilla exacta, y con lo que escribe la cadena completa (batería, público, Opus, htdemucs_ft, MuScriptor, la grilla sacada de los ataques y la limpieza de siempre). La diferencia está en anchos de la norma del jurado: menos de 1 no cambia la nota del jurado de forma apreciable (`herramientas/sesgo_transcriptor.js`).', '',
+    '| Rasgo | Qué mide | Verdad | Escrito | Sesgo |', '|---|---|---|---|---|');
+  for (const r of sesgo.slice(0, 14)) L.push(`| ${r.k} | ${r.nombre} | ${nf(r.verdad)} | ${nf(r.escrito)} | ${nf(r.sesgo, 1)} |`);
+  L.push('');
+}
+const tm = join(RAIZ, 'docs', 'tomas.md');
+if (existsSync(tm)) L.push('## 4. Varias tomas del mismo espectáculo', '', 'El detalle está en [tomas.md](tomas.md).', '');
+writeFileSync(join(RAIZ, 'docs', 'transcriptor.md'), L.join('\n') + '\n');
+console.log(L.join('\n'));
+void spawnSync;

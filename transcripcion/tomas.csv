@@ -1,18 +1,18 @@
-espectaculo,toma,fuente,url,titulo,desde,hasta
-asaltantes_2024_retirada,disco,disco oficial,https://www.youtube.com/watch?v=oWgZlhQ5Ljc,Asaltantes con Patente 2024 - Retirada Cuidar el tiempo (Audio Oficial del Disco),,
-asaltantes_2024_retirada,tf_primera,Tenfield primera rueda,https://www.youtube.com/watch?v=_I2xKLUut8U,Asaltantes con Patente - Novena Etapa - Primera Rueda - Carnaval 2024,2307.5,2693.0
-asaltantes_2024_retirada,tf_segunda,Tenfield segunda rueda,https://www.youtube.com/watch?v=Iyy90zDfxhs,Asaltantes con Patente - Quinta Etapa - Segunda Rueda - Carnaval 2024,2351.5,2719.6
-asaltantes_2024_retirada,tf_liguilla,Tenfield liguilla,https://www.youtube.com/watch?v=pvNLIYyRxPo,Asaltantes con Patente - Liguilla - Segunda Etapa - Carnaval 2024,2288.1,2675.0
-asaltantes_2024_retirada,cu,Carnaval Uruguay,https://www.youtube.com/watch?v=CmtaeA7IFmE,Asaltantes Con Patente 2024 - Retirada,,
-asaltantes_2024_retirada,fan_vacarnaval,Va Carnaval (tribuna),https://www.youtube.com/watch?v=QuBJsRwlw4U,Retirada Asaltantes Con Patente 2024,,
-bastarda_2026_retirada,ebp,Entre Bombos y Platillos,https://www.youtube.com/watch?v=KfB_pBJ2Oj4,Doña Bastarda 2026 - Retirada | Carnaval Uruguayo,,
-bastarda_2026_retirada,tf_segunda,Tenfield segunda rueda,https://www.youtube.com/watch?v=EhWUEwNjCIY,Doña Bastarda - Etapa 10 - Segunda Rueda - Carnaval 2026,2769.0,3212.2
-bastarda_2026_retirada,tf_liguilla,Tenfield liguilla,https://www.youtube.com/watch?v=lriwat6w030,Doña Bastarda - Etapa 6 de la Liguilla - Carnaval 2026,2354.2,2770.6
-bastarda_2026_retirada,tf_ganadores,Tenfield ronda de ganadores,https://www.youtube.com/watch?v=M28nyrJACw0,Doña Bastarda - Ronda De Ganadores - Carnaval 2026,2591.8,3043.7
-bastarda_2026_retirada,murgas,MURGAS actuación completa,https://www.youtube.com/watch?v=B5USS3QZ-Ag,Doña Bastarda 2026 - Actuación Completa,2143.6,2594.1
-bastarda_2026_retirada,fan_granma,GranMa (tribuna) primera rueda,https://www.youtube.com/watch?v=wKp3kclcaao,BAJADA DE DOÑA BASTARDA 2026 DEL TEATRO DE VERANO PRIMERA RUEDA,,
-trasnochada_2026_retirada,propia,canal de la murga,https://www.youtube.com/watch?v=RAzOHRPw9VI,RETIRADA 2026 - MURGA LA TRASNOCHADA,,
-trasnochada_2026_retirada,camilo_primera,Camilo (tribuna) primera rueda,https://www.youtube.com/watch?v=Awb0jxwRt28,LA TRASNOCHADA 2026 - RETIRADA PRIMERA RUEDA,,
-trasnochada_2026_retirada,camilo,Camilo (tribuna),https://www.youtube.com/watch?v=c0ynCjAdLMM,LA TRASNOCHADA 2026 - RETIRADA,,
-trasnochada_2026_retirada,momo_virtual,Momo Virtual (audio),https://www.youtube.com/watch?v=311Hlb1bcBc,LA TRASNOCHADA 2026 RETIRADA TEATRO DE VERANO (AUDIO),,
-trasnochada_2026_retirada,canisha,la canisha (tribuna),https://www.youtube.com/watch?v=HctUuih_LKU,La Trasnochada 2026 - Retirada,,
+espectaculo,toma,fuente,url,titulo,desde,hasta,murga,anio,parte
+asaltantes_2024_retirada,disco,disco oficial,https://www.youtube.com/watch?v=oWgZlhQ5Ljc,Asaltantes con Patente 2024 - Retirada Cuidar el tiempo (Audio Oficial del Disco),,,Asaltantes con Patente,2024,retirada
+asaltantes_2024_retirada,tf_primera,Tenfield primera rueda,https://www.youtube.com/watch?v=_I2xKLUut8U,Asaltantes con Patente - Novena Etapa - Primera Rueda - Carnaval 2024,2307.5,2693.0,Asaltantes con Patente,2024,retirada
+asaltantes_2024_retirada,tf_segunda,Tenfield segunda rueda,https://www.youtube.com/watch?v=Iyy90zDfxhs,Asaltantes con Patente - Quinta Etapa - Segunda Rueda - Carnaval 2024,2351.5,2719.6,Asaltantes con Patente,2024,retirada
+asaltantes_2024_retirada,tf_liguilla,Tenfield liguilla,https://www.youtube.com/watch?v=pvNLIYyRxPo,Asaltantes con Patente - Liguilla - Segunda Etapa - Carnaval 2024,2288.1,2675.0,Asaltantes con Patente,2024,retirada
+asaltantes_2024_retirada,cu,Carnaval Uruguay,https://www.youtube.com/watch?v=CmtaeA7IFmE,Asaltantes Con Patente 2024 - Retirada,,,Asaltantes con Patente,2024,retirada
+asaltantes_2024_retirada,fan_vacarnaval,Va Carnaval (tribuna),https://www.youtube.com/watch?v=QuBJsRwlw4U,Retirada Asaltantes Con Patente 2024,,,Asaltantes con Patente,2024,retirada
+bastarda_2026_retirada,ebp,Entre Bombos y Platillos,https://www.youtube.com/watch?v=KfB_pBJ2Oj4,Doña Bastarda 2026 - Retirada | Carnaval Uruguayo,,,Doña Bastarda,2026,retirada
+bastarda_2026_retirada,tf_segunda,Tenfield segunda rueda,https://www.youtube.com/watch?v=EhWUEwNjCIY,Doña Bastarda - Etapa 10 - Segunda Rueda - Carnaval 2026,2769.0,3212.2,Doña Bastarda,2026,retirada
+bastarda_2026_retirada,tf_liguilla,Tenfield liguilla,https://www.youtube.com/watch?v=lriwat6w030,Doña Bastarda - Etapa 6 de la Liguilla - Carnaval 2026,2354.2,2770.6,Doña Bastarda,2026,retirada
+bastarda_2026_retirada,tf_ganadores,Tenfield ronda de ganadores,https://www.youtube.com/watch?v=M28nyrJACw0,Doña Bastarda - Ronda De Ganadores - Carnaval 2026,2591.8,3043.7,Doña Bastarda,2026,retirada
+bastarda_2026_retirada,murgas,MURGAS actuación completa,https://www.youtube.com/watch?v=B5USS3QZ-Ag,Doña Bastarda 2026 - Actuación Completa,2143.6,2594.1,Doña Bastarda,2026,retirada
+bastarda_2026_retirada,fan_granma,GranMa (tribuna) primera rueda,https://www.youtube.com/watch?v=wKp3kclcaao,BAJADA DE DOÑA BASTARDA 2026 DEL TEATRO DE VERANO PRIMERA RUEDA,,,Doña Bastarda,2026,retirada
+trasnochada_2026_retirada,propia,canal de la murga,https://www.youtube.com/watch?v=RAzOHRPw9VI,RETIRADA 2026 - MURGA LA TRASNOCHADA,,,La Trasnochada,2026,retirada
+trasnochada_2026_retirada,camilo_primera,Camilo (tribuna) primera rueda,https://www.youtube.com/watch?v=Awb0jxwRt28,LA TRASNOCHADA 2026 - RETIRADA PRIMERA RUEDA,,,La Trasnochada,2026,retirada
+trasnochada_2026_retirada,camilo,Camilo (tribuna),https://www.youtube.com/watch?v=c0ynCjAdLMM,LA TRASNOCHADA 2026 - RETIRADA,,,La Trasnochada,2026,retirada
+trasnochada_2026_retirada,momo_virtual,Momo Virtual (audio),https://www.youtube.com/watch?v=311Hlb1bcBc,LA TRASNOCHADA 2026 RETIRADA TEATRO DE VERANO (AUDIO),,,La Trasnochada,2026,retirada
+trasnochada_2026_retirada,canisha,la canisha (tribuna),https://www.youtube.com/watch?v=HctUuih_LKU,La Trasnochada 2026 - Retirada,,,La Trasnochada,2026,retirada

@@ -103,17 +103,20 @@ export function comparar() {
     const ref = T[0];
     const CR = suavizar(croma(leerAudio(ref.voz)));
     L.push(`## ${show}`, '', `Referencia: **${ref.toma}** (${ref.fuente}). Notas a ±80 ms; F1 de 100 % es la misma transcripción.`, '',
-      '| Toma | Fuente | Transp. | Costo DTW | Notas crudas F1 | Sin octava | Limpias F1 | Golpes en común | Mismas voces | Diferencia de voces | Misma melodía | Armonía |', '|---|---|---|---|---|---|---|---|---|---|---|---|');
+      '| Toma | Fuente | En común | Transp. | Costo DTW | Notas crudas F1 | Sin octava | Limpias F1 | Golpes en común | Mismas voces | Diferencia de voces | Misma melodía | Armonía |', '|---|---|---|---|---|---|---|---|---|---|---|---|---|');
     for (const t of T.slice(1)) {
       const CB0 = suavizar(croma(leerAudio(t.voz)));
       const tr = transposicion(CR, CB0), CB = rotar(CB0, tr);
-      const { f, costo } = alinear(CR, CB);
-      const llevar = N0 => N0.map(n => ({ t0: f(n.t0), p: n.p - tr })).sort((a, b) => a.t0 - b.t0 || a.p - b.p);
-      const c = compararNotas(ref.crudas, llevar(t.crudas));
-      const cl = ref.limpias && t.limpias ? compararNotas(ref.limpias, llevar(t.limpias)) : null;
+      const { f, costo, comunA, comunB } = alinear(CR, CB);
+      // sólo lo que las dos tomas tienen en común
+      const enA = N0 => N0.filter(n => n.t0 >= comunA[0] && n.t0 <= comunA[1]);
+      const llevar = N0 => N0.filter(n => n.t0 >= comunB[0] && n.t0 <= comunB[1]).map(n => ({ t0: f(n.t0), p: n.p - tr })).sort((a, b) => a.t0 - b.t0 || a.p - b.p);
+      const c = compararNotas(enA(ref.crudas), llevar(t.crudas));
+      const cl = ref.limpias && t.limpias ? compararNotas(enA(ref.limpias), llevar(t.limpias)) : null;
+      const comun = comunA[1] - comunA[0];
       const x = cl || c;
-      L.push(`| ${t.toma} | ${t.fuente} | ${tr} | ${nf(costo, 3)} | ${pc(c.f1)} | ${pc(c.f1Clase)} | ${cl ? pc(cl.f1) : '—'} | ${pc(x.golpesComunes)} | ${pc(x.mismasVoces)} | ${nf(x.difVoces)} | ${pc(x.melodia)} | ${pc(x.armonia)} |`);
-      resumen.push({ show, toma: t.toma, fuente: t.fuente, transp: tr, costo, crudas: c, limpias: cl });
+      L.push(`| ${t.toma} | ${t.fuente} | ${Math.floor(comun / 60)}:${String(Math.round(comun % 60)).padStart(2, "0")} | ${tr} | ${nf(costo, 3)} | ${pc(c.f1)} | ${pc(c.f1Clase)} | ${cl ? pc(cl.f1) : '—'} | ${pc(x.golpesComunes)} | ${pc(x.mismasVoces)} | ${nf(x.difVoces)} | ${pc(x.melodia)} | ${pc(x.armonia)} |`);
+      resumen.push({ show, toma: t.toma, fuente: t.fuente, transp: tr, costo, comun, crudas: c, limpias: cl });
     }
     // rasgos del jurado: cada par de tomas
     if (T.filter(t => t.an).length >= 2) {
