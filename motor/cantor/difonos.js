@@ -28,7 +28,9 @@ class Rnd { constructor(s) { this.a = (s * 2654435761 + 7) >>> 0; } r() { let t 
 export function guion(notas, opc = {}) {
   const o = {
     vibrato: .14, vibVel: 5.5, vibEntra: .22, deriva: .05, temblor: 0, pique: .45, caida: .8, consonantes: 1, semilla: 1,
-    w: true, transporte: 0, eses: 1, acento: 1, sheismo: 1, golpe: 0, arco: 0, ...opc,
+    // eses: 50 ms (esesCortas .57), más bajas y sin filtrar (en terminar: esesFiltro 0, esesDb 8). Cortas y filtradas
+    // sonaban a t (Whisper oía «Te íbamos» por «Seguimos») y a chasquido.
+    w: true, transporte: 0, eses: 1, esesCortas: .57, acento: 1, sheismo: 1, golpe: 0, arco: 0, ...opc,
   };
   const rng = new Rnd(o.semilla);
   // ll e y: la "sh" rioplatense ("shegó", "cashe"). Estas voces no la tienen: se canta la ll castellana (jj, que ya
@@ -156,7 +158,7 @@ export function guion(notas, opc = {}) {
 // g: el guion.
 export function terminar(x, sr, g, opc = {}) {
   const curvaDeLaVoz = TIMBRES['CURVA_DIFONOS' + (opc.voz && opc.voz !== 'es2' ? '_' + opc.voz.toUpperCase() : '')] || TIMBRES.CURVA_DIFONOS || null;
-  const o = { aire: 0, emision: 0, semilla: 1, curva: curvaDeLaVoz, brillo: 1, eses: 1, ruidos: 1, ...opc };
+  const o = { aire: 0, emision: 0, semilla: 1, curva: curvaDeLaVoz, brillo: 1, eses: 1, esesFiltro: 0, esesDb: 8, ruidos: 1, ...opc };
   if (o.curva && o.brillo !== 1) o.curva = o.curva.map(([f, db]) => [f, db * o.brillo]);
   if (o.color > 0 || o.inclinacion) {
     // el color propio de este cantor: unas ondas suaves en dB sobre la escala de frecuencias (de 400 Hz a 5 kHz), y su

@@ -47,7 +47,7 @@ Lo que se canta lo decide `motor/cantor/difonos.js`:
   - antes de vocal sí se oye, suave y pegada a la palabra siguiente: «la-salas», «mi-samigo-sehperan», «lu-ce-s y empieza»;
   - en los artículos (los, las, unos, unas) antes de consonante queda un soplo: «lah luce»;
   - la de adentro de la palabra se aspira: «fiehta», «dehcalzo». Dura 25 ms, sin agudos, unos 27 dB debajo de la vocal;
-  - las demás duran 35 ms, filtradas, sin lo de arriba de 4 kHz, y quedan unos 24 dB debajo de la vocal.
+  - las demás duran 50 ms y van 8 dB más bajas, sin filtrar. Primero se probaron de 35 ms y sin lo de arriba de 4 kHz, pero así sonaban a t y a chasquido, y se entendían menos (ver «Primero hablar, después cantar»). Entre las tres versiones, de oído ganó esta.
 
   - la ll y la y suenan "sh", como en el Río de la Plata: «shegué a la cashe cuando la shuvia sha se iba». Estas voces no tienen ese sonido, así que se canta la ll castellana (jj), que ya va hacia el paladar. Después se le deja poca voz, abajo de 900 Hz, y se le suma un soplo entre 2 y 4 kHz, con el pico en 2,5 kHz, unos 10 dB debajo de la vocal. Se probó también armarla desde la s, pero Whisper oía "platizo" y "suvia": las transiciones de la s la delatan. Con la ll castellana entiende «llegó», «platillo», «calle» y «parrilla».
 
