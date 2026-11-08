@@ -86,7 +86,8 @@ for (const f of fragmentos) {
     const porCuerda = { bajos: [], segundos: [], primos: [], sobreprimos: [], tercia: [] };
     if (g.ps.length === 1) { for (const k of ['segundos', 'primos', 'sobreprimos']) if (g.ps[0] >= RANGOS[k][0] && g.ps[0] <= RANGOS[k][1]) porCuerda[k].push(g.ps[0]); if (!Object.values(porCuerda).some(l => l.length)) porCuerda.primos.push(g.ps[0]); }
     else for (const p of g.ps) porCuerda[p >= 70 && g.ps.length >= 3 ? 'tercia' : p >= 65 ? 'sobreprimos' : p >= 56 ? 'primos' : p >= 48 ? 'segundos' : 'bajos'].push(p);
-    const silabas = silDe.get(g.i) || [{ s: g.t0 - finAnt > .15 ? LA : A, t0: g.t0, t1: g.t1 }];
+    // sin letra, «la»; acentuada si cae en el tiempo (para el cantor de difonos, que marca los acentos)
+    const silabas = silDe.get(g.i) || [{ s: { ...(g.t0 - finAnt > .15 ? LA : A), acento: g.q % 4 === 0 }, t0: g.t0, t1: g.t1 }];
     for (const [k, ps] of Object.entries(porCuerda)) {
       if (!ps.length) continue;
       const n = lineas[k].length;

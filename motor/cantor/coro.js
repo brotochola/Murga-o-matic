@@ -56,6 +56,7 @@ export function silabear(P, letras) {
           const parte = k === 0 ? { ataque: p.ataque, nucleo: p.nucleo, coda: ultima ? p.coda : [] } : { ataque: [], nucleo: vocal.length ? vocal : ['a'], coda: ultima ? p.coda : [] };
           if (ultima && sil.fin !== false) parte.fin = true;   // termina la palabra (el solista se come las eses finales)
           if (ultima && sil.articulo) parte.articulo = true;
+          if (k === 0 && sil.acento) parte.acento = true;     // sílaba acentuada: el cantor de difonos la marca
           porQ.set(s.inicio + g.q, { sil: parte, texto: sil.texto, d: g.d, parte: !!g.parte, melisma: notas.length > 1 });
         });
       }

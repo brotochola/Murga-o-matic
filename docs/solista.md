@@ -104,6 +104,20 @@ Otra voz es lo que más diferencia, porque es otro hombre. Quedó así: en cada 
 
 Con el coro de 12 voces, Whisper erra el 12,8 % de las letras, contra el 15,0 % con todos es2. No se entiende peor.
 
+## Acentos
+
+Las sílabas acentuadas entran con un golpe de voz: 3 dB de más al entrar, que se van en 60 ms, y 1,5 dB que quedan. Las demás van un poco más suaves, y cada frase crece 1 dB hasta su último acento. Sin letra (en el banco del coro), se acentúa lo que cae en el tiempo.
+
+Para medirlo se rearmaron acá los 12 fragmentos del banco nocturno (las mismas ventanas que elige `banco_fragmentos.py`), cantados por el coro de difonos. El ataque de cada golpe (la subida del 10 al 90 %) y el hueco entre golpes se compararon con lo que midió la compu en el coro real:
+
+| Coro de difonos | Ataque: diferencia con el real | Hueco: diferencia con el real |
+|---|---|---|
+| Sin golpe de voz | 31 ms | 2,0 dB |
+| Golpe de 3 dB (como quedó) | 18 ms | 1,8 dB |
+| Golpe de 5 dB | 16 ms | 1,8 dB |
+
+Los ataques del coro sintético eran lentos (unos 87 ms en la mediana, contra 64 en el real); con el golpe de voz se acercan. El coro se entiende igual (13,0 % de letras mal).
+
 ## En la página
 
 En **Voces**, la opción **Difonos** hace cantar a los trece cantores, en obreros; la primera vez baja las dos voces (8 MB). Una presentación de 4 minutos tarda unos 20 s en una compu de dos núcleos. Con **Sólo un solista**, el primero de los primos canta la melodía con la letra, solo, sobre la batería.

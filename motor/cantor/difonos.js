@@ -28,7 +28,7 @@ class Rnd { constructor(s) { this.a = (s * 2654435761 + 7) >>> 0; } r() { let t 
 export function guion(notas, opc = {}) {
   const o = {
     vibrato: .14, vibVel: 5.5, vibEntra: .22, deriva: .05, temblor: 0, pique: .45, caida: .8, consonantes: 1, semilla: 1,
-    w: true, transporte: 0, eses: 1, acento: 1, sheismo: 1, ...opc,
+    w: true, transporte: 0, eses: 1, acento: 1, sheismo: 1, golpe: 0, arco: 0, ...opc,
   };
   const rng = new Rnd(o.semilla);
   // ll e y: la "sh" rioplatense ("shegó", "cashe"). Estas voces no la tienen: se canta la ll castellana (jj, que ya
@@ -130,11 +130,16 @@ export function guion(notas, opc = {}) {
   linea('_', inicio, segs[0].t0, false);
   for (const s of segs) linea(s.p, s.t0, s.t1, s.p !== '_');
   linea('_', segs[segs.length - 1].t1, fin, false);
-  // 5. el volumen: cada nota con su fuerza, las largas crecen un poco, y un poco de temblor con el vibrato
+  // 5. el volumen: cada nota con su fuerza, las largas crecen un poco. Las sílabas acentuadas entran con un golpe de
+  // voz (golpe: dB de más al entrar, que se van en 60 ms, y la mitad que queda) y las otras un poco más suaves; cada
+  // frase crece hasta su último acento (arco, en dB).
+  const arcoDe = new Float32Array(N);
+  if (o.arco) { let a = 0; for (let i = 0; i <= N; i++) if (i === N || sueltas.has(i)) { if (i > a) { let u = a; for (let j = a; j < i; j++) if (notas[j].sil.acento) u = j; for (let j = a; j < i; j++) arcoDe[j] = o.arco * Math.min(1, (j - a) / Math.max(1, u - a)); } a = i; } }
   const ganancia = t => {
     const i = notaEn(t), n = notas[i];
     const vel = n.vel ?? .8;
-    let db = 20 * Math.log10(.4 + .75 * vel);
+    let db = 20 * Math.log10(.4 + .75 * vel) + arcoDe[i];
+    if (o.golpe) db += n.sil.acento ? o.golpe * (.5 + (t < n.t0 - .01 ? 0 : Math.exp(-(t - n.t0 + .01) / .06))) : -o.golpe * .25;
     const largo = n.t1 - n.t0;
     if (largo > .5) db += 1.5 * suave((t - n.t0 - .1) / .4);
     if (finales.has(i)) db -= 12 * suave((t - (n.t1 - .12)) / .12);
@@ -274,6 +279,8 @@ export function cantorDifonos(cuerda, semilla, V = VARIACION, D = DIFERENCIA) {
     retraso: r.u(0, V.retraso * .5), desfase: V.desfase * .5,
     // el timbre del coro real, al 60 %: con la curva entera el coro se entiende un poco menos (15,6 % contra 12,4 %)
     temblor: .04, brillo: .6,
+    // los acentos con golpe de voz: el ataque se acerca al del coro real (de 31 a 18 ms de diferencia en el banco)
+    golpe: 3, arco: 1,
   };
 }
 
