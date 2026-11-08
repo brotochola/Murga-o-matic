@@ -12,7 +12,7 @@ const reales = cargarAnalisis().filter(a => a.notas?.length > 200 && (estilo ===
 const NR = normas(cargarAnalisis().filter(a => a.notas?.length > 200).map(rasgosReal));
 const R = reales.map(rasgosReal);
 const med = (L, k) => { const v = L.map(r => r[k]).filter(Number.isFinite).sort((a, b) => a - b); return v[v.length >> 1]; };
-const run = M => { const L = []; for (const forma of ['presentacion', 'retirada']) for (let s = 1; s <= N; s++) L.push(rasgos(notasDePieza(M.componer(MODELO, { forma, estilo, semilla: s + SEM0, tonica: (s + SEM0) % 12, modo: (s + SEM0) % 2 ? 'menor' : 'mayor' })))); return L; };
+const run = M => { const L = []; for (const forma of ['presentacion', 'retirada']) for (let s = 1; s <= N; s++) L.push(rasgos(notasDePieza(M.componer(MODELO, { forma, estilo, semilla: s + SEM0, tonica: (s + SEM0) % 12, modo: (s + SEM0) % 2 ? 'menor' : 'mayor', tercia: +(process.env.TERCIA || 0) })))); return L; };
 const A = run(V1), B = run(V2);
 const filas = Object.keys(RASGOS).map(k => ({ k, real: med(R, k), a: med(A, k), b: med(B, k), da: Math.abs(med(A, k) - med(R, k)) / NR[k].ancho, db: Math.abs(med(B, k) - med(R, k)) / NR[k].ancho }));
 filas.sort(process.env.POR_NUEVO ? (x, y) => y.db - x.db : (x, y) => Math.abs(y.db - y.da) - Math.abs(x.db - x.da));

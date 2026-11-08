@@ -573,7 +573,8 @@ function ajustar(p, g, sec, antes) {
 }
 
 export function componer(M, op) {
-  const o = { forma: 'presentacion', estilo: 'todas', tonica: 9, modo: 'menor', tempo: null, largo: 'normal', semilla: 1, clarinada: true, modula: true, tercia: .25, cancionFinal: true, recita: 0, ...op };
+  // la tercia arranca apagada, como en la página: así el jurado, la copia y las demos miden lo que se escucha por defecto
+  const o = { forma: 'presentacion', estilo: 'todas', tonica: 9, modo: 'menor', tempo: null, largo: 'normal', semilla: 1, clarinada: true, modula: true, tercia: 0, cancionFinal: true, recita: 0, ...op };
   const E = M.estilos[o.estilo] || M.estilos.todas;
   const F = E.forma || {};
   const rng = new Rng(o.semilla);
