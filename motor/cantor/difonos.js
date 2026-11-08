@@ -55,13 +55,21 @@ export function guion(notas, opc = {}) {
     ata.forEach((p, k) => { const d = dAta[k] * tA[i] / sA; poner(p, t, t + d, i, 'ataque'); t += d; });
     t = n.t0;
     // coda al final, núcleo en el medio
-    // acento rioplatense, exagerado como en la murga: la s del final de la palabra no se canta ("lo gurise corren") y
-    // la de adentro de la palabra se aspira ("fiehta"): corta y como un soplo
+    // Acento rioplatense, exagerado como en la murga. La s del final de la palabra:
+    //   antes de vocal se oye, suave, pegada a la palabra siguiente ("la-salas", "lu-ce-s y");
+    //   en los artículos antes de consonante queda un soplo ("lah luce");
+    //   si no, no se canta ("lo gurise corren").
+    // La de adentro de la palabra se aspira ("fiehta"): corta y como un soplo.
     let coda = n.sil.coda.map(sym);
-    if (o.acento > 0 && n.sil.fin && coda[coda.length - 1] === 's') coda = coda.slice(0, -1);
     const sigFon = ligada ? (sig.sil.ataque[0] || sig.sil.nucleo[0]) : null;
-    const aspirada = coda.map((p, k) => p === 's' && (o.acento > 0 || o.eses > 0) && (k < coda.length - 1 || consonante(sigFon) || o.acento > 0));
-    let dCoda = coda.map((p, k) => aspirada[k] ? .025 * o.consonantes : dur(p)); const sC = dCoda.reduce((x, y) => x + y, 0);
+    const tipos = coda.map(() => 'coda');
+    if (o.acento > 0) coda.forEach((p, k) => { if (p === 's') tipos[k] = 'aspirada'; });
+    if (o.acento > 0 && n.sil.fin && coda[coda.length - 1] === 's') {
+      if (ligada && !consonante(sigFon)) tipos[coda.length - 1] = 'ligada';
+      else if (!(ligada && n.sil.articulo)) { coda = coda.slice(0, -1); tipos.pop(); }
+    } else if (o.acento <= 0 && o.eses > 0) coda.forEach((p, k) => { if (p === 's' && (k < coda.length - 1 || consonante(sigFon))) tipos[k] = 'aspirada'; });
+    const aspirada = tipos.map(t => t === 'aspirada');
+    let dCoda = coda.map((p, k) => tipos[k] === 'aspirada' ? .025 * o.consonantes : tipos[k] === 'ligada' ? .03 * o.consonantes : dur(p)); const sC = dCoda.reduce((x, y) => x + y, 0);
     if (sC > (b - t) * .35) dCoda = dCoda.map(d => d * (b - t) * .35 / sC);
     const finNuc = b - dCoda.reduce((x, y) => x + y, 0);
     const nuc = (n.sil.nucleo.length ? n.sil.nucleo : ['a']);
@@ -69,7 +77,7 @@ export function guion(notas, opc = {}) {
     const dCorta = Math.min(.045, (finNuc - t) * .2);
     const dLarga = (finNuc - t - cortas * dCorta) / Math.max(1, largas.length);
     for (const p of nuc) { const d = VOCAL(p) ? dLarga : dCorta; poner(sym(p), t, t + d, i, VOCAL(p) ? 'vocal' : 'semi'); t += d; }
-    coda.forEach((p, k) => { poner(p, t, t + dCoda[k], i, aspirada[k] ? 'aspirada' : 'coda'); t += dCoda[k]; });
+    coda.forEach((p, k) => { poner(p, t, t + dCoda[k], i, tipos[k]); t += dCoda[k]; });
     if (sig && !ligada) { const desde = t, hasta = sig.t0 - tA[i + 1]; if (hasta - desde > .004) segs.push({ p: '_', t0: desde, t1: hasta, nota: -1, tipo: 'silencio' }); }
   }
   // 3. la altura (semitonos), como función del tiempo

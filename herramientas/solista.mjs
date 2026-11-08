@@ -62,7 +62,7 @@ export function melodia(texto, { tempo = TEMPO, inicio = .35, sube = SUBE } = {}
     if (i === ultAcento) d = sils.length - 1 > i ? corchea * 3 : corchea * 5;
     else if (i > ultAcento) d = corchea * 3;
     else if (s.acento && i % 2 === 1) d = corchea * 1.5;
-    notas.push({ t0: t, t1: t + d, midi: ESCALA[Math.max(0, Math.min(7, grado))] + sube, vel: s.acento ? .85 : .75, sil: { ...partes(s.fon), fin: s.fin }, texto: s.texto, fon: s.fon });
+    notas.push({ t0: t, t1: t + d, midi: ESCALA[Math.max(0, Math.min(7, grado))] + sube, vel: s.acento ? .85 : .75, sil: { ...partes(s.fon), fin: s.fin, articulo: s.articulo }, texto: s.texto, fon: s.fon });
     t += d;
   });
   return notas;

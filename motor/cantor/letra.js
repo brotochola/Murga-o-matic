@@ -6,6 +6,8 @@ const FUERTES = 'aeoáéíóú';           // las débiles con tilde (í, ú) cu
 const VOCALES = 'aeiouáéíóúü';
 const INSEPARABLES = new Set(['pl', 'pr', 'bl', 'br', 'cl', 'cr', 'dr', 'fl', 'fr', 'gl', 'gr', 'tr', 'kl', 'kr', 'tl']);
 // Monosílabos y palabras que se dicen sin acento propio
+// los artículos que terminan en s: el solista por difonos les deja un soplo aunque siga consonante ("lah luce")
+const ARTICULOS = new Set(['los', 'las', 'unos', 'unas']);
 const ATONAS = new Set(('a al ante con de del desde el en entre hacia hasta la las le les lo los me mi mis nos os para por que ' +
   'se sin so su sus te tu tus un una unos unas y e o u ni pero mas como cuando donde si aunque porque pues tan cual').split(' '));
 
@@ -150,7 +152,7 @@ export function silabasCantadas(texto, { sinalefa = true } = {}) {
     sils.forEach((s, i) => {
       const prevSil = i > 0 ? sils[i - 1] : (iw > 0 ? silabas(ws[iw - 1]).slice(-1)[0] : '');
       const ctx = { inicioPalabra: i === 0, trasNLS: /[nls]$/.test(prevSil) };
-      out.push({ texto: s, palabra: iw, fon: fonemasSilaba(s, ctx), acento: i === t, inicio: i === 0, fin: i === sils.length - 1 });
+      out.push({ texto: s, palabra: iw, fon: fonemasSilaba(s, ctx), acento: i === t, inicio: i === 0, fin: i === sils.length - 1, ...(i === sils.length - 1 && ARTICULOS.has(quitarTilde(w.toLowerCase())) ? { articulo: true } : {}) });
     });
   });
   // consonantes suaves (b d g entre vocales o tras vocal/l/r) y s aspirada antes de consonante

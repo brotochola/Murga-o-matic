@@ -43,7 +43,9 @@ Lo que se canta lo decide `motor/cantor/difonos.js`:
 - **Emisión.** Más presencia en 2-4 kHz, menos graves y un poco de saturación. No cambia lo que se entiende.
 - **Aire.** Un ruido que sigue a la voz empeora mucho lo que se entiende (16,4 %), así que quedó afuera.
 - **Eses.** Las de es2 son castellanas: largas (70 ms), fuertes (de 6 a 13 dB debajo de la vocal) y con el silbido en 5 kHz. Con el acento rioplatense exagerado, como el de un murguista:
-  - la s del final de la palabra no se canta: «lo gurise corren descalzo», «se apagan la luce»;
+  - la s del final de la palabra no se canta antes de consonante ni al final de la frase: «lo gurise corren descalzo»;
+  - antes de vocal sí se oye, suave y pegada a la palabra siguiente: «la-salas», «mi-samigo-sehperan», «lu-ce-s y empieza»;
+  - en los artículos (los, las, unos, unas) antes de consonante queda un soplo: «lah luce»;
   - la de adentro de la palabra se aspira: «fiehta», «dehcalzo». Dura 25 ms, sin agudos, unos 27 dB debajo de la vocal;
   - las demás duran 35 ms, filtradas, sin lo de arriba de 4 kHz, y quedan unos 24 dB debajo de la vocal.
 
