@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { medir } from './comparar_transcripcion.js';
+import { medir, emparejar } from './comparar_transcripcion.js';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PRUEBAS = join(RAIZ, 'murga_trabajo', 'pruebas');
@@ -79,6 +79,20 @@ L.push('## 1. De dónde sale el error', '', 'Las cinco piezas (13 minutos, ' + p
   tabla(['voces__ninguno__medium', 'mezcla__ninguno__medium', 'tv__ninguno__medium', 'mezcla__htdemucs_ft__medium', 'tv__htdemucs_ft__medium'], base5), '');
 L.push('## 2. Las perillas', '', 'Sobre tres piezas (' + var3.join(', ') + '), con batería, público y Opus, separado con htdemucs_ft salvo que diga otra cosa.', '',
   tabla(['voces_mezcla__ninguno__medium', 'tv__htdemucs_ft__medium', ...todos.filter(c => c.startsWith('tv__') && c !== 'tv__htdemucs_ft__medium' && c !== 'tv__ninguno__medium')], var3), '');
+// dos pasadas del mismo audio con los cortes de 5 s corridos: ¿escriben lo mismo?
+{
+  let n = 0, n100 = 0, na = 0, nb = 0, cerca = 0, sinPar = 0, piezasD = 0;
+  const comb = { y: [], o: [] };
+  for (const p of var3) {
+    const fa = join(PRUEBAS, 'salidas', p, 'tv__htdemucs_ft__medium.json'), fb = join(PRUEBAS, 'salidas', p, 'tv__htdemucs_ft__medium_desfase2.5.json');
+    if (!existsSync(fa) || !existsSync(fb)) continue;
+    piezasD++;
+    const A = JSON.parse(readFileSync(fa, 'utf8')).notas.map(([t0, t1, q]) => ({ t0, t1, p: q })), B = JSON.parse(readFileSync(fb, 'utf8')).notas.map(([t0, t1, q]) => ({ t0, t1, p: q }));
+    const r = emparejar(A, B, .06); n += r.pares.length; n100 += emparejar(A, B, .1).pares.length; na += A.length; nb += B.length;
+    A.forEach((x, i) => { if (r.ur[i]) return; sinPar++; const d1 = x.t0 % 5, d2 = (x.t0 + 2.5) % 5; if (Math.min(d1, 5 - d1, d2, 5 - d2) < .5) cerca++; });
+  }
+  if (piezasD) L.push('**¿Escribe siempre lo mismo?** Casi. El mismo audio, pasado dos veces con los cortes de 5 s corridos 2,5 s, da transcripciones que coinciden en el ' + pc(2 * n100 / (na + nb)) + ' de las notas a ±100 ms, la misma vara que contra la verdad, y en el ' + pc(2 * n / (na + nb)) + ' a ±60 ms. Lo que cambia de una pasada a la otra es sobre todo el momento exacto del ataque, en hasta 100 ms, y no tanto qué nota escribe. Las diferencias no se juntan cerca de los cortes: el ' + pc(cerca / sinPar) + ' de las notas sin par a ±60 ms cae a menos de 0,5 s de un corte, cuando al azar sería el 40 %. Como las dos pasadas aciertan lo mismo contra la verdad (89 %) y coinciden más que eso entre ellas, los errores son en buena parte los mismos: el transcriptor se equivoca siempre en los mismos lugares. Por eso juntar dos pasadas no mejora. Quedarse con lo que coincide sube la precisión pero pierde un cuarto de las notas, y sumar todo hace lo contrario.', '');
+}
 const conVar = todos.filter(c => ['p1b', 'p3b'].every(p => casos.get(c).has(p)));
 if (conVar.length) L.push('Con la variación entre cantores que ajustó `banco_ajustar.py` (más desafinación y retraso entre cantores, como mide el coro real), en dos piezas:', '', tabla(conVar, ['p1b', 'p3b']), '');
 if (sesgo) {
