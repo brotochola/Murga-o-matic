@@ -44,8 +44,11 @@ Si se abre `index.html` como archivo, sin servidor, el navegador no deja cargar 
 | 7 | Compone y canta | `motor/compositor.js`, `motor/app.js` |
 | 8 | Juzga lo generado contra lo real y elige las demos | `herramientas/jurado.js`, `herramientas/copia.js`, `herramientas/demos.js` → `motor/demos.js` |
 | 9 | Escribe el análisis | `herramientas/informe.js` → `docs/analisis_de_los_midis.md` |
+| 10 | Mide al transcriptor: un coro sintético con las notas conocidas, mezclado como una murga, por la misma cadena | `herramientas/coro_de_prueba.mjs`, `transcripcion/banco_pruebas.py`, `herramientas/comparar_transcripcion.js`, `herramientas/sesgo_transcriptor.js` → [docs/transcriptor.md](docs/transcriptor.md) |
+| 11 | Compara varias grabaciones del mismo espectáculo | `transcripcion/tomas.csv`, `herramientas/tomas.js` → [docs/tomas.md](docs/tomas.md) |
+| 12 | Compara las dos versiones del compositor contra el corpus | `herramientas/ab_compositor.mjs`, `repeticion.mjs`, `bloques_forma.mjs` → [docs/compositor_2.md](docs/compositor_2.md) |
 
-El análisis completo, con todos los números, está en [docs/analisis_de_los_midis.md](docs/analisis_de_los_midis.md). Las fuentes sobre el coro, en [INVESTIGACION.md](INVESTIGACION.md).
+El análisis completo, con todos los números, está en [docs/analisis_de_los_midis.md](docs/analisis_de_los_midis.md). Cuánto se puede confiar en las transcripciones, en [docs/transcriptor.md](docs/transcriptor.md). Qué cambió en el compositor 2 y por qué, en [docs/compositor_2.md](docs/compositor_2.md); la página deja elegir también la versión 1, la del 7 de noviembre. Las fuentes sobre el coro, en [INVESTIGACION.md](INVESTIGACION.md).
 
 ## Para cambiar el motor
 
