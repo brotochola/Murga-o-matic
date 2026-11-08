@@ -174,6 +174,6 @@ export { leerAudio, suavizar, leerCsv, LISTA, TRABAJO, SR };
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const cmd = process.argv[2];
   if (cmd === 'cortar') cortar();
-  else if (cmd === 'comparar') (await import('./tomas_comparar.js')).comparar();
+  else if (cmd === 'comparar') import('./tomas_comparar.js').then(m => m.comparar());   // sin await: tomas_comparar importa este módulo
   else console.log('uso: node herramientas/tomas.js cortar|comparar');
 }

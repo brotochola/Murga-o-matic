@@ -18,7 +18,7 @@ import { leerMidi } from './midi.js';
 import { rasgosReal, normas, RASGOS } from './jurado.js';
 import { cargarAnalisis } from './medir.js';
 
-const DIR = join(TRABAJO, 'tomas');
+const DIR = process.env.TOMAS_DIR || join(TRABAJO, 'tomas');
 const pc = x => (100 * x).toFixed(0) + ' %';
 const nf = (x, d = 2) => (x == null || !Number.isFinite(x) ? '—' : x.toFixed(d).replace('.', ','));
 const slug = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -75,7 +75,7 @@ function compararNotas(A, B) {
 }
 
 export function comparar() {
-  const filas = leerCsv(LISTA);
+  const filas = leerCsv(process.env.TOMAS_LISTA || LISTA);
   const porShow = new Map(); for (const f of filas) { const n = `${f.espectaculo}__${f.toma}`; if (!porShow.has(f.espectaculo)) porShow.set(f.espectaculo, []); porShow.get(f.espectaculo).push({ ...f, nombre: n }); }
   // normas y distancias entre espectáculos distintos del corpus
   const corpus = cargarAnalisis().filter(a => a.notas?.length > 200);
@@ -134,8 +134,8 @@ export function comparar() {
     'Cerca de 0, el rasgo es estable y describe a la murga.', '',
     '| Rasgo | Qué mide | Mismo espectáculo | Espectáculos distintos | Razón |', '|---|---|---|---|---|');
   for (const x of filasR) L.push(`| ${x.k} | ${RASGOS[x.k][1]} | ${nf(x.dentro)} | ${nf(x.entre)} | ${nf(x.razon)} |`);
-  writeFileSync(join(TRABAJO, 'tomas', 'comparacion.json'), JSON.stringify({ resumen, rasgos: filasR }, null, 1));
-  writeFileSync(join(TRABAJO, '..', 'docs', 'tomas.md'), L.join('\n') + '\n');
+  writeFileSync(join(DIR, 'comparacion.json'), JSON.stringify({ resumen, rasgos: filasR }, null, 1));
+  writeFileSync(process.env.TOMAS_DIR ? join(DIR, 'tomas.md') : join(TRABAJO, '..', 'docs', 'tomas.md'), L.join('\n') + '\n');
   console.log(L.join('\n'));
 }
 void slug; void SR;
