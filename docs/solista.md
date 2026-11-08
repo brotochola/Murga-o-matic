@@ -213,15 +213,31 @@ Con *Sin Disfraz* completo (Lamolle y Lombardo, 1998; resumen en [INVESTIGACION.
 
 En el agudo los cantores sonaban raros. Medido con un cantor que sostiene «a» de Do 3 a Re 5 (`vibrato` 0), MBROLA no se rompe: los armónicos quedan limpios (de 25 a 33 dB sobre lo que hay entre ellos, igual que en el grave) y la vocal mantiene su forma (de 1 a 4 dB de diferencia con la «a» grave). Lo raro es otra cosa: la voz es de habla, a un esfuerzo tranquilo, y subida dos octavas queda como un falsete flojito. Entre 1,5 y 3 kHz tiene de 11 a 15 dB menos que en el total, y arriba de 3 kHz, de 23 a 35 dB menos. Un tenor de murga en La 4 canta con el pecho y al máximo, con mucho más arriba.
 
-`gritar()` en `difonos.js`, antes de la curva de timbre:
+La primera versión (`gritar()`) saturaba la voz: la dividía por su envolvente, la pasaba por un polinomio de grado 3 y le agregaba un temblor de volumen al azar. Agregaba armónicos arriba y aspereza. Al oído quedó raro y casi no se notaba. Medido después contra el coro real, se entiende por qué: los agudos ya estaban.
+
+**Lo que mide el coro real.** Quince tramos de 20 s de La Trasnochada 2020 (retirada) contra el coro de difonos entero, 13 cantores al unísono y sin sala, en los tramos con altura clara. Se mide el nivel de los armónicos por bandas, relativo al total:
+
+| | 0–400 Hz | 400–800 | 800–1200 | 1200–1800 | 1800–2500 | 2500–3200 | 3200–4000 | H1−H2 |
+|---|---|---|---|---|---|---|---|---|
+| coro real | −4,8 | −4,9 | **−8,4** | **−9,8** | −14,4 | −14,0 | −15,4 | **0,9 dB** |
+| difonos sin gritar | −4,3 | −5,0 | −9,9 | −11,7 | −11,3 | −14,2 | −16,6 | 3,4 dB |
+| difonos gritando (ahora) | −6,0 | −4,8 | **−8,4** | **−10,0** | −10,4 | −13,1 | −16,2 | **0,1 dB** |
+
+H1−H2 es la mediana en cantores solos. Arriba de 2,5 kHz el coro sintético ya tenía lo del real, por la curva de timbre. Le faltaban de 1,5 a 2 dB entre 0,8 y 1,8 kHz y le sobraban 2,5 dB de fundamental frente al segundo armónico. Es lo que cambia en la voz cuando se canta fuerte: se abre la boca y sube el primer formante (Schulman 1989; Traunmüller y Eriksson 2000), y la glotis aprieta más, así que la fundamental pierde frente a lo demás. Un indicio del primer formante, el centro de gravedad de los armónicos entre 250 Hz y 1,6 kHz, da 632 Hz de mediana en el real, 553 Hz sin gritar y 606 Hz gritando.
+
+Además, el coro de difonos se corta entre sílabas. Medido cada 10 ms, está 15 dB abajo de lo que suena un 9,4 % del tiempo, y el real un 3,0 %. En un cantor solo (es1), quedan 15 dB abajo de la vocal casi la mitad de los cuadros de m y n y del 83 al 92 % de los de b, d y g: son consonantes de habla. Cantando fuerte, la voz sigue entera por las consonantes sonoras.
+
+**`esforzar()` en `difonos.js`**, antes de la curva de timbre:
 
 - **Esfuerzo por nota:** grito × (0,75 + 0,35 × fuerza) × (1 + 0,5 × cuántas quintas pasa del centro de su cuerda). El centro va de Mi 3 en los bajos a Mi 4 en los sobreprimos (`CUERDAS_DIFONOS`): como dice el libro, la emisión cambia con el volumen y con el registro.
-- **Saturación:** la voz dividida por su envolvente pasa por un polinomio de grado 3 (armónicos 2 y 3) y vuelve a su envolvente. Con una tangente hiperbólica los armónicos de arriba volvían doblados como ruido.
-- **Aspereza:** el volumen tiembla un poco al azar (ruido filtrado a 70 Hz, 10 % × esfuerzo).
-- **Brillo:** el timbre del coro real sube de 60 % hacia el 100 % (70 % de lo que falta, con grito 1).
-- Las eses y las consonantes sordas van aparte, sin saturar.
+- **La boca más abierta:** cada 10 ms se busca el primer formante con predicción lineal (ventana de 25 ms, preénfasis 0,9, orden sr/1000 + 2, ventana de retardos de 60 Hz). Es el polo más grave entre 150 Hz y 1,2 kHz y por encima de la fundamental: se encuentra el pico de la envolvente en una grilla y se ajusta con Newton. Un filtro de segundo orden lo corre: ceros donde estaba el polo y polos donde va, 20 % más arriba con esfuerzo 1 (nunca pasa de 1,2 kHz) y con un 30 % menos de ancho de banda. El resto del espectro no se toca. Los coeficientes se interpolan entre cuadros, y un filtro de segundo orden interpolado entre dos estables sigue estable.
+- **La voz apretada:** un pozo en la altura de la nota, de 4 dB con esfuerzo 1 (Q 1,2).
+- Las dos cosas van sólo en las vocales: una m o una n son casi pura fundamental, y con el pozo se perdían.
+- **Parejo:** lo que queda más de 8 dB abajo de la vocal de al lado (el máximo en ±150 ms) sube hasta 14 dB × esfuerzo. Lo que está más de 35 dB abajo, como un silencio o el cierre de una p, no se toca. En un cantor solo, los cuadros cortados bajan de 1.433 a 1.298 con es2 y de 2.061 a 1.386 con es1; en es1, la n pasa de 48 a 15 % y la b de 88 a 48 %. Lo que queda son sobre todo p, t, k, s y j, que se cortan también cantando. En el coro del banco, donde todos se cortan juntos en las sordas, el tiempo 15 dB abajo baja poco: de 9,4 a 8,8 % con una semilla y de 8,6 a 7,4 % con otra.
+- **Brillo:** el timbre del coro real sube de 60 % hacia el 100 %, como antes.
+- El volumen total del cantor queda igual. Las eses y las consonantes sordas van aparte.
 
-Con el grito de cada cantor (0,6 ± 20 %), el sobreprimo en La 4 pasa de −15 a −4 dB entre 1,5 y 3 kHz, y de −30 a −12 dB entre 3 y 4,5 kHz. En **La pieza → Cuánto gritan** se elige no, sí (× 1) o mucho (× 1,6); en «Los cantantes», uno por uno.
+Se entiende un poco menos: con el banco de las 24 frases (media de tres coros), de 18,3 % de letras mal sin gritar a 19,7 % gritando (17,9, 18,9 y 22,2 contra 19,2, 16,9 y 18,9); con el formante 16 % más arriba en vez de 20 %, 18,7 %. Es el precio de que suene gritado, y para el que quiera la letra más clara está «no gritan». Cuesta poco tiempo: un cantor de 68 s tarda de 0,1 a 0,3 s más. En la demo, con los tres valores de **La pieza → Cuánto gritan**, el total de la mezcla (con la batería) cambia así frente a «no gritan»: entre 100 y 400 Hz, −3,8 dB con «sí» y −5,2 dB con «mucho»; entre 0,8 y 3,5 kHz, de +1,4 a +1,9 dB y de +2,0 a +2,5 dB.
 
 **La sala.** Las voces van todas juntas a una reverberación (la batería no). Era ruido blanco de 0,7 s y casi no se oía. Ahora tiene 20 ms antes de empezar, unos primeros rebotes distintos a cada lado y una cola de 1,6 s en los graves y 0,7 s arriba de 2,5 kHz, sin lo de abajo de 120 Hz. En **Mezcla → Sala** se elige cuánta: el valor por defecto (0,5) es casi el doble de lo que se mandaba antes.
 
@@ -229,5 +245,6 @@ Con el grito de cada cantor (0,6 ± 20 %), el sobreprimo en La 4 pasa de −15 a
 
 - **Que no suene a locutor.** Las voces son de habla: las vocales largas se estiran repitiendo el mismo pedazo y pueden sonar quietas.
 - **La afinación con intención.** Según el libro, en la murga muchas notas se cantan apenas más altas o más bajas a propósito, y cantadas muy afinadas pierden sabor. Los cantores sintéticos desafinan al azar, no con intención.
-- **La emisión según el registro.** El libro dice que la colocación cambia con la cuerda, el volumen y el registro: en el grave, «voz de segundo»; en el agudo, más nasal. Las voces de MBROLA son de habla, a un solo esfuerzo, y no cambian de color cuando suben.
+- **La emisión según el registro.** El libro dice que la colocación cambia con la cuerda, el volumen y el registro: en el grave, «voz de segundo»; en el agudo, más nasal. El grito ya abre más la vocal en las notas fuertes y agudas, pero lo nasal del agudo no está.
+- **Los cortes de las sordas.** En p, t, k y s el coro de difonos se corta entero, porque los cantores se cortan casi juntos: 15 dB abajo un 8 a 9 % del tiempo, contra 3 % en el real. Acortar esos cierres podría costar que se entienda la letra.
 - **El timbre.** Hay que medirlo contra el coro real, con el banco, para la curva de ecualización.

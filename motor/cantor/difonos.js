@@ -226,7 +226,7 @@ export function terminar(x, sr, g, opc = {}) {
     voz = Float32Array.from(pre);
     for (const { a, b } of lasEses) for (let k = Math.max(0, a - r); k < Math.min(n, b + r); k++) { const m = rampa(k, a, b); if (m > 0) voz[k] *= 1 - m; }
   }
-  if (o.grito > 0 && g.notas?.length) gritar(voz === pre ? (voz = Float32Array.from(pre)) : voz, sr, g, o);
+  if (o.grito > 0 && g.notas?.length) esforzar(voz === pre ? (voz = Float32Array.from(pre)) : voz, sr, g, o);
   // el timbre del coro real (curva medida en herramientas/curva_difonos.py): las vocales mucho más brillantes
   const y = o.curva ? ecualizar(voz, sr, o.curva) : Float32Array.from(voz);
   // Las eses: más bajas y filtradas, sin el silbido de arriba de 4 kHz. Las aspiradas, más todavía: un soplo. La sh: un
@@ -282,42 +282,131 @@ export function terminar(x, sr, g, opc = {}) {
   return y;
 }
 
-// El grito. Las voces de MBROLA son de habla, a un esfuerzo tranquilo; el coro de murga canta al máximo, al aire libre.
-// Gritando, la fuente de la voz se vuelve más rica en armónicos y más áspera, y más en las notas fuertes y en las
-// agudas (Sin Disfraz: la colocación cambia con el volumen y con el registro). Antes de la curva de timbre:
-//   esfuerzo: por nota, grito × (0,75 + 0,35 × fuerza) × (1 + 0,5 × cuánto pasa del centro de su cuerda, en quintas:
-//     de −1 a +1,4). Sin eso, en el agudo la voz de habla subida dos octavas queda como un falsete flojito, casi
-//     sin armónicos arriba de 1,5 kHz (ver docs/solista.md, «El agudo»);
-//   saturación: la voz dividida por su envolvente (siempre la misma forma, fuerte o suave) pasa por un polinomio de
-//     grado 3 (armónicos 2 y 3 de cada componente, más cuanto más esfuerzo) y vuelve a su envolvente. Con una tangente
-//     hiperbólica salían armónicos por encima de la mitad de la frecuencia de muestreo, que vuelven doblados como
-//     ruido entre los armónicos (de 30 a 18 dB de limpieza en el agudo); el polinomio casi no dobla nada;
-//   aspereza: el volumen tiembla un poco al azar, rápido (ruido filtrado a 70 Hz), como la voz forzada.
-// Las consonantes sordas y las eses no pasan por acá (van aparte), así no se ensucian.
-function gritar(x, sr, g, o) {
-  const N = g.notas, centro = o.centro ?? N.reduce((a, n) => a + n.midi, 0) / N.length;
-  const PASO = 32, nc = Math.ceil(x.length / PASO) + 2, esf = new Float32Array(nc);
+// El grito: cantar con esfuerzo. Las voces de MBROLA son de habla, a un esfuerzo tranquilo; el coro de murga canta al
+// máximo, al aire libre. Comparado con el coro real (La Trasnochada 2020, nivel de los armónicos por bandas, coro
+// contra coro), el de difonos tenía los agudos que hacían falta (la curva de timbre ya los pone), pero le faltaban de
+// 1,5 a 2 dB entre 0,8 y 1,8 kHz, le sobraban 2,5 dB de fundamental (H1−H2: 3,4 dB contra 0,9) y se cortaba entre
+// sílabas (15 dB abajo un 9 % del tiempo, contra 3 %). Es lo que cambia cuando se canta fuerte (docs/solista.md):
+//   - la boca se abre más y el primer formante sube (Schulman 1989; Traunmüller y Eriksson 2000): la vocal suena
+//     abierta, gritada. Cada 10 ms se busca el primer formante (predicción lineal: el polo más grave entre 150 Hz y
+//     1,2 kHz, por encima de la fundamental) y un filtro de segundo orden lo corre: ceros donde estaba, polos donde
+//     va (más arriba y un poco más angosto, la resonancia más marcada). El resto del espectro no se toca;
+//   - la glotis aprieta más: la fundamental baja frente a los demás armónicos (un pozo en la altura de la nota);
+//   - la voz sigue entera por las consonantes sonoras (m n l b d g), que en el habla caen 15 o 20 dB.
+// Cuánto, por nota: grito × (0,75 + 0,35 × fuerza) × (1 + 0,5 × cuánto pasa del centro de su cuerda, en quintas: de −1
+// a +1,4): más en las notas fuertes y en las agudas (Sin Disfraz: la colocación cambia con el volumen y el registro).
+// Con 1, el formante sube un 20 %, la fundamental baja 4 dB y las consonantes sonoras suben hasta 14 dB. Reemplaza a
+// una saturación (más armónicos arriba, que ya estaban: sonaba raro y casi no se notaba). Las sordas y las eses no
+// pasan por acá.
+export const ESFUERZO = { formante: .2, angosto: .3, fundamental: 4, techo: 1200, parejo: 14, hueco: 8, puerta: 35 };
+function esforzar(x, sr, g, o) {
+  const N = g.notas, centro = o.centro ?? N.reduce((a, n) => a + n.midi, 0) / N.length, E = ESFUERZO;
+  const PASO = 32, nc = Math.ceil(x.length / PASO) + 2, esf = new Float32Array(nc), f0 = new Float32Array(nc);
   for (const n of N) {
     const e = o.grito * (.75 + .35 * (n.vel ?? .8)) * (1 + .5 * Math.max(-1, Math.min(1.4, (n.midi - centro) / 7)));
     const a = Math.max(0, Math.floor(((n.t0 - .06) - g.inicio) * sr / PASO)), b = Math.min(nc, Math.ceil((n.t1 - g.inicio) * sr / PASO));
-    for (let j = a; j < b; j++) esf[j] = Math.max(esf[j], e);
+    const hz = 440 * Math.pow(2, (n.midi - 69) / 12);
+    for (let j = a; j < b; j++) { esf[j] = Math.max(esf[j], e); f0[j] = hz; }
   }
   { const al = 1 - Math.exp(-PASO / sr / .04); let v = esf[0]; for (let j = 0; j < nc; j++) { v += (esf[j] - v) * al; esf[j] = v; } }
-  const rng = new Rnd((o.semilla || 1) * 71 + 3);
-  const subir = 1 - Math.exp(-1 / (.001 * sr)), bajar = 1 - Math.exp(-1 / (.025 * sr)), aspera = 1 - Math.exp(-2 * Math.PI * 70 / sr);
-  const normaRuido = Math.sqrt((2 - aspera) / aspera) / .577;   // que el ruido filtrado tenga desvío 1
-  let env = 1e-4, ruido = 0, dc1 = 0, dc2 = 0;
-  const kdc = 1 - 2 * Math.PI * 30 / sr;
-  for (let k = 0; k < x.length; k++) {
-    const u = k / PASO, j = u | 0, f = u - j, e = esf[j] * (1 - f) + esf[j + 1] * f;
-    const v = x[k], av = Math.abs(v);
-    env += (av - env) * (av > env ? subir : bajar);
-    if (e <= 0 || env < 1e-5) { const z = v; dc2 = z - dc1 + kdc * dc2; dc1 = z; x[k] = dc2; continue; }
-    const a3 = Math.min(1, .9 * e), a2 = Math.min(.5, .35 * e), w = Math.max(-1, Math.min(1, v / env));
-    ruido += ((rng.r() * 2 - 1) - ruido) * aspera;
-    const z = env * ((1 - a3) * w + a3 * (1.5 * w - .5 * w * w * w) + a2 * w * w) * (1 + .1 * e * ruido * normaRuido);
-    dc2 = z - dc1 + kdc * dc2; dc1 = z; x[k] = dc2;   // sin la continua que deja la curva corrida
+  // el formante y la fundamental cambian en las vocales (una m o una n son casi pura fundamental: con el pozo se
+  // perdían)
+  const voc = new Float32Array(nc);
+  for (const q of g.segs) if (VOCAL(q.p)) { const a = Math.max(0, Math.round((q.t0 - g.inicio) * sr / PASO)), b = Math.min(nc, Math.round((q.t1 - g.inicio) * sr / PASO)); for (let j = a; j < b; j++) voc[j] = 1; }
+  { const al = 1 - Math.exp(-PASO / sr / .015); let v = voc[0]; for (let j = 0; j < nc; j++) { v += (voc[j] - v) * al; voc[j] = v; } v = voc[nc - 1]; for (let j = nc - 1; j >= 0; j--) { v += (voc[j] - v) * al; voc[j] = v; } }
+  for (let j = 1; j < nc; j++) if (!f0[j]) f0[j] = f0[j - 1];
+  for (let j = nc - 2; j >= 0; j--) if (!f0[j]) f0[j] = f0[j + 1];
+  const efz = k => { const u = k / PASO, j = Math.min(nc - 2, u | 0), f = u - j; return esf[j] * (1 - f) + esf[j + 1] * f; };
+  let rms0 = 0; for (let k = 0; k < x.length; k++) rms0 += x[k] * x[k];
+
+  // 1. el primer formante, cada 10 ms (ventana de 25 ms, preénfasis, orden sr/1000 + 2, ventana de retardos de 60 Hz)
+  const H = Math.round(.01 * sr), W = Math.round(.025 * sr), P = Math.round(sr / 1000) + 2, nf = Math.ceil(x.length / H) + 1;
+  const ven = new Float32Array(W); for (let i = 0; i < W; i++) ven[i] = .5 - .5 * Math.cos(2 * Math.PI * (i + .5) / W);
+  const lag = new Float32Array(P + 1); for (let k = 0; k <= P; k++) lag[k] = Math.exp(-.5 * (2 * Math.PI * 60 * k / sr) ** 2);
+  const NG = 48, gw = new Float32Array(NG); for (let i = 0; i < NG; i++) gw[i] = 2 * Math.PI * 150 * Math.pow(E.techo / 150, i / (NG - 1)) / sr;
+  const gc = new Float32Array(NG * (P + 1)), gs = new Float32Array(NG * (P + 1));
+  for (let i = 0; i < NG; i++) for (let k = 0; k <= P; k++) { gc[i * (P + 1) + k] = Math.cos(gw[i] * k); gs[i * (P + 1) + k] = Math.sin(gw[i] * k); }
+  const C = new Float32Array(nf * 4);   // por cuadro: b1 b2 a1 a2 (sin cambio: b = a = 0)
+  const seg = new Float32Array(W), r = new Float64Array(P + 1), a = new Float64Array(P + 1), t = new Float64Array(P + 1);
+  let umbral = 0; for (let k = 0; k < x.length; k++) umbral = Math.max(umbral, Math.abs(x[k])); umbral = (umbral * .01) ** 2 * W * .375;
+  for (let j = 0; j < nf; j++) {
+    const c = j * H, e = efz(Math.min(x.length - 1, c)) * voc[Math.min(nc - 1, Math.round(c / PASO))];
+    if (e < .02) continue;
+    let prev = 0;
+    for (let i = 0; i < W; i++) { const k = c - (W >> 1) + i, v = k >= 0 && k < x.length ? x[k] : 0; seg[i] = (v - .9 * prev) * ven[i]; prev = v; }
+    for (let k = 0; k <= P; k++) { let s = 0; for (let i = k; i < W; i++) s += seg[i] * seg[i - k]; r[k] = s * lag[k]; }
+    if (r[0] < umbral) continue;
+    r[0] *= 1.0001;
+    // Levinson
+    a.fill(0); a[0] = 1; let err = r[0];
+    for (let m = 1; m <= P; m++) {
+      let s = r[m]; for (let i = 1; i < m; i++) s += a[i] * r[m - i];
+      const km = -s / err; t.set(a);
+      for (let i = 1; i < m; i++) a[i] = t[i] + km * t[m - i];
+      a[m] = km; err *= 1 - km * km; if (err <= 0) break;
+    }
+    // el pico de la envolvente más grave por encima de la fundamental (un mínimo de |A|)
+    const hz0 = f0[Math.min(nc - 1, Math.round(c / PASO))], piso = Math.max(150, 1.15 * hz0) * 2 * Math.PI / sr;
+    const m2 = new Float32Array(NG);
+    for (let i = 0; i < NG; i++) { let re = 0, im = 0; for (let k = 0; k <= P; k++) { re += a[k] * gc[i * (P + 1) + k]; im -= a[k] * gs[i * (P + 1) + k]; } m2[i] = re * re + im * im; }
+    let ib = -1; for (let i = 1; i < NG - 1; i++) if (gw[i] >= piso && m2[i] < m2[i - 1] && m2[i] <= m2[i + 1]) { ib = i; break; }
+    if (ib < 0) continue;
+    // y el polo, con Newton sobre z^P·A(z), desde ahí
+    let zr = .96 * Math.cos(gw[ib]), zi = .96 * Math.sin(gw[ib]), ok = false;
+    for (let it = 0; it < 12; it++) {
+      let qr = 1, qi = 0, dr = 0, di = 0;
+      for (let k = 1; k <= P; k++) { const ndr = dr * zr - di * zi + qr, ndi = dr * zi + di * zr + qi; dr = ndr; di = ndi; const nqr = qr * zr - qi * zi + a[k], nqi = qr * zi + qi * zr; qr = nqr; qi = nqi; }
+      const den = dr * dr + di * di; if (den < 1e-20) break;
+      const sr_ = (qr * dr + qi * di) / den, si = (qi * dr - qr * di) / den;
+      zr -= sr_; zi -= si;
+      if (sr_ * sr_ + si * si < 1e-14) { ok = true; break; }
+    }
+    const rad = Math.hypot(zr, zi), th = Math.atan2(zi, zr);
+    if (!ok || rad < .7 || rad > .998 || th < piso * .95 || Math.abs(th - gw[ib]) > 2 * Math.PI * 250 / sr) continue;
+    const th2 = Math.min(th * (1 + E.formante * e), Math.max(th, 2 * Math.PI * E.techo / sr)), rad2 = Math.min(.996, Math.pow(rad, 1 - E.angosto * Math.min(1.5, e)));
+    C[j * 4] = -2 * rad * Math.cos(th); C[j * 4 + 1] = rad * rad; C[j * 4 + 2] = -2 * rad2 * Math.cos(th2); C[j * 4 + 3] = rad2 * rad2;
   }
+  // 2. el filtro que corre el formante (coeficientes interpolados entre cuadros: un segundo orden estable sigue estable)
+  //    y el pozo en la fundamental (pico negativo, Q 1,2, recalculado cada 32 muestras)
+  const y = new Float32Array(x.length);
+  let x1 = 0, x2 = 0, y1 = 0, y2 = 0, p1 = 0, p2 = 0, q1 = 0, q2 = 0, pb0 = 1, pb1 = 0, pb2 = 0, pa1 = 0, pa2 = 0;
+  for (let k = 0; k < x.length; k++) {
+    if (k % PASO === 0) {
+      const j = Math.min(nc - 1, k / PASO), e = esf[j], db = -E.fundamental * e * voc[j];
+      if (db > -.05) { pb0 = 1; pb1 = pb2 = pa1 = pa2 = 0; }
+      else {
+        const A = Math.pow(10, db / 40), w = 2 * Math.PI * Math.min(f0[j], sr * .45) / sr, cs = Math.cos(w), al = Math.sin(w) / (2 * 1.2), a0 = 1 + al / A;
+        pb0 = (1 + al * A) / a0; pb1 = -2 * cs / a0; pb2 = (1 - al * A) / a0; pa1 = -2 * cs / a0; pa2 = (1 - al / A) / a0;
+      }
+    }
+    const u = k / H, j = u | 0, f = u - j, i0 = j * 4, i1 = Math.min(nf - 1, j + 1) * 4;
+    let b1 = C[i0] * (1 - f) + C[i1] * f, b2 = C[i0 + 1] * (1 - f) + C[i1 + 1] * f, a1 = C[i0 + 2] * (1 - f) + C[i1 + 2] * f, a2 = C[i0 + 3] * (1 - f) + C[i1 + 3] * f;
+    const v = x[k];
+    const w1 = v + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2; x2 = x1; x1 = v; y2 = y1; y1 = w1;
+    const w2 = pb0 * w1 + pb1 * p1 + pb2 * p2 - pa1 * q1 - pa2 * q2; p2 = p1; p1 = w1; q2 = q1; q1 = w2;
+    y[k] = w2;
+  }
+  // 3. parejo: las consonantes sonoras (m n l b d g r) con la voz entera, no 15 o 20 dB abajo de la vocal como en el
+  //    habla (eran el 60 a 90 % de los cortes del coro). Lo que queda más de `hueco` dB abajo de la vocal de al lado
+  //    (el máximo en ±150 ms) sube hasta parejo × esfuerzo dB; lo que está más de `puerta` dB abajo (silencio, el
+  //    cierre de una p) no se toca. Suavizado de ida y vuelta (8 ms), sin correrlo.
+  if (E.parejo > 0) {
+    const nb = Math.ceil(y.length / PASO), L = new Float32Array(nb), G = new Float32Array(nb + 1);
+    for (let j = 0; j < nb; j++) { let s = 0; const k1 = Math.min(y.length, (j + 1) * PASO); for (let k = j * PASO; k < k1; k++) s += y[k] * y[k]; L[j] = 10 * Math.log10(s / PASO + 1e-14); }
+    const V = Math.round(.15 * sr / PASO);
+    for (let j = 0; j < nb; j++) {
+      let ref = -280; for (let i = Math.max(0, j - V); i <= Math.min(nb - 1, j + V); i++) if (L[i] > ref) ref = L[i];
+      const d = ref - L[j], e = esf[Math.min(nc - 1, j)];
+      G[j] = d > E.puerta ? 0 : Math.min(E.parejo * e, Math.max(0, d - E.hueco));
+    }
+    G[nb] = G[nb - 1];
+    { const al = 1 - Math.exp(-PASO / sr / .008); let v = G[0]; for (let j = 0; j <= nb; j++) { v += (G[j] - v) * al; G[j] = v; } v = G[nb]; for (let j = nb; j >= 0; j--) { v += (G[j] - v) * al; G[j] = v; } }
+    for (let k = 0; k < y.length; k++) { const u = k / PASO, j = u | 0, f = u - j; y[k] *= Math.pow(10, (G[j] * (1 - f) + G[j + 1] * f) / 20); }
+  }
+  // el mismo volumen que antes (la mezcla ya tiene sus niveles)
+  let rms1 = 0; for (let k = 0; k < y.length; k++) rms1 += y[k] * y[k];
+  const kg = rms1 > 0 ? Math.sqrt(rms0 / rms1) : 1;
+  for (let k = 0; k < x.length; k++) x[k] = y[k] * kg;
 }
 
 // De la frecuencia de la voz (16 o 22,05 kHz) a la de la página: sinc con ventana de Kaiser, tabla precalculada.
@@ -347,7 +436,7 @@ export function remuestrear(x, srIn, srOut) {
 // como en variacion.js: un poco más alto o más bajo, su vibrato, su garganta, cuánto pica al entrar y cuánto alarga
 // las consonantes. Devuelve las opciones para cantarDifonos.
 // (La tercia canta muy agudo: con el tracto del primo suena menos finita.)
-// centro: desde dónde empieza a gritar más (el medio de lo cómodo para la cuerda; gritar(), en midi)
+// centro: desde dónde empieza a gritar más (el medio de lo cómodo para la cuerda; esforzar(), en midi)
 export const CUERDAS_DIFONOS = { bajos: { tracto: .9, centro: 52 }, segundos: { tracto: .95, centro: 55 }, primos: { tracto: 1, centro: 60 }, sobreprimos: { tracto: 1.03, centro: 64 }, tercia: { tracto: 1, centro: 64 } };
 // Todos salen de dos voces grabadas: para que no suenen iguales, cada cantor de una cuerda tiene otra garganta (el que
 // la lleva en el medio, los demás más grandes o más chicos: TRACTO), su propio color (timbre: dB de más o de menos en
@@ -375,7 +464,7 @@ export function cantorDifonos(cuerda, semilla, { c = 0, V = VARIACION, D = DIFER
     golpe: 3, arco: 1,
     // cuánto adorna las notas largas de las clarinadas y de los finales (adornos.js; algunos nada)
     adornos: cuantoAdorna(cuerda, semilla, c),
-    // cuánto grita (gritar(): más armónicos, aspereza y brillo); cada uno un poco distinto
+    // cuánto grita (esforzar(): la boca más abierta, la voz apretada y pareja, más brillo); cada uno un poco distinto
     grito: +(.6 * new Rnd(semilla * 43 + 19).u(.8, 1.2)).toFixed(2), centro: T.centro,
   };
 }
