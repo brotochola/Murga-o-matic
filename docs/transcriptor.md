@@ -57,6 +57,17 @@ Sobre tres piezas (p1, p2, p3), con batería, público y Opus, separado con htde
 
 Ninguna perilla le gana a lo que ya se usaba (htdemucs_ft y MuScriptor medium, búsqueda voraz): el haz, la guía, los cortes corridos y htdemucs quedan a medio punto o menos, y algunas tardan hasta cuatro veces más. El modelo small es 2,4 veces más rápido pero acierta 3 puntos menos, y la melodía 5,5 menos. El modelo large no se pudo probar: sus pesos piden aceptar la licencia en https://huggingface.co/MuScriptor/muscriptor-large con la cuenta de Hugging Face.
 
+**Con un coro más parecido al real.** `banco_ajustar.py` ajustó cuánto se diferencian los cantores entre sí para que el coro sintético se parezca al real: más desafinación y más retraso entre cantores, y el que lleva la cuerda más fuerte. Las mismas dos piezas (p1 y p3), cantadas con la variación de antes y con la ajustada:
+
+| Caso | F1 ±100 ms | ±50 ms | Precisión | Cobertura | Octava | Melodía | Bajo | Voces por golpe (verdad → escritas) | Golpes a una voz | Inventadas | SDR voces | Tiempo por s de audio |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| batería, público y Opus · htdemucs_ft · medium · variación de antes | **88,0 %** | 53,3 % | 88,9 % | 87,1 % | 0,3 % | 80,9 % | 83,0 % | 2,03 → 1,93 | 41,0 % → 32,8 % | 0 | 10,2 dB | 0,44 s |
+| batería, público y Opus · htdemucs_ft · medium · variación ajustada | **84,2 %** | 55,0 % | 84,5 % | 83,9 % | 0,1 % | 68,5 % | 79,6 % | 2,03 → 1,93 | 41,0 % → 29,4 % | 1 | 12,1 dB | 0,43 s |
+| coro solo, seco · sin separar · medium · variación de antes | **83,4 %** | 54,5 % | 82,7 % | 84,1 % | 0,0 % | 77,7 % | 82,4 % | 2,03 → 1,85 | 41,0 % → 34,2 % | 0 | — | 0,50 s |
+| coro solo, seco · sin separar · medium · variación ajustada | **87,9 %** | 58,4 % | 86,7 % | 89,1 % | 0,2 % | 79,8 % | 87,8 % | 2,03 → 1,97 | 41,0 % → 34,7 % | 0 | — | 0,47 s |
+
+En la cadena completa, que es la de las murgas, el coro ajustado le cuesta más al transcriptor: acierta 88,0 % → 84,2 % de las notas, y la melodía 80,9 % → 68,5 %. Con el coro solo, seco, pasa lo contrario. Son dos piezas: alcanza para saber que la melodía transcripta depende mucho de cómo canta el coro, no para corregirla. Si las murgas reales cantan como el coro ajustado, la melodía del corpus tiene más errores que los que dice la sección 1.
+
 ## 3. ¿Qué rasgos del análisis mueve el transcriptor?
 
 Cada rasgo del jurado se calcula dos veces en las cinco piezas: con las notas verdaderas, en su grilla exacta, y con lo que escribe la cadena completa (batería, público, Opus, htdemucs_ft, MuScriptor, la grilla sacada de los ataques y la limpieza de siempre). La diferencia está en anchos de la norma del jurado: menos de 1 no cambia la nota del jurado de forma apreciable (`herramientas/sesgo_transcriptor.js`).
