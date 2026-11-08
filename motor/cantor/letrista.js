@@ -25,8 +25,10 @@ export function partesAEscribir(metrica, forma) {
   for (const s of metrica) {
     const g = grupoDe(s.nombre);
     const firma = s.versos.map(v => v.silabas).join(',');
-    const id = vistos.has(g) && vistos.get(g).firma === firma ? g : (vistos.has(g) ? s.nombre : g);
-    if (!vistos.has(id)) vistos.set(id, { id, nombre: id, firma, funcion: funcion(s.nombre, s.tipo, forma), versos: s.versos.map(v => ({ silabas: v.silabas, tipo: v.tipo, acentos: v.acentos })), secciones: [] });
+    // la misma música dentro del grupo canta el mismo texto (el estribillo de la canción final cuando vuelve)
+    const igual = [...vistos.values()].find(v => v.grupo === g && v.firma === firma);
+    const id = igual ? igual.id : (vistos.has(g) ? s.nombre : g);
+    if (!vistos.has(id)) vistos.set(id, { id, nombre: id, grupo: g, firma, funcion: funcion(s.nombre, s.tipo, forma), versos: s.versos.map(v => ({ silabas: v.silabas, tipo: v.tipo, acentos: v.acentos })), secciones: [] });
     vistos.get(id).secciones.push(s.nombre);
   }
   return [...vistos.values()];

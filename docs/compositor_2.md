@@ -1,6 +1,6 @@
 # Compositor 2: qué cambió y por qué
 
-La versión 1 del compositor es la que se aprobó de oído el 7 de noviembre de 2026. La versión 2 corrige seis cosas en las que lo generado se apartaba de las murgas reales. Cada cambio se midió contra el corpus antes de quedarse. Los que no movían nada fuera del ruido se descartaron.
+La versión 1 del compositor es la que se aprobó de oído el 7 de noviembre de 2026. La versión 2 corrige siete cosas en las que lo generado se apartaba de las murgas reales. Cada cambio se midió contra el corpus antes de quedarse. Los que no movían nada fuera del ruido se descartaron.
 
 La página deja elegir la versión en **Compositor**. La versión 1 viene con su modelo y sus modos de ese día (`motor/compositor_v1.js`, `motor/modelo_v1.js`, `motor/modos_v1.js`), así suena exactamente igual que antes.
 
@@ -76,6 +76,29 @@ Con el umbral en 50 %, las celdas quedan en 14,3 %. La suma de distancias, con e
 
 Además, se descartaban los gestos que arrancan en semicorchea impar, una anacrusa sincopada, aunque la celda queda alineada al medio compás igual. Ahora entran. Las celdas llegan a 16,6 % de golpes en semicorchea impar y lo generado a 16,1 %. Con dos juegos de semillas, la suma de los tres estilos baja de 52,7 a 50,7 y de 53,6 a 52,1.
 
+## 7. La retirada dura lo que una real
+
+En el corpus, una retirada dura 7,8 minutos en la mediana sin la canción final, y 11 con ella. Las generadas en "normal" duraban 5,3 minutos, canción final incluida. En los bloques largos con batería se nota más: los reales van de 100 a 350 s seguidos, y los generados no pasaban de 70.
+
+Ahora la retirada "normal" tiene tres partes en lugar de dos, y la "larga", cuatro. Antes de la tercera parte hay otro pasaje corto a capela. La canción final pasa de 32 a 64 compases (unos 150 s, como en el corpus). Tiene estrofa, estribillo, la estrofa otra vez con el coro y un cierre nuevo. Se probó también volver a cantar el estribillo, pero así la repetición a 32 compases subía de 9 % a 22 %, contra 7 % en las reales.
+
+| Retirada | Antes | Ahora | Real |
+|---|---|---|---|
+| Duración, mediana | 341 s | 480 s | 573 s |
+| Bloques de 4 s o más | 7 | 9 | 9 |
+| Pasajes a capela | 3 | 4 | 4 |
+| Tiempo a capela | 25 % | 20 % | 18 % |
+
+La repetición en las retiradas queda más cerca de las reales:
+
+| Distancia | 4 compases | 8 | 16 | 24 | 32 |
+|---|---|---|---|---|---|
+| Real | 11 % | 10 % | 8 % | 8 % | 7 % |
+| Antes | 9 % | 20 % | 27 % | 14 % | 9 % |
+| Ahora | 9 % | 17 % | 14 % | 11 % | 13 % |
+
+En los rasgos de nota no cambia nada fuera del ruido. Con dos juegos de semillas, la suma de distancias da: todas 18,7 → 17,4 y 20,2 → 19,2; Catalina 20,6 → 20,7 y 21,7 → 20,8; Trasnochada 19,5 → 19,6 y 20,9 → 20,3.
+
 ## Lo que se probó y no quedó
 
 - **Suavizar los saltos de las voces de abajo en las costuras**, por octava o por la nota del acorde más cercana. Baja los saltos de cuarta, pero sube los de tercera y saca terceras entre voces. En el jurado, sin espiar, no cambió nada (1,32 contra 1,33).
@@ -84,4 +107,4 @@ Además, se descartaban los gestos que arrancan en semicorchea impar, una anacru
 ## Lo que sigue abierto
 
 - El ámbito de las líneas por compás sigue alto (2,05 semitonos contra 1,68), y la síncopa un poco baja (0,14 contra 0,19).
-- Las retiradas generadas duran 5,6 minutos en "normal". Las reales, unos 8.
+- Las partes de la retirada siguen siendo más cortas que las reales: el cuerpo de la retirada, sin la canción final, dura 5,2 minutos contra 7,8.

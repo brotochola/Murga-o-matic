@@ -648,28 +648,35 @@ export function componer(M, op) {
   };
 
   if (o.forma === 'retirada') {
+    // En el corpus una retirada dura 7,8 min en la mediana sin la canción final, y 11 con ella: lleva una parte más
+    // que la presentación (normal: tres partes)
+    const partes = { corta: 1, normal: 3, larga: 4 }[o.largo] || 3;
     let tono = { tonica: o.tonica, modo: o.modo };
     // los cambios de tono se deciden antes, para que la sección de antes los pueda preparar
-    const t1 = o.modula && veces >= 2 ? modular(rngMod, o.estilo, tono) : tono;
+    const t1 = o.modula && partes >= 2 ? modular(rngMod, o.estilo, tono) : tono;
     const t2 = o.modula && rngMod.r() < .5 ? modular(rngMod, o.estilo, t1) : t1;
     if (o.cancionFinal) {
-      // en el corpus la canción final va casi siempre con batería (150 a 180 s seguidos), a veces con una entrada corta a capela
-      const can = temaSec('Canción final', 16, { densidad: 'amplio', din: 82, tipo: 'duo', conTercia: false, tempo: Math.round(tPri * .92) });
-      temaSec('Canción final, con el coro', 16, { din: 92, tipo: 'pleno', tempo: Math.round(tPri * .92), de: can });
+      // en el corpus la canción final va casi siempre con batería (150 a 180 s seguidos), a veces con una entrada corta
+      // a capela. Estrofa, estribillo, la estrofa otra vez con el coro y un cierre: una sola vuelta repetida, porque
+      // en el corpus el contorno de la melodía se repite poco a cualquier distancia (herramientas/repeticion.mjs)
+      const tc = Math.round(tPri * .92);
+      const can = temaSec('Canción final', 16, { densidad: 'amplio', din: 82, tipo: 'duo', conTercia: false, tempo: tc });
+      if (partes >= 2) temaSec('Canción final, estribillo', 16, { densidad: 'medio', din: 90, tipo: 'pleno', curva: 8, tempo: tc });
+      temaSec('Canción final, con el coro', 16, { din: 92, tipo: 'pleno', tempo: tc, de: can });
+      if (partes >= 2) temaSec('Canción final, cierre', 16, { densidad: 'medio', din: 98, tipo: 'pleno', curva: 8, tempo: tc });
     }
     if (o.clarinada) clar('Clarinada', tono);
     const pri = temaSec('Primera parte', 16, { densidad: 'medio', din: 88, momento: [0, .6], ...tono });
-    temaSec('Primera parte, sigue', 16, { din: 94, tipo: 'pleno', curva: 6, densidad: 'medio', momento: [.1, .7], ...tono, prepara: veces >= 2 ? (o.clarinada ? null : t1) : t2 });
-    if (veces >= 2) {
-      // los pasajes a capela del medio duran 16 s en la mediana del corpus: cuatro compases lentos con sus calderones
-      if (o.clarinada) clar('Clarinada del medio', { ...tono, compases: 4, segundos: 16, prepara: t1 });
+    temaSec('Primera parte, sigue', 16, { din: 94, tipo: 'pleno', curva: 6, densidad: 'medio', momento: [.1, .7], ...tono, prepara: partes >= 2 ? (o.clarinada ? null : t1) : t2 });
+    const NOMBRES = [, , 'Segunda', 'Tercera', 'Cuarta'];
+    for (let k = 2; k <= partes; k++) {
+      const ult = k === partes, d = 2 * (k - 2), m = .1 * (k - 2);
+      // los pasajes a capela del medio duran 16 s en la mediana del corpus: cuatro compases lentos con sus calderones.
+      // Las retiradas reales tienen cuatro (con la clarinada y la bajada a capela): van antes de la segunda y la tercera parte
+      if (o.clarinada && k <= 3) clar(k === 2 ? 'Clarinada del medio' : 'Clarinada, antes de la tercera parte', { ...tono, compases: 4, segundos: 16, prepara: k === 2 ? t1 : null });
       tono = t1;
-      const seg = temaSec('Segunda parte', 16, { densidad: 'silabico', din: 92, tempo: tUlt, loop: loopUlt, momento: [.4, 1], ...tono });
-      temaSec('Segunda parte, sigue', 16, { din: 98, tipo: 'pleno', tempo: tUlt, loop: loopUlt, densidad: 'silabico', momento: [.5, 1], ...tono, curva: 6, prepara: veces >= 3 ? null : t2 });
-      if (veces >= 3) {
-        const ter = temaSec('Tercera parte', 16, { densidad: 'silabico', din: 98, tempo: tUlt, loop: loopUlt, momento: [.5, 1], ...tono });
-        temaSec('Tercera parte, sigue', 16, { din: 100, tipo: 'pleno', tempo: tUlt, loop: loopUlt, densidad: 'silabico', momento: [.6, 1], ...tono, curva: 6, prepara: t2 });
-      }
+      temaSec(`${NOMBRES[k]} parte`, 16, { densidad: 'silabico', din: Math.min(100, 92 + 2 * d), tempo: tUlt, loop: loopUlt, momento: [Math.min(.6, .4 + m), 1], ...tono });
+      temaSec(`${NOMBRES[k]} parte, sigue`, 16, { din: Math.min(102, 98 + d), tipo: 'pleno', tempo: tUlt, loop: loopUlt, densidad: 'silabico', momento: [Math.min(.7, .5 + m), 1], ...tono, curva: 6, prepara: ult ? t2 : null });
     }
     tono = t2;
     llamada(8);
