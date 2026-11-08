@@ -13,7 +13,9 @@ La pregunta: ¿se puede tener un cantor sintético al que se le entienda lo que 
 |---|---|---|
 | Formantes (el de los trece cantores sintéticos) | 52,9 % | 87,0 % |
 | Difonos, voz es2 | 6,6 % | 20,6 % |
-| Difonos es2, como en la página (consonantes ×1,1, temblor, vibrato 0,2, emisión) | 7,1 % | 21,1 % |
+| Difonos es2, con las eses suaves y aspiradas | 6,5 % | 22,2 % |
+| Difonos es2, como en la página (consonantes ×1,1, temblor, vibrato 0,2, emisión, eses suaves) | 8,5 % | 25,8 % |
+| Lo mismo, con las eses de antes | 7,1 % | 21,1 % |
 | Difonos es2, consonantes ×1,2 | 3,7 % | 12,5 % |
 | Difonos es2, consonantes ×0,8 (con 12 frases) | 9,4 % | 22,0 % |
 | Difonos es2, con aire (ruido que sigue a la voz) | 16,4 % | 32,3 % |

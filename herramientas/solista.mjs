@@ -71,7 +71,7 @@ export function melodia(texto, { tempo = TEMPO, inicio = .35, sube = SUBE } = {}
 const wav = (ruta, x, sr) => {
   const b = Buffer.alloc(44 + x.length * 2);
   b.write('RIFF', 0); b.writeUInt32LE(36 + x.length * 2, 4); b.write('WAVEfmt ', 8); b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22);
-  b.writeUInt32LE(sr, 24); b.writeUInt32LE(sr * 2, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34); b.write('data', 36); b.writeUInt32LE(x.length * 2, 40);
+  sr = Math.round(sr); b.writeUInt32LE(sr, 24); b.writeUInt32LE(sr * 2, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34); b.write('data', 36); b.writeUInt32LE(x.length * 2, 40);
   for (let i = 0; i < x.length; i++) b.writeInt16LE(Math.max(-32767, Math.min(32767, Math.round(x[i] * 32767))), 44 + i * 2);
   writeFileSync(ruta, b);
 };
@@ -155,10 +155,6 @@ async function cantarFrase(notas) {
   throw new Error('motor desconocido: ' + MOTOR);
 }
 
-// Sólo si se corre directo (otros scripts importan FRASES y melodia)
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) await principal();
-
-async function principal() {
 // las voces: la de la página (motor/vendor/mbrola) o las del paquete mbrola-esN de Debian y Ubuntu
 const voces = {};
 async function vozMbrola(voz) {
@@ -169,6 +165,10 @@ async function vozMbrola(voz) {
   return (voces[voz] = await crearMbrola(readFileSync(join(RAIZ, 'motor', 'vendor', 'mbrola', 'mbrola.wasm')), readFileSync(ruta)));
 }
 
+// Sólo si se corre directo (otros scripts importan FRASES y melodia)
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) await principal();
+
+async function principal() {
 const lista = [];
 for (const [k, texto] of FRASES.entries()) {
   const notas = melodia(texto);
