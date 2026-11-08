@@ -18,6 +18,8 @@ export const DURACION = {
 };
 const VOCAL = p => 'aeiou'.includes(p);
 import { VARIACION } from './variacion.js';
+import * as TIMBRES from './timbre.js';
+import { ecualizar } from './eq.js';
 
 class Rnd { constructor(s) { this.a = (s * 2654435761 + 7) >>> 0; } r() { let t = this.a += 0x6d2b79f5; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; } u(a, b) { return a + (b - a) * this.r(); } }
 
@@ -142,9 +144,13 @@ export function guion(notas, opc = {}) {
 // emisión murguera (más presencia en 2-4 kHz, menos barro en los graves, un poco de saturación). x: Float32Array a sr;
 // g: el guion.
 export function terminar(x, sr, g, opc = {}) {
-  const o = { aire: 0, emision: 0, semilla: 1, ...opc };
-  const y = new Float32Array(x.length);
-  for (let k = 0; k < x.length; k++) y[k] = x[k] * g.ganancia(g.inicio + k / sr);
+  const o = { aire: 0, emision: 0, semilla: 1, curva: TIMBRES.CURVA_DIFONOS || null, brillo: 1, ...opc };
+  if (o.curva && o.brillo !== 1) o.curva = o.curva.map(([f, db]) => [f, db * o.brillo]);
+  const pre = new Float32Array(x.length);
+  for (let k = 0; k < x.length; k++) pre[k] = x[k] * g.ganancia(g.inicio + k / sr);
+  // el timbre del coro real (curva medida en herramientas/curva_difonos.py): las vocales mucho más brillantes. Las eses
+  // no pasan por la curva: se toman de antes y se filtran aparte, abajo.
+  const y = o.curva ? ecualizar(pre, sr, o.curva) : Float32Array.from(pre);
   const bq = (tipo, f, q, db) => {
     const A = Math.pow(10, db / 40), w = 2 * Math.PI * f / sr, c = Math.cos(w), al = Math.sin(w) / (2 * q);
     let b0, b1, b2, a0, a1, a2;
@@ -159,14 +165,14 @@ export function terminar(x, sr, g, opc = {}) {
   if (eses > 0) {
     // Las eses: más bajas y filtradas, sin el silbido de arriba de 4 kHz. Las aspiradas, más todavía: un soplo.
     // Se hace sólo sobre cada s, con rampas de 6 ms.
-    const r = Math.round(.006 * sr), pre = Math.round(.02 * sr);
+    const r = Math.round(.006 * sr), previo = Math.round(.02 * sr);
     for (const s of g.segs) {
       if (s.p !== 's') continue;
       const asp = s.tipo === 'aspirada';
       const a = Math.round((s.t0 - g.inicio) * sr), b = Math.round((s.t1 - g.inicio) * sr);
-      const desde = Math.max(0, a - r - pre), hasta = Math.min(y.length, b + r);
+      const desde = Math.max(0, a - r - previo), hasta = Math.min(y.length, b + r);
       if (hasta - desde < 8) continue;
-      const z = y.slice(desde, hasta);
+      const z = pre.slice(desde, hasta);
       filtrar(z, bq('pico', 5000, 1.2, -6 * eses));
       filtrar(z, bq('agudos', asp ? 2500 : 4000, .7, -12 * eses));
       filtrar(z, bq('agudos', asp ? 2500 : 6000, .7, -8 * eses));
@@ -235,7 +241,8 @@ export function cantorDifonos(cuerda, semilla, V = VARIACION) {
     // los tiempos, la mitad que en el coro de formantes: con todo, el coro de difonos se entiende mucho menos (19 % de
     // letras mal contra 13 %, herramientas/coro_difonos.mjs)
     retraso: r.u(0, V.retraso * .5), desfase: V.desfase * .5,
-    temblor: .04, emision: 1,
+    // el timbre del coro real, al 60 %: con la curva entera el coro se entiende un poco menos (15,6 % contra 12,4 %)
+    temblor: .04, brillo: .6,
   };
 }
 

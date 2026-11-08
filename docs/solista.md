@@ -75,6 +75,15 @@ Que los cantores no entren todos juntos es lo que más tapa la letra: cada conso
 
 Para que MBROLA no tenga que cantar minutos de silencio, que lo hacen fallar, cada cantor se canta de a frases: se corta donde hay más de 1,5 s sin notas.
 
+## El timbre, medido
+
+La curva de ecualización del coro de formantes (`CURVA`) salió de comparar ese coro con la entrada a capela de La Trasnochada 2020: con esa curva, el coro de formantes tiene el timbre del coro real. `herramientas/curva_difonos.py` canta esas mismas notas (`banco_sintetizar.mjs --motor difonos`) con los dos coros y compara sus espectros promedio de vocales. Hace tres vueltas de corrección y escribe `CURVA_DIFONOS` en `motor/cantor/timbre.js`. No hace falta el audio real: el puente es la curva de formantes.
+
+- **El coro de difonos crudo es mucho más oscuro que el real:** tiene de 15 a 28 dB menos entre 2 y 8 kHz. El brillo de la voz murguera no está en estas voces de habla.
+- **Con la curva**, el error medio es de 2 dB, contra 11,6 dB sin ella. Abajo de 140 Hz la curva sube como mucho 12 dB, para que no retumbe; arriba no pasa de 24.
+- **Las eses no pasan por la curva:** se toman de antes de ecualizar y se filtran aparte. Si no, la curva las subiría 20 dB.
+- **Se entiende un poco menos con la curva entera:** con el coro, Whisper erra el 15,6 % de las letras. Con la curva al 60 % erra el 12,4 %, y sin curva el 13,5 %; la diferencia entre estos dos es ruido. Quedó al 60 % (`brillo: .6` en `cantorDifonos`), en lugar de la «emisión» puesta a ojo.
+
 ## En la página
 
 En **Voces**, la opción **Difonos** hace cantar a los trece cantores, en obreros. Una presentación de 4 minutos tarda unos 20 s en una compu de dos núcleos. Con **Sólo un solista**, el primero de los primos canta la melodía con la letra, solo, sobre la batería.

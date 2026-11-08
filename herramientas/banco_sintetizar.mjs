@@ -2,7 +2,10 @@
 // mismos segundos (las de la transcripción), con «la» o con la letra si está en murga_trabajo/banco/letras/<id>.txt
 // (un verso por línea). Sale en mono, como las voces separadas, para comparar con banco_medir.py.
 //
-//   node herramientas/banco_sintetizar.mjs [--variacion params.json] [--salida dir] [--solo id] [--exportar]
+//   node herramientas/banco_sintetizar.mjs [--motor formantes|difonos] [--variacion params.json] [--salida dir] [--solo id] [--exportar]
+//     --motor       formantes (cantor.js, el de siempre) o difonos (difonos.js con MBROLA y la voz es2)
+//     --emision 0   difonos sin la emisión murguera de difonos.js (para medir el timbre crudo)
+//     --curva no    sin la curva de ecualización (para medir el timbre crudo, como hace herramientas/curva_difonos.py)
 //     --variacion   cuánto se diferencian los cantores (lo que prueba banco_ajustar.py); si no, motor/cantor/variacion.js
 //     --exportar    además, cada cantor por separado y un manifiesto, para transcripcion/convertir_coro.py (Seed-VC)
 //     --ids a,b     sólo esos fragmentos      --sala 0.24   cuánta sala se le suma (las grabaciones tienen la suya; 0 = seco)
@@ -17,6 +20,8 @@ import { RANGOS } from '../motor/compositor.js';
 import { sala } from '../motor/cantor/mezcla.js';
 import { versosDe, silabasCantadas, alinear, partes } from '../motor/cantor/letra.js';
 import { VARIACION } from '../motor/cantor/variacion.js';
+import { crearMbrola } from '../motor/cantor/mbrola.js';
+import { cantarDifonos, cantorDifonos, remuestrear } from '../motor/cantor/difonos.js';
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TRABAJO = resolve(process.env.MURGA_TRABAJO || join(RAIZ, 'murga_trabajo'));
@@ -25,6 +30,11 @@ const args = process.argv.slice(2), arg = (k, d) => { const i = args.indexOf('--
 const SR = 44100;
 const variacion = arg('variacion') ? JSON.parse(readFileSync(arg('variacion'), 'utf8')) : null;
 const SAL = resolve(arg('salida', join(BANCO, 'sintetico')));
+const MOTOR = arg('motor', 'formantes');
+const mb = MOTOR === 'difonos' ? await crearMbrola(readFileSync(join(RAIZ, 'motor/vendor/mbrola/mbrola.wasm')), readFileSync(join(RAIZ, 'motor/vendor/mbrola', arg('voz', 'es2')))) : null;
+// los difonos llevan su curva adentro (difonos.js, cantor por cantor, sin tocar las eses)
+const LA_CURVA = arg('curva') === 'no' || MOTOR === 'difonos' ? null : CURVA;
+const igualar = (x) => LA_CURVA ? ecualizar(x, SR, LA_CURVA) : Float32Array.from(x);
 const solo = arg('solo'), exportar = args.includes('--exportar'), ids = arg('ids') ? new Set(arg('ids').split(',')) : null, cuantaSala = +arg('sala', .24);
 mkdirSync(SAL, { recursive: true });
 
@@ -92,13 +102,22 @@ for (const f of fragmentos) {
     const V = { ...VARIACION, ...(variacion || {}) }, lider = c === 0 && ls.length > 1;
     const cfg = CORO[k], semilla = 1000 + idx * 7;
     const ganancia = cfg.ganancia / Math.sqrt(cfg.cantores) * (lider && V.liderDb ? Math.pow(10, V.liderDb / 20) : 1) * volumenDe(semilla, V);
-    const r = cantar(notas, { sr: SR, tipo: cfg.tipo, semilla, separar: true, variacion: variacion || undefined, retraso: lider && V.liderAdelanto ? -V.liderAdelanto : 0 });
+    const ret = lider && V.liderAdelanto ? -V.liderAdelanto : 0;
+    let r;
+    if (MOTOR === 'difonos') {
+      // el cantor de difonos de la página: su cuerda (tracto) y sus mañas; sale a la frecuencia de la voz y se pasa a SR
+      const o = { ...cantorDifonos(k, semilla, V), ...(arg('emision') != null ? { emision: +arg('emision') } : {}), ...(arg('curva') === 'no' ? { curva: null } : {}) };
+      const d = cantarDifonos(mb, notas, { ...o, retraso: o.retraso + ret });
+      const y = remuestrear(d.x, d.sr, SR), desde = Math.round(d.inicio * SR), z = new Float32Array(n);
+      for (let s = 0; s < y.length; s++) { const j = desde + s; if (j >= 0 && j < n) z[j] = y[s]; }
+      r = { voz: z, ruido: new Float32Array(n) };
+    } else r = cantar(notas, { sr: SR, tipo: cfg.tipo, semilla, separar: true, variacion: variacion || undefined, retraso: ret });
     const m = Math.min(n, r.voz.length);
     for (let s = 0; s < m; s++) { voz[s] += r.voz[s] * ganancia; ruido[s] += r.ruido[s] * ganancia; }
     cantores.push({ k, c, ganancia, pan: Math.max(-1, Math.min(1, cfg.pan + (c - (cfg.cantores - 1) / 2) * .12)), r, n: notas.length });
     idx++;
   });
-  const e = ecualizar(voz, SR, CURVA);
+  const e = igualar(voz);
   for (let s = 0; s < n; s++) e[s] += ruido[s];
   if (cuantaSala > 0) { const R = Float32Array.from(e); sala(e, R, SR, { mezcla: cuantaSala, largo: 1.7 }); }
   let pk = 1e-9; for (const v of e) pk = Math.max(pk, Math.abs(v));
@@ -110,7 +129,7 @@ for (const f of fragmentos) {
     const man = { sr: SR, largo, pieza: { nombre: f.id, murga: f.murga }, cantores: [], bateria: { archivo: 'bateria.wav', relacion: 0 }, sala: { mezcla: .24, largo: 1.7 } };
     cantores.forEach((x, i) => {
       const y = new Float32Array(n); y.set(x.r.voz.subarray(0, n));
-      const z = ecualizar(y, SR, CURVA); for (let s = 0; s < Math.min(n, x.r.ruido.length); s++) z[s] += x.r.ruido[s];
+      const z = igualar(y); for (let s = 0; s < Math.min(n, x.r.ruido.length); s++) z[s] += x.r.ruido[s];
       let p = 1e-9; for (const v of z) p = Math.max(p, Math.abs(v)); for (let s = 0; s < n; s++) z[s] *= .7 / p;
       const archivo = `voces/${String(i + 1).padStart(2, '0')}_${x.k}.wav`; wav(join(dir, archivo), z);
       man.cantores.push({ archivo, cuerda: x.k, tipo: CORO[x.k].tipo, pan: +x.pan.toFixed(3), ganancia: +(x.ganancia * p / .7).toFixed(5), copias: null, notas: x.n });
