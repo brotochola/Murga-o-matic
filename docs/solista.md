@@ -209,6 +209,22 @@ Con *Sin Disfraz* completo (Lamolle y Lombardo, 1998; resumen en [INVESTIGACION.
 
 - **La tercia, hasta Si 4.** El libro dibuja el registro de los sobreprimos de Mi 4 a La 4, con extensión hasta Si 4 («un buen sobreprimo llega fácilmente a un la o un si»), y la tercia no es necesariamente el más agudo. Iba de Re 4 a Re 5, con mediana en La 4; ahora va de Re 4 a Si 4, con mediana en Sol 4.
 
+## El agudo y el grito
+
+En el agudo los cantores sonaban raros. Medido con un cantor que sostiene «a» de Do 3 a Re 5 (`vibrato` 0), MBROLA no se rompe: los armónicos quedan limpios (de 25 a 33 dB sobre lo que hay entre ellos, igual que en el grave) y la vocal mantiene su forma (de 1 a 4 dB de diferencia con la «a» grave). Lo raro es otra cosa: la voz es de habla, a un esfuerzo tranquilo, y subida dos octavas queda como un falsete flojito. Entre 1,5 y 3 kHz tiene de 11 a 15 dB menos que en el total, y arriba de 3 kHz, de 23 a 35 dB menos. Un tenor de murga en La 4 canta con el pecho y al máximo, con mucho más arriba.
+
+`gritar()` en `difonos.js`, antes de la curva de timbre:
+
+- **Esfuerzo por nota:** grito × (0,75 + 0,35 × fuerza) × (1 + 0,5 × cuántas quintas pasa del centro de su cuerda). El centro va de Mi 3 en los bajos a Mi 4 en los sobreprimos (`CUERDAS_DIFONOS`): como dice el libro, la emisión cambia con el volumen y con el registro.
+- **Saturación:** la voz dividida por su envolvente pasa por un polinomio de grado 3 (armónicos 2 y 3) y vuelve a su envolvente. Con una tangente hiperbólica los armónicos de arriba volvían doblados como ruido.
+- **Aspereza:** el volumen tiembla un poco al azar (ruido filtrado a 70 Hz, 10 % × esfuerzo).
+- **Brillo:** el timbre del coro real sube de 60 % hacia el 100 % (70 % de lo que falta, con grito 1).
+- Las eses y las consonantes sordas van aparte, sin saturar.
+
+Con el grito de cada cantor (0,6 ± 20 %), el sobreprimo en La 4 pasa de −15 a −4 dB entre 1,5 y 3 kHz, y de −30 a −12 dB entre 3 y 4,5 kHz. En **La pieza → Cuánto gritan** se elige no, sí (× 1) o mucho (× 1,6); en «Los cantantes», uno por uno.
+
+**La sala.** Las voces van todas juntas a una reverberación (la batería no). Era ruido blanco de 0,7 s y casi no se oía. Ahora tiene 20 ms antes de empezar, unos primeros rebotes distintos a cada lado y una cola de 1,6 s en los graves y 0,7 s arriba de 2,5 kHz, sin lo de abajo de 120 Hz. En **Mezcla → Sala** se elige cuánta: el valor por defecto (0,5) es casi el doble de lo que se mandaba antes.
+
 ## Lo que falta
 
 - **Que no suene a locutor.** Las voces son de habla: las vocales largas se estiran repitiendo el mismo pedazo y pueden sonar quietas.

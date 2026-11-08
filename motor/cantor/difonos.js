@@ -156,7 +156,7 @@ export function guion(notas, opc = {}) {
     if (finales.has(i)) db -= 12 * suave((t - (n.t1 - .12)) / .12);
     return Math.pow(10, db / 20);
   };
-  return { pho: lineas.join('\n') + '\n', inicio, fin, segs, ganancia };
+  return { pho: lineas.join('\n') + '\n', inicio, fin, segs, ganancia, notas };
 }
 
 // Después de MBROLA: el volumen de cada nota, las eses más suaves, un poco de aire (ruido que sigue a la voz) y la
@@ -164,8 +164,11 @@ export function guion(notas, opc = {}) {
 // g: el guion.
 export function terminar(x, sr, g, opc = {}) {
   const curvaDeLaVoz = TIMBRES['CURVA_DIFONOS' + (opc.voz && opc.voz !== 'es2' ? '_' + opc.voz.toUpperCase() : '')] || TIMBRES.CURVA_DIFONOS || null;
-  const o = { aire: 0, emision: 0, semilla: 1, curva: curvaDeLaVoz, brillo: 1, eses: 1, esesFiltro: 0, esesDb: 8, ruidos: 1, ...opc };
-  if (o.curva && o.brillo !== 1) o.curva = o.curva.map(([f, db]) => [f, db * o.brillo]);
+  const o = { aire: 0, emision: 0, grito: 0, semilla: 1, curva: curvaDeLaVoz, brillo: 1, eses: 1, esesFiltro: 0, esesDb: 8, ruidos: 1, ...opc };
+  // gritando, la voz se acerca al timbre entero del coro real (brillo 1): el grito sube el brillo hasta un 70 % de lo
+  // que le falta
+  const brillo = o.brillo + (1 - o.brillo) * Math.min(1, o.grito) * .7;
+  if (o.curva && brillo !== 1) o.curva = o.curva.map(([f, db]) => [f, db * brillo]);
   if (o.color > 0 || o.inclinacion) {
     // el color propio de este cantor: unas ondas suaves en dB sobre la escala de frecuencias (de 400 Hz a 5 kHz), y su
     // brillo (inclinación, dB por octava arriba de 1 kHz)
@@ -223,8 +226,9 @@ export function terminar(x, sr, g, opc = {}) {
     voz = Float32Array.from(pre);
     for (const { a, b } of lasEses) for (let k = Math.max(0, a - r); k < Math.min(n, b + r); k++) { const m = rampa(k, a, b); if (m > 0) voz[k] *= 1 - m; }
   }
+  if (o.grito > 0 && g.notas?.length) gritar(voz === pre ? (voz = Float32Array.from(pre)) : voz, sr, g, o);
   // el timbre del coro real (curva medida en herramientas/curva_difonos.py): las vocales mucho más brillantes
-  const y = o.curva ? ecualizar(voz, sr, o.curva) : Float32Array.from(pre);
+  const y = o.curva ? ecualizar(voz, sr, o.curva) : Float32Array.from(voz);
   // Las eses: más bajas y filtradas, sin el silbido de arriba de 4 kHz. Las aspiradas, más todavía: un soplo. La sh: un
   // ruido un poco más fuerte que la s, en una banda de 2 a 4 kHz con el pico en 2,5 kHz (sin lo agudo de la s).
   for (const { s, a, b } of lasEses) {
@@ -278,6 +282,44 @@ export function terminar(x, sr, g, opc = {}) {
   return y;
 }
 
+// El grito. Las voces de MBROLA son de habla, a un esfuerzo tranquilo; el coro de murga canta al máximo, al aire libre.
+// Gritando, la fuente de la voz se vuelve más rica en armónicos y más áspera, y más en las notas fuertes y en las
+// agudas (Sin Disfraz: la colocación cambia con el volumen y con el registro). Antes de la curva de timbre:
+//   esfuerzo: por nota, grito × (0,75 + 0,35 × fuerza) × (1 + 0,5 × cuánto pasa del centro de su cuerda, en quintas:
+//     de −1 a +1,4). Sin eso, en el agudo la voz de habla subida dos octavas queda como un falsete flojito, casi
+//     sin armónicos arriba de 1,5 kHz (ver docs/solista.md, «El agudo»);
+//   saturación: la voz dividida por su envolvente (siempre la misma forma, fuerte o suave) pasa por un polinomio de
+//     grado 3 (armónicos 2 y 3 de cada componente, más cuanto más esfuerzo) y vuelve a su envolvente. Con una tangente
+//     hiperbólica salían armónicos por encima de la mitad de la frecuencia de muestreo, que vuelven doblados como
+//     ruido entre los armónicos (de 30 a 18 dB de limpieza en el agudo); el polinomio casi no dobla nada;
+//   aspereza: el volumen tiembla un poco al azar, rápido (ruido filtrado a 70 Hz), como la voz forzada.
+// Las consonantes sordas y las eses no pasan por acá (van aparte), así no se ensucian.
+function gritar(x, sr, g, o) {
+  const N = g.notas, centro = o.centro ?? N.reduce((a, n) => a + n.midi, 0) / N.length;
+  const PASO = 32, nc = Math.ceil(x.length / PASO) + 2, esf = new Float32Array(nc);
+  for (const n of N) {
+    const e = o.grito * (.75 + .35 * (n.vel ?? .8)) * (1 + .5 * Math.max(-1, Math.min(1.4, (n.midi - centro) / 7)));
+    const a = Math.max(0, Math.floor(((n.t0 - .06) - g.inicio) * sr / PASO)), b = Math.min(nc, Math.ceil((n.t1 - g.inicio) * sr / PASO));
+    for (let j = a; j < b; j++) esf[j] = Math.max(esf[j], e);
+  }
+  { const al = 1 - Math.exp(-PASO / sr / .04); let v = esf[0]; for (let j = 0; j < nc; j++) { v += (esf[j] - v) * al; esf[j] = v; } }
+  const rng = new Rnd((o.semilla || 1) * 71 + 3);
+  const subir = 1 - Math.exp(-1 / (.001 * sr)), bajar = 1 - Math.exp(-1 / (.025 * sr)), aspera = 1 - Math.exp(-2 * Math.PI * 70 / sr);
+  const normaRuido = Math.sqrt((2 - aspera) / aspera) / .577;   // que el ruido filtrado tenga desvío 1
+  let env = 1e-4, ruido = 0, dc1 = 0, dc2 = 0;
+  const kdc = 1 - 2 * Math.PI * 30 / sr;
+  for (let k = 0; k < x.length; k++) {
+    const u = k / PASO, j = u | 0, f = u - j, e = esf[j] * (1 - f) + esf[j + 1] * f;
+    const v = x[k], av = Math.abs(v);
+    env += (av - env) * (av > env ? subir : bajar);
+    if (e <= 0 || env < 1e-5) { const z = v; dc2 = z - dc1 + kdc * dc2; dc1 = z; x[k] = dc2; continue; }
+    const a3 = Math.min(1, .9 * e), a2 = Math.min(.5, .35 * e), w = Math.max(-1, Math.min(1, v / env));
+    ruido += ((rng.r() * 2 - 1) - ruido) * aspera;
+    const z = env * ((1 - a3) * w + a3 * (1.5 * w - .5 * w * w * w) + a2 * w * w) * (1 + .1 * e * ruido * normaRuido);
+    dc2 = z - dc1 + kdc * dc2; dc1 = z; x[k] = dc2;   // sin la continua que deja la curva corrida
+  }
+}
+
 // De la frecuencia de la voz (16 o 22,05 kHz) a la de la página: sinc con ventana de Kaiser, tabla precalculada.
 const TABLA = (() => {
   const H = 16, R = 256, t = new Float32Array(H * R + 1), I0 = x => { let s = 1, d = 1; for (let k = 1; k < 25; k++) { d *= (x / 2 / k) ** 2; s += d; } return s; }, b = 8.6;
@@ -305,7 +347,8 @@ export function remuestrear(x, srIn, srOut) {
 // como en variacion.js: un poco más alto o más bajo, su vibrato, su garganta, cuánto pica al entrar y cuánto alarga
 // las consonantes. Devuelve las opciones para cantarDifonos.
 // (La tercia canta muy agudo: con el tracto del primo suena menos finita.)
-export const CUERDAS_DIFONOS = { bajos: { tracto: .9 }, segundos: { tracto: .95 }, primos: { tracto: 1 }, sobreprimos: { tracto: 1.03 }, tercia: { tracto: 1 } };
+// centro: desde dónde empieza a gritar más (el medio de lo cómodo para la cuerda; gritar(), en midi)
+export const CUERDAS_DIFONOS = { bajos: { tracto: .9, centro: 52 }, segundos: { tracto: .95, centro: 55 }, primos: { tracto: 1, centro: 60 }, sobreprimos: { tracto: 1.03, centro: 64 }, tercia: { tracto: 1, centro: 64 } };
 // Todos salen de dos voces grabadas: para que no suenen iguales, cada cantor de una cuerda tiene otra garganta (el que
 // la lleva en el medio, los demás más grandes o más chicos: TRACTO), su propio color (timbre: dB de más o de menos en
 // unas pocas zonas del espectro) y más o menos brillo (inclinación: dB por octava arriba de 1 kHz). Siempre lo mismo
@@ -332,6 +375,8 @@ export function cantorDifonos(cuerda, semilla, { c = 0, V = VARIACION, D = DIFER
     golpe: 3, arco: 1,
     // cuánto adorna las notas largas de las clarinadas y de los finales (adornos.js; algunos nada)
     adornos: cuantoAdorna(cuerda, semilla, c),
+    // cuánto grita (gritar(): más armónicos, aspereza y brillo); cada uno un poco distinto
+    grito: +(.6 * new Rnd(semilla * 43 + 19).u(.8, 1.2)).toFixed(2), centro: T.centro,
   };
 }
 
@@ -359,7 +404,7 @@ export function cantarDifonos(mb, notas, opc = {}) {
   if (!notas.length) return { x: new Float32Array(0), sr: F * a, inicio: 0 };
   notas = correr(notas, opc);
   const ns = a === 1 ? notas : notas.map(n => ({ ...n, t0: n.t0 * a, t1: n.t1 * a, midi: n.midi - 12 * Math.log2(a) }));
-  const o = a === 1 ? opc : { ...opc, consonantes: (opc.consonantes ?? 1) * a, vibVel: (opc.vibVel ?? 5.5) / a, vibEntra: (opc.vibEntra ?? .22) * a };
+  const o = a === 1 ? opc : { ...opc, consonantes: (opc.consonantes ?? 1) * a, vibVel: (opc.vibVel ?? 5.5) / a, vibEntra: (opc.vibEntra ?? .22) * a, ...(opc.centro != null ? { centro: opc.centro - 12 * Math.log2(a) } : {}) };
   // De a frases: MBROLA no aguanta silencios de minutos (se pasa de rango) y así tampoco canta el silencio
   const frases = [[]];
   ns.forEach((n, i) => { if (i && n.t0 - ns[i - 1].t1 > 1.5 * a) frases.push([]); frases[frases.length - 1].push(n); });

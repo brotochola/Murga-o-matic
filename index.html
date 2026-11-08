@@ -303,6 +303,10 @@ a{color:var(--sobreprimos)}
       <div class="field"><label class="lbl" for="tercia">Cuánto adorna la tercia</label>
         <input id="tercia" type="range" min="0" max="1" step="0.05" value="0">
       </div>
+      <div class="field" id="campoGrito" hidden><label class="lbl" for="grito">Cuánto gritan</label>
+        <select id="grito"><option value="no">No gritan: voz de habla, como antes</option><option value="si" selected>Gritan, como en el tablado</option><option value="mucho">Gritan mucho</option></select>
+        <p class="hint">Gritando, la voz se pone más brillante y áspera, y más en las notas fuertes y en las agudas. Cada cantor grita a su manera; en «Los cantantes» se cambia uno por uno.</p>
+      </div>
       <div class="field" id="campoAdornos" hidden><label class="lbl" for="adornos">Adornos en clarinadas y finales</label>
         <select id="adornos"><option value="ninguno">Ninguno: sonido limpio</option><option value="algunos" selected>Algunos cantores adornan</option><option value="muchos">Muchos adornos</option></select>
         <p class="hint">En las notas largas, algunos cantores hacen vibratos, trinos, vueltas o se pasan a otra voz del acorde, cada uno a su manera (como cuenta <i>Sin Disfraz</i>).</p>
@@ -327,6 +331,10 @@ a{color:var(--sobreprimos)}
           <button data-v="teja" aria-pressed="false">Como La Teja</button>
         </div>
         <p class="hint">En las murgas de La Unión, mirando desde el público, los segundos van a la izquierda, los sobreprimos en el medio y los primos a la derecha; en las de La Teja, al revés (<i>Sin Disfraz</i>).</p>
+      </div>
+      <div class="field"><label class="lbl" for="sala">Sala: la reverberación de las voces</label>
+        <input id="sala" type="range" min="0" max="1" step="0.05" value="0.5">
+        <div class="hint" style="display:flex;justify-content:space-between"><span>seco</span><span>un poco</span><span>mucha</span></div>
       </div>
       <div class="mixer" id="mixer"></div>
     </aside>
