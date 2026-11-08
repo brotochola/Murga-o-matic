@@ -244,7 +244,9 @@ function melodia(rng, E, sec, golpes, lo, hi, guia, sigma = 2.2) {
     if (g.evitar === p) e = 0;
     if (i === 0) e *= enAc ? 1.5 : .3;
     const c = guia ? guia(i) : null;
-    if (c !== null && c !== undefined) { const d = Math.abs(p - c); e *= Math.exp(-(d * d) / (2 * sigma * sigma)) * (d === 0 ? 3 : 1); }
+    // la nota que se varía no puede ser la misma, pero queda cerca: como entre dos versos, cambia por una vecina
+    const sg = g.evitar !== undefined ? 1.6 : sigma;
+    if (c !== null && c !== undefined) { const d = Math.abs(p - c); e *= Math.exp(-(d * d) / (2 * sg * sg)) * (d === 0 ? 3 : 1); }
     // la frase vive en el medio del registro
     const centro = (lo + hi) / 2, dc = (p - centro) / ((hi - lo) / 2);
     e *= Math.exp(-.5 * dc * dc);
@@ -440,7 +442,7 @@ function tema(rng, E, T, sec, ev, opc = {}) {
   // La última unidad de la forma larga vuelve igual a la segunda: sólo se sortea hasta ahí
   const repiteUlt = !de && unidades >= 4 && original[3] === original[1];
   const unicos = repiteUlt ? G.filter(g => g.u < 3) : G;
-  const guia = de ? (i => de.notas[i] ?? unicos[i].guia) : (i => (unicos[i].evitar !== undefined ? null : unicos[i].guia));
+  const guia = de ? (i => de.notas[i] ?? unicos[i].guia) : (i => unicos[i].guia);
   const sorteadas = melodia(rng, E, sec, unicos, lo, hi, guia, de ? .5 : .75);
   unicos.forEach((g, i) => { g.nota = sorteadas[i]; });
   if (repiteUlt) {
