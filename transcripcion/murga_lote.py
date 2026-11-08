@@ -230,16 +230,22 @@ def main():
     ap.add_argument("--demucs", default="htdemucs_ft", help="htdemucs | htdemucs_ft")
     ap.add_argument("--shifts", type=int, default=1)
     ap.add_argument("--cookies", default=None, help="chrome | firefox | edge …")
+    ap.add_argument("--lista", default=str(LISTA), help="otra lista: tomas.csv tiene varias tomas del mismo espectáculo")
+    ap.add_argument("--carpeta", default="", help="subcarpeta de murga_trabajo para voces, batería, mp3 y midis (vacío = las de siempre)")
     a = ap.parse_args()
+    if a.carpeta:
+        global VOCES, BATERIA, MP3, MIDIS, CLIPS
+        base = TRABAJO / a.carpeta
+        CLIPS, VOCES, BATERIA, MP3, MIDIS = (base / d for d in ("clips", "voces", "bateria", "mp3", "midis"))
 
     for d in (AUDIO, CLIPS, VOCES, BATERIA, MP3, MIDIS):
         d.mkdir(parents=True, exist_ok=True)
     if sys.platform == "win32":  # que Windows no se duerma mientras corre
         ctypes.windll.kernel32.SetThreadExecutionState(0x80000000 | 0x00000001)
 
-    filas = list(csv.DictReader(LISTA.open(encoding="utf-8")))
-    for f in filas:
-        f["nombre"] = f"{slug(f['murga'])}_{f['anio']}_{f['parte']}"
+    filas = list(csv.DictReader(Path(a.lista).open(encoding="utf-8")))
+    for f in filas:  # en tomas.csv cada fila es una toma de un espectáculo
+        f["nombre"] = f"{f['espectaculo']}__{f['toma']}" if "toma" in f else f"{slug(f['murga'])}_{f['anio']}_{f['parte']}"
     filas = [f for f in filas if a.solo in f["nombre"]]
 
     h = None

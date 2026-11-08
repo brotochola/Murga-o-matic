@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { leerMidi } from './midi.js';
 
 export const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
-export const TRABAJO = join(RAIZ, 'murga_trabajo');
+// MURGA_CARPETA=tomas: las mismas herramientas sobre otra carpeta de trabajo (murga_trabajo/tomas)
+export const TRABAJO = join(RAIZ, 'murga_trabajo', process.env.MURGA_CARPETA || '');
 export const MIDIS = join(TRABAJO, 'midis');
 export const REVISION = join(TRABAJO, 'revision');
 

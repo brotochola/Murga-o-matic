@@ -190,7 +190,7 @@ def pasos(a):
         ("fragmentos", "Elegir fragmentos de coro real", [], lambda: correr([UV, "run", "-q", "herramientas/banco_fragmentos.py", "--maximo", a.fragmentos]), .05, True),
         ("sintetizar", "Volver a cantarlos con el coro sintético de ahora", ["fragmentos"], lambda: correr(["node", "herramientas/banco_sintetizar.mjs"]), .05, True),
         ("medir_antes", "Medir real contra sintético", ["sintetizar"], lambda: correr([UV, "run", "-q", "herramientas/banco_medir.py", "--salida", BANCO / "medidas_antes.json"]), .05, True),
-        ("ajustar", f"Buscar la mejor variación entre cantores ({a.horas:g} h)", ["fragmentos"], lambda: correr([UV, "run", "-q", "herramientas/banco_ajustar.py", "--horas", a.horas], timeout=(a.horas + 1) * 3600), a.horas + .2, True),
+        ("ajustar", f"Buscar la mejor variación entre cantores ({a.horas:g} h)", ["fragmentos"], lambda: correr([UV, "run", "-q", "herramientas/banco_ajustar.py", "--horas", a.horas] + (["--paralelo", os.environ["MURGA_PARALELO"]] if os.environ.get("MURGA_PARALELO") else []), timeout=(a.horas + 1) * 3600), a.horas + .2, True),
         ("medir_despues", "Medir con la variación ajustada", ["ajustar"], lambda: paso_medir_despues(a), .1, True),
         ("seedvc_instalar", "Instalar Seed-VC", [], lambda: correr([UV, "run", "-q", "transcripcion/convertir_coro.py", "instalar"], timeout=3 * 3600), .5, con_placa),
         ("seedvc_referencias", "Elegir voces de referencia", ["seedvc_instalar", "fragmentos"], lambda: paso_referencias(a), .1, con_placa),
