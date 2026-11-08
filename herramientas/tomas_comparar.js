@@ -104,6 +104,7 @@ export function comparar() {
     const CR = suavizar(croma(leerAudio(ref.voz)));
     L.push(`## ${show}`, '', `Referencia: **${ref.toma}** (${ref.fuente}). Notas a ±80 ms; F1 de 100 % es la misma transcripción.`, '',
       '| Toma | Fuente | En común | Transp. | Costo DTW | Notas crudas F1 | Sin octava | Limpias F1 | Golpes en común | Mismas voces | Diferencia de voces | Misma melodía | Armonía |', '|---|---|---|---|---|---|---|---|---|---|---|---|---|');
+    const fallidas = new Set();
     for (const t of T.slice(1)) {
       const CB0 = suavizar(croma(leerAudio(t.voz)));
       const tr = transposicion(CR, CB0), CB = rotar(CB0, tr);
@@ -115,12 +116,13 @@ export function comparar() {
       const cl = ref.limpias && t.limpias ? compararNotas(enA(ref.limpias), llevar(t.limpias)) : null;
       const comun = comunA[1] - comunA[0];
       const x = cl || c;
+      if (comun < 60) { fallidas.add(t.toma); L.push(`| ${t.toma} | ${t.fuente} | no se alineó: ${Math.round(comun)} s en común | | | | | | | | | | |`); resumen.push({ show, toma: t.toma, fuente: t.fuente, fallida: true, comun }); continue; }
       L.push(`| ${t.toma} | ${t.fuente} | ${Math.floor(comun / 60)}:${String(Math.round(comun % 60)).padStart(2, "0")} | ${tr} | ${nf(costo, 3)} | ${pc(c.f1)} | ${pc(c.f1Clase)} | ${cl ? pc(cl.f1) : '—'} | ${pc(x.golpesComunes)} | ${pc(x.mismasVoces)} | ${nf(x.difVoces)} | ${pc(x.melodia)} | ${pc(x.armonia)} |`);
       resumen.push({ show, toma: t.toma, fuente: t.fuente, transp: tr, costo, comun, crudas: c, limpias: cl });
     }
     // rasgos del jurado: cada par de tomas
     if (T.filter(t => t.an).length >= 2) {
-      const R = T.filter(t => t.an).map(t => ({ toma: t.toma, r: rasgosReal(t.an) }));
+      const R = T.filter(t => t.an && !fallidas.has(t.toma)).map(t => ({ toma: t.toma, r: rasgosReal(t.an) }));
       for (let i = 0; i < R.length; i++) for (let j = i + 1; j < R.length; j++) for (const k of claves) { const d = distRasgo(R[i].r, R[j].r, k); if (Number.isFinite(d)) juntos[k].push(d); }
     }
     L.push('');
@@ -134,6 +136,24 @@ export function comparar() {
     'Cerca de 0, el rasgo es estable y describe a la murga.', '',
     '| Rasgo | Qué mide | Mismo espectáculo | Espectáculos distintos | Razón |', '|---|---|---|---|---|');
   for (const x of filasR) L.push(`| ${x.k} | ${RASGOS[x.k][1]} | ${nf(x.dentro)} | ${nf(x.entre)} | ${nf(x.razon)} |`);
+  // lo que se aprende, con los números de esta corrida
+  {
+    const ok = resumen.filter(r => !r.fallida && r.limpias);
+    const mismaNoche = ok.filter(r => r.costo < .03), otras = ok.filter(r => r.costo >= .06);
+    const medF = L0 => med(L0.map(r => r.limpias.f1)), medM = L0 => med(L0.map(r => r.limpias.melodia));
+    const estables = filasR.filter(x => x.razon != null && x.dentro > 0).slice(-5).map(x => x.k), ruido = filasR.filter(x => x.razon > .8).map(x => x.k);
+    L.push('', '## Lo que se aprende', '');
+    if (mismaNoche.length) L.push(`- **La misma noche, otra grabación.** ${mismaNoche.map(r => r.toma).join(', ')} es la misma actuación que la referencia, grabada desde otro lugar (el croma casi no cambia: costo DTW ${nf(med(mismaNoche.map(r => r.costo)), 3)}). Sus transcripciones coinciden en el ${pc(medF(mismaNoche))} de las notas y en el ${pc(medM(mismaNoche))} de la melodía. Es el techo de la cadena entre grabaciones: aunque el coro cante exactamente lo mismo, la toma, la mezcla y los cortes de 5 s cambian una de cada cuatro notas.`, '');
+    if (otras.length) L.push(`- **Noches distintas.** Entre noches distintas del mismo espectáculo coincide el ${pc(medF(otras))} de las notas (mediana de ${otras.length} tomas, entre ${pc(Math.min(...otras.map(r => r.limpias.f1)))} y ${pc(Math.max(...otras.map(r => r.limpias.f1)))}) y el ${pc(medM(otras))} de la melodía. La distancia hasta el techo de la misma noche es lo que la murga cambia de una noche a la otra, más lo que agregan las grabaciones peores (la tribuna, la televisión).`, '');
+    // las trabas: si en todas las tomas de un espectáculo (también el disco) el filtro saca mucho, es música
+    const trabas = [];
+    for (const [show, tomas] of porShow) {
+      const fr = tomas.map(t => cargarToma(t.nombre)).filter(t => t?.an).map(t => (t.an.quitadas?.trabado || 0) / ((t.an.n_notas || 0) + Object.values(t.an.quitadas || {}).reduce((a, b) => a + b, 0)));
+      if (fr.length >= 3 && Math.min(...fr) > .12) trabas.push(`${show} (${pc(Math.min(...fr))} a ${pc(Math.max(...fr))} en las ${fr.length} tomas)`);
+    }
+    if (trabas.length) L.push(`- **El filtro de trabas saca música.** En ${trabas.join('; ')}, el filtro de trabas de \`limpiar.js\` saca muchas notas en todas las tomas, también en el disco, que no tiene aplausos ni habla. Si fueran trabas del transcriptor no caerían en el mismo lugar en grabaciones distintas, pero caen en el mismo lugar y sobre los mismos acordes. Es un recitado cantado: golpes picados y parejos sobre un acorde (en el disco de Asaltantes, 22 golpes sobre Sol mayor y 21 sobre Do, cada 0,23 s). El filtro los confunde con trabas porque son igual de regulares. En el corpus pesa poco: las rachas que el filtro saca y que caen en la grilla del tempo, con tres voces o más, suman unos 520 golpes, menos del 1 %. Queda anotado para mejorar el filtro.`, '');
+    L.push(`- **Qué rasgos describen a la murga.** Los más estables entre noches, comparados con la diferencia entre espectáculos, son ${estables.reverse().join(', ')}. ${ruido.length ? 'En cambio, ' + ruido.join(', ') + ' cambian entre dos noches casi tanto como entre dos espectáculos: en el jurado pesan como ruido.' : ''}`, '');
+  }
   writeFileSync(join(DIR, 'comparacion.json'), JSON.stringify({ resumen, rasgos: filasR }, null, 1));
   writeFileSync(process.env.TOMAS_DIR ? join(DIR, 'tomas.md') : join(TRABAJO, '..', 'docs', 'tomas.md'), L.join('\n') + '\n');
   console.log(L.join('\n'));

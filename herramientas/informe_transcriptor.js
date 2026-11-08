@@ -111,7 +111,12 @@ if (sesgo) {
   L.push('');
 }
 const tm = join(RAIZ, 'docs', 'tomas.md');
-if (existsSync(tm)) L.push('## 4. Varias tomas del mismo espectáculo', '', 'El detalle está en [tomas.md](tomas.md).', '');
+if (existsSync(tm)) {
+  // lo que se aprende de las tomas, tal como lo escribe tomas_comparar.js
+  const aprende = readFileSync(tm, 'utf8').split('## Lo que se aprende')[1];
+  L.push('## 4. Varias tomas del mismo espectáculo', '', 'Tres retiradas de 2024 y 2026 (Asaltantes con Patente, Doña Bastarda y La Trasnochada), con 5 o 6 grabaciones cada una: otras noches, la televisión, la tribuna y el disco. El detalle está en [tomas.md](tomas.md).', '');
+  if (aprende) L.push(aprende.trim(), '');
+}
 writeFileSync(join(RAIZ, 'docs', 'transcriptor.md'), L.join('\n') + '\n');
 console.log(L.join('\n'));
 void spawnSync;

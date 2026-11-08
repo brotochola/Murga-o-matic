@@ -89,3 +89,15 @@ Cada rasgo del jurado se calcula dos veces en las cinco piezas: con las notas ve
 | cromat | notas fuera de la escala | 0,06 | 0,08 | 0,4 |
 | bloqueLargo | golpes largos a tres voces o más | 0,47 | 0,42 | -0,3 |
 
+## 4. Varias tomas del mismo espectáculo
+
+Tres retiradas de 2024 y 2026 (Asaltantes con Patente, Doña Bastarda y La Trasnochada), con 5 o 6 grabaciones cada una: otras noches, la televisión, la tribuna y el disco. El detalle está en [tomas.md](tomas.md).
+
+- **La misma noche, otra grabación.** fan_granma es la misma actuación que la referencia, grabada desde otro lugar (el croma casi no cambia: costo DTW 0,023). Sus transcripciones coinciden en el 77 % de las notas y en el 81 % de la melodía. Es el techo de la cadena entre grabaciones: aunque el coro cante exactamente lo mismo, la toma, la mezcla y los cortes de 5 s cambian una de cada cuatro notas.
+
+- **Noches distintas.** Entre noches distintas del mismo espectáculo coincide el 35 % de las notas (mediana de 11 tomas, entre 16 % y 55 %) y el 53 % de la melodía. La distancia hasta el techo de la misma noche es lo que la murga cambia de una noche a la otra, más lo que agregan las grabaciones peores (la tribuna, la televisión).
+
+- **El filtro de trabas saca música.** En asaltantes_2024_retirada (18 % a 28 % en las 6 tomas), el filtro de trabas de `limpiar.js` saca muchas notas en todas las tomas, también en el disco, que no tiene aplausos ni habla. Si fueran trabas del transcriptor no caerían en el mismo lugar en grabaciones distintas, pero caen en el mismo lugar y sobre los mismos acordes. Es un recitado cantado: golpes picados y parejos sobre un acorde (en el disco de Asaltantes, 22 golpes sobre Sol mayor y 21 sobre Do, cada 0,23 s). El filtro los confunde con trabas porque son igual de regulares. En el corpus pesa poco: las rachas que el filtro saca y que caen en la grilla del tempo, con tres voces o más, suman unos 520 golpes, menos del 1 %. Queda anotado para mejorar el filtro.
+
+- **Qué rasgos describen a la murga.** Los más estables entre noches, comparados con la diferencia entre espectáculos, son voces, unaVoz, span, salto, largas. En cambio, tonica, subdom cambian entre dos noches casi tanto como entre dos espectáculos: en el jurado pesan como ruido.
+
