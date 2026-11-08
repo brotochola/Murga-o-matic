@@ -4,6 +4,16 @@ La versión 1 del compositor es la que se aprobó de oído el 7 de noviembre de 
 
 La página deja elegir la versión en **Compositor**. La versión 1 viene con su modelo y sus modos de ese día (`motor/compositor_v1.js`, `motor/modelo_v1.js`, `motor/modos_v1.js`), así suena exactamente igual que antes.
 
+**En resumen**, tal como suenan en la página (cada versión con su modelo), medidas contra los 85 tramos y con dos juegos de semillas:
+
+| Estilo | Versión 1 | Versión 2 |
+|---|---|---|
+| Todas | 26,7 · 25,1 | 17,1 · 15,9 |
+| Agarrate Catalina | 25,9 · 23,9 | 18,1 · 18,1 |
+| La Trasnochada | 20,2 · 23,1 | 19,1 · 18,5 |
+
+Es la suma de las distancias a lo real en 30 rasgos de nota (abajo, en "Cómo se midió"). Además, la versión 2 repite el contorno de la melodía casi como las murgas reales, en lugar de hasta cuatro veces más, y la retirada dura y se arma por bloques como las reales.
+
 ## Cómo se midió
 
 - **Rasgos de nota.** Para cada estilo (Catalina, Trasnochada, todas) se generan 80 piezas (40 semillas por forma) con cada versión. Se calcula la mediana de cada uno de los 30 rasgos del jurado y su distancia a la mediana de los tramos reales de ese estilo, en anchos de la norma del jurado. La medida es la suma de las 30 distancias. Con otro juego de 80 semillas la suma cambia hasta ±1,3: eso es el ruido.
