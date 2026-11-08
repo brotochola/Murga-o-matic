@@ -135,6 +135,7 @@ Suma de distancias con dos juegos de semillas, mejora en los cuatro estilos medi
 - **Suavizar los saltos de las voces de abajo en las costuras**, por octava o por la nota del acorde más cercana. Baja los saltos de cuarta, pero sube los de tercera y saca terceras entre voces. En el jurado, sin espiar, no cambió nada (1,32 contra 1,33).
 - **Cambiar el peso de la costura, el de la continuidad de la melodía y el del registro.** Con dos juegos de semillas, la mejor combinación ganó un 3 %, del mismo tamaño que el ruido.
 - **Atar más la melodía a la celda** (una campana más angosta alrededor de la nota de la celda, o más premio por quedarse en ella), **levantar el piso de la tabla de pasos** o **aplanarla**. Las dos primeras no movieron nada; aplanar la tabla baja las repeticiones pero dispara los saltos.
+- **Quedarse más en el mismo acorde al pegar un gesto con el siguiente.** Lo generado cambia de acorde 0,71 veces por compás y lo real 0,59. Pegando celdas reales al azar ya da 0,68: los cambios salen de las costuras. Frenar el cambio en la costura lo baja a 0,64, pero la suma de distancias no se mueve fuera del ruido (17,1 → 16,8 y 15,9 → 16,2 con el freno a 0,6).
 
 ## Lo que sigue abierto
 
