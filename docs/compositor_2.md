@@ -74,6 +74,8 @@ Al aprender, un gesto de dos compases se descartaba si menos del 60 % de sus gol
 
 Con el umbral en 50 %, las celdas quedan en 14,3 %. La suma de distancias, con el modelo de antes, baja en los tres estilos: Catalina 20,0 → 18,3, Trasnochada 18,0 → 17,3, todas 17,7 → 17,1. Con 40 % casi no entra más síncopa (14,5 %), así que quedó 50 %. Los gestos con la grilla corrida se siguen yendo por el otro filtro: que los apoyos caigan en el acorde.
 
+Además, se descartaban los gestos que arrancan en semicorchea impar, una anacrusa sincopada, aunque la celda queda alineada al medio compás igual. Ahora entran. Las celdas llegan a 16,6 % de golpes en semicorchea impar y lo generado a 16,1 %. Con dos juegos de semillas, la suma de los tres estilos baja de 52,7 a 50,7 y de 53,6 a 52,1.
+
 ## Lo que se probó y no quedó
 
 - **Suavizar los saltos de las voces de abajo en las costuras**, por octava o por la nota del acorde más cercana. Baja los saltos de cuarta, pero sube los de tercera y saca terceras entre voces. En el jurado, sin espiar, no cambió nada (1,32 contra 1,33).
