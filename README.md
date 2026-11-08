@@ -28,6 +28,8 @@ Fuera de la página, con una placa de video, cada cantor se puede pasar por [See
 
 La página se guarda en el navegador y después anda sin internet, en la compu o en el teléfono. Abajo de todo, en **Sin conexión**, «Guardar todo» baja lo que falta (23,5 MB: las tres voces de difonos, las muestras del coro, los loops, el compositor de la versión 1, la partitura y el MP3). Lo que se usa se guarda solo, y apenas se abre la página ya queda guardado lo básico (1,4 MB). En Chrome, Edge y Android aparece «Instalar como app»; en iPhone, Compartir → «Agregar a inicio».
 
+También hay una versión en **un solo archivo HTML** (25 MB) que se abre con doble clic, sin internet y sin servidor: `bun herramientas/un_archivo.mjs` la arma en `murga_trabajo/un_archivo/murga-o-matic.html`. Lleva adentro el código empaquetado y todos los audios, comprimidos. Es para la compu; en el teléfono anda mejor la página instalada.
+
 Lo hace `sw.js` (un service worker) con la lista `offline.json`, que tiene cada archivo de la página con un resumen de su contenido. **Cada vez que cambia un archivo de la página hay que correr `node herramientas/offline.mjs` antes del commit**: rehace la lista y la versión de `sw.js`. Así, quien la tiene guardada ve «Hay una versión nueva» y, al recargar, baja sólo los archivos que cambiaron. `herramientas/probar_pagina.mjs` avisa si la lista quedó atrasada.
 
 ## Uso local

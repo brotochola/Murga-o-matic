@@ -42,6 +42,7 @@ const cambiosDeAcorde = s => (s.acordes || []).map((g, c, l) => (c && l[c - 1] =
 // ───────────────────────── scripts de vendor/, a pedido ─────────────────────────
 const scripts = new Map();
 export function cargarScript(url) {
+  if (window.__cargarScript) return window.__cargarScript(url);   // la página en un solo archivo (herramientas/un_archivo.mjs)
   if (!scripts.has(url)) scripts.set(url, new Promise((ok, mal) => {
     const s = document.createElement('script'); s.src = url; s.async = true;
     s.onload = ok; s.onerror = () => { scripts.delete(url); s.remove(); mal(new Error('no se pudo cargar ' + url.split('/').pop())); };
