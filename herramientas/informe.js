@@ -22,7 +22,7 @@ const topH = (h, n = 10) => { const t = suma(h); return Object.entries(h).sort((
 const tabla = (cab, filas) => `| ${cab.join(' | ')} |\n|${cab.map(() => '---').join('|')}|\n` + filas.map(f => `| ${f.join(' | ')} |`).join('\n') + '\n';
 const MURGAS = [...new Set(L.map(a => a.murga))];
 const NOMBRE_MOTIVO = { trabado: 'trabas del transcriptor', choque: 'choque a un semitono', extrana: 'ajena a lo que suena', fantasma: 'demasiado corta', aislada: 'aislada', registro: 'fuera de registro', eterna: 'eterna' };
-const NOMBRE_ESTILO = { trasnochada: 'La Trasnochada', catalina: 'Agarrate Catalina', muneca: 'La Gran Muñeca', pasteles: 'Metele que son Pasteles', todas: 'todas juntas' };
+const NOMBRE_ESTILO = { trasnochada: 'La Trasnochada', catalina: 'Agarrate Catalina', muneca: 'La Gran Muñeca', pasteles: 'Metele que son Pasteles', bastarda: 'Doña Bastarda', asaltantes: 'Asaltantes con Patente', milonga: 'La Nueva Milonga', cabra: 'Cayó la Cabra', todas: 'todas juntas' };
 const esPres = a => a.parte === 'presentacion';
 const corto = a => `${a.murga.split(' ').pop()} ${a.anio} ${a.parte.replace(/_/g, ' ')}`;
 

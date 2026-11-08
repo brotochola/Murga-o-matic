@@ -9,7 +9,8 @@ import { CIFRADOS } from './cifrados.js';
 import { bloques, tempoEn, tonoNumEn } from './forma.js';
 import { acorde } from '../motor/compositor.js';
 
-const ESTILOS = { trasnochada: 'La Trasnochada', catalina: 'Agarrate Catalina', muneca: 'La Gran Muñeca', pasteles: 'Metele que son Pasteles' };
+// Un estilo por murga con al menos cuatro tramos; las demás entran sólo en «todas»
+const ESTILOS = { trasnochada: 'La Trasnochada', catalina: 'Agarrate Catalina', muneca: 'La Gran Muñeca', pasteles: 'Metele que son Pasteles', bastarda: 'Doña Bastarda', asaltantes: 'Asaltantes con Patente', milonga: 'La Nueva Milonga', cabra: 'Cayó la Cabra' };
 const PARTES = { presentacion: 'presentacion', cancion_final: 'final', final_y_retirada: 'retirada', retirada: 'retirada' };
 const cnt = (h, k, v = 1) => { h[k] = (h[k] || 0) + v; };
 const redondear = (h, d = 3) => { const t = Object.values(h).reduce((a, b) => a + b, 0) || 1; const r = {}; for (const [k, v] of Object.entries(h)) { const x = +(v / t).toFixed(d); if (x > 0) r[k] = x; } return r; };
@@ -73,7 +74,10 @@ function celdasDe(v, parte, estilo) {
         fuertes++;
         if (a.pcs.includes(mod(x.ps[x.ps.length - 1] - t, 12))) enAcorde++;
       }
-      if (fuertes < 2 || enAcorde / fuertes < .6 || pares / gs.length < .6 || suena / span < .3) continue;
+      // pares: que tenga pulso. Con 60 % se iban también los gestos sincopados de verdad: las celdas tenían 12,5 % de golpes
+      // en semicorchea impar contra 18,6 % en los tramos; con 50 %, 14,3 %, y lo generado se acerca a lo real en los tres
+      // estilos (docs/compositor_2.md). Los gestos con la grilla corrida igual se van por los apoyos fuera del acorde.
+      if (fuertes < 2 || enAcorde / fuertes < .6 || pares / gs.length < .5 || suena / span < .3) continue;
       const t0 = aSeg(gs[0].q), t1 = aSeg(gs[gs.length - 1].q);
       const tonica = 60 + t;
       R.push({

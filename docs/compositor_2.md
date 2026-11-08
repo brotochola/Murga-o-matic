@@ -1,6 +1,6 @@
 # Compositor 2: qué cambió y por qué
 
-La versión 1 del compositor es la que se aprobó de oído el 7 de noviembre de 2026. La versión 2 corrige cinco cosas en las que lo generado se apartaba de las murgas reales. Cada cambio se midió contra el corpus antes de quedarse. Los que no movían nada fuera del ruido se descartaron.
+La versión 1 del compositor es la que se aprobó de oído el 7 de noviembre de 2026. La versión 2 corrige seis cosas en las que lo generado se apartaba de las murgas reales. Cada cambio se midió contra el corpus antes de quedarse. Los que no movían nada fuera del ruido se descartaron.
 
 La página deja elegir la versión en **Compositor**. La versión 1 viene con su modelo y sus modos de ese día (`motor/compositor_v1.js`, `motor/modelo_v1.js`, `motor/modos_v1.js`), así suena exactamente igual que antes.
 
@@ -67,6 +67,12 @@ Los saltos de cuarta o más en las líneas bajan de 1,84 a 1,24 anchos de la nor
 En las retiradas generadas, el coro cantaba a capela el 38 % del tiempo; en las reales, el 17 %. La mayor parte venía de la canción final, que arrancaba con 16 compases sin batería. En el corpus, la canción final va casi siempre con batería, en 9 de 12 tramos y por 150 a 180 s seguidos, a veces con una entrada corta a capela. Además, la clarinada del medio duraba 27 s, y los pasajes a capela del medio duran 16 s en la mediana.
 
 Ahora la canción final va con batería y la clarinada del medio tiene 4 compases. Queda a capela el 25 % del tiempo, con pasajes del medio de 15 s.
+
+## 6. Los gestos sincopados entran al modelo
+
+Al aprender, un gesto de dos compases se descartaba si menos del 60 % de sus golpes caían en semicorchea par. La idea era tirar los gestos con la grilla corrida, pero también se iban los sincopados de verdad. Los tramos tienen 18,6 % de golpes en semicorchea impar; las celdas del modelo, 12,5 %; y lo generado, 12,4 %. El banco de prueba dice que la grilla de los tramos no infla la síncopa: si algo, la baja un poco (0,4 anchos).
+
+Con el umbral en 50 %, las celdas quedan en 14,3 %. La suma de distancias, con el modelo de antes, baja en los tres estilos: Catalina 20,0 → 18,3, Trasnochada 18,0 → 17,3, todas 17,7 → 17,1. Con 40 % casi no entra más síncopa (14,5 %), así que quedó 50 %. Los gestos con la grilla corrida se siguen yendo por el otro filtro: que los apoyos caigan en el acorde.
 
 ## Lo que se probó y no quedó
 

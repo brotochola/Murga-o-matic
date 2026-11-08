@@ -204,7 +204,7 @@ writeFileSync(join(RAIZ, 'murga_trabajo', 'cambios_de_modo.json'), JSON.stringif
 if (process.argv.includes('--modelo')) {
   // Lo que usa el compositor: qué cambio de tono elegir (por murga y en total) y cómo prepararlo
   const porMurga = {};
-  for (const c of CC) { const k = { 'La Trasnochada': 'trasnochada', 'Agarrate Catalina': 'catalina', 'La Gran Muñeca': 'muneca', 'Metele que son Pasteles': 'pasteles' }[c.murga] || 'otra'; (porMurga[k] ||= {})[c.clave] = (porMurga[k][c.clave] || 0) + 1; }
+  for (const c of CC) { const k = { 'La Trasnochada': 'trasnochada', 'Agarrate Catalina': 'catalina', 'La Gran Muñeca': 'muneca', 'Metele que son Pasteles': 'pasteles', 'Doña Bastarda': 'bastarda', 'Asaltantes con Patente': 'asaltantes', 'La Nueva Milonga': 'milonga', 'Cayó la Cabra': 'cabra' }[c.murga] || 'otra'; (porMurga[k] ||= {})[c.clave] = (porMurga[k][c.clave] || 0) + 1; }
   porMurga.todas = Object.fromEntries(cuenta(CC, c => c.clave));
   const prep = lista => { const n = lista.length || 1; return { dominante: +(lista.filter(c => c.antes.funcion === 'dominante del nuevo').length / n).toFixed(3), ivMenor: +(lista.filter(c => c.antes.funcion === 'iv menor del nuevo').length / n).toFixed(3) }; };
   const L_ = ctx => { const l = L.filter(x => x.ctx === ctx), c = l.filter(x => x.contrario && !x.haciaIV); return +(c.length / (l.length || 1)).toFixed(3); };

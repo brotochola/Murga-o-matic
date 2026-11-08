@@ -26,7 +26,7 @@ const CUERDAS={
   primos:{cantores:4,pan:.05,rango:"fa#3–la4"},
   sobreprimos:{cantores:3,pan:.35,rango:"do4–re5"},
   tercia:{cantores:1,pan:.6,rango:"mi4–fa5"}};
-const ESTILOS={todas:"Todas juntas",trasnochada:"La Trasnochada",catalina:"Agarrate Catalina",muneca:"La Gran Muñeca",pasteles:"Metele que son Pasteles"};
+const ESTILOS={todas:"Todas juntas",trasnochada:"La Trasnochada",catalina:"Agarrate Catalina",bastarda:"Doña Bastarda",asaltantes:"Asaltantes con Patente",milonga:"La Nueva Milonga",cabra:"Cayó la Cabra",muneca:"La Gran Muñeca",pasteles:"Metele que son Pasteles"};
 const TEXTO_TIPO={clarinada:"a capela, en bloque",coro:"coro en bloque",pleno:"coro pleno",duo:"pocas voces",llamada:"la batería llama",cierre:"acorde final"};
 
 // ============================================================ audio
@@ -469,7 +469,7 @@ $("otra").onclick=()=>{S.seed=1+Math.floor(Math.random()*99998);$("semilla").val
 $("brillo").onchange=e=>{S.brillo=+e.target.value;regen(true)};
 $("recita").onchange=e=>{S.recita=+e.target.value;regen()};
 // Demos: las semillas que mejor le caen al jurado
-{const caja=$("demos");const NOM={trasnochada:"La Trasnochada",catalina:"Agarrate Catalina"};
+{const caja=$("demos");const NOM=ESTILOS;
  for(const d of DEMOS){const b=document.createElement("button");b.className="btn";b.textContent=`${d.forma==="retirada"?"Retirada":"Presentación"} · ${NOM[d.estilo]||d.estilo}`;
   b.onclick=()=>{S.acordes={};S.editando=null;S.forma=d.forma;S.estilo=d.estilo;S.tonica=d.tonica;S.modo=d.modo;S.seed=d.semilla;S.largo="normal";S.tempo=0;S.recita=0;$("recita").value=0;
    $("forma").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===d.forma));$("estilo").value=d.estilo;$("tonica").value=d.tonica;$("modo").value=d.modo;$("semilla").value=d.semilla;$("largo").value="normal";$("tempo").value="";$("campoFinal").style.display=d.forma==="retirada"?"":"none";generar()};

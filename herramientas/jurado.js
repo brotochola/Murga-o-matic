@@ -300,7 +300,8 @@ function sinEspiar(reales) {
     const M = { ...MODELO, celdas: MODELO.celdas.filter(c => !fuera.has(c.f)) };
     for (const p of propios) {
       const forma = p.an.parte === 'presentacion' ? 'presentacion' : 'retirada';
-      const est = murga === 'La Trasnochada' ? 'trasnochada' : murga === 'Agarrate Catalina' ? 'catalina' : 'todas';
+      const k = { 'La Trasnochada': 'trasnochada', 'Agarrate Catalina': 'catalina', 'La Gran Muñeca': 'muneca', 'Metele que son Pasteles': 'pasteles', 'Doña Bastarda': 'bastarda', 'Asaltantes con Patente': 'asaltantes', 'La Nueva Milonga': 'milonga', 'Cayó la Cabra': 'cabra' }[murga];
+      const est = k && MODELO.estilos[k] ? k : 'todas';
       const gen = [1, 2, 3].map(s => rasgos(notasDePieza(componer(M, { forma, estilo: est, semilla: s * 11 + p.an.anio, tonica: 9, modo: 'menor' }))));
       const dGen = media(gen.map(g => dist(g, p.R)));
       const dReal = otros.filter(o => (o.an.parte === 'presentacion') === (p.an.parte === 'presentacion')).map(o => dist(o.R, p.R)).sort((a, b) => a - b);
