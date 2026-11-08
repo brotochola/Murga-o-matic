@@ -1,0 +1,362 @@
+[
+ {
+  "k": "subdom",
+  "nombre": "tiempo en subdominante",
+  "grupo": "armonia",
+  "verdad": 0.16344876660341556,
+  "escrito": 0.22246449334460458,
+  "sesgo": 1.1696055666577263,
+  "p50": 0.22326674500587543
+ },
+ {
+  "k": "frase",
+  "nombre": "largo mediano de frase, en compases",
+  "grupo": "ritmo",
+  "verdad": 1.4125,
+  "escrito": 1.625,
+  "sesgo": 0.8952080042127432,
+  "p50": 1.5625
+ },
+ {
+  "k": "topTercera",
+  "nombre": "la melodía salta una tercera",
+  "grupo": "melodia",
+  "verdad": 0.09532422693721371,
+  "escrito": 0.11685461791524912,
+  "sesgo": 0.8505248730166723,
+  "p50": 0.1048780487804878
+ },
+ {
+  "k": "largas",
+  "nombre": "notas largas (negra con puntillo o más)",
+  "grupo": "ritmo",
+  "verdad": 0.16808757269562874,
+  "escrito": 0.2076181570020487,
+  "sesgo": 0.7691022220215691,
+  "p50": 0.1291759465478842
+ },
+ {
+  "k": "densidad",
+  "nombre": "golpes por compás",
+  "grupo": "ritmo",
+  "verdad": 4.247361380841513,
+  "escrito": 3.743785348459069,
+  "sesgo": -0.7655198152598668,
+  "p50": 4.365482233502538
+ },
+ {
+  "k": "aire",
+  "nombre": "parte del tiempo sin nadie cantando",
+  "grupo": "ritmo",
+  "verdad": 0.11650224792106859,
+  "escrito": 0.07264234301614836,
+  "sesgo": -0.6493558334751,
+  "p50": 0.1156754032258065
+ },
+ {
+  "k": "topGrado",
+  "nombre": "la melodía se mueve por grado",
+  "grupo": "melodia",
+  "verdad": 0.3967130558507133,
+  "escrito": 0.35969567664933205,
+  "sesgo": -0.5780218663111295,
+  "p50": 0.36607142857142855
+ },
+ {
+  "k": "aterriza",
+  "nombre": "frases que terminan en nota larga",
+  "grupo": "ritmo",
+  "verdad": 0.7534665076525541,
+  "escrito": 0.8338183147980585,
+  "sesgo": 0.5563266938365105,
+  "p50": 0.7407407407407407
+ },
+ {
+  "k": "dominante",
+  "nombre": "tiempo en dominante",
+  "grupo": "armonia",
+  "verdad": 0.26406546489563565,
+  "escrito": 0.2358099947450035,
+  "sesgo": -0.48352272366470495,
+  "p50": 0.17634408602150536
+ },
+ {
+  "k": "octavas",
+  "nombre": "golpes con la melodía doblada a la octava",
+  "grupo": "voces",
+  "verdad": 0.19165474524086798,
+  "escrito": 0.2386312298970113,
+  "sesgo": 0.44046631548439025,
+  "p50": 0.17339667458432304
+ },
+ {
+  "k": "tercera",
+  "nombre": "la línea salta una tercera",
+  "grupo": "melodia",
+  "verdad": 0.06318507112368003,
+  "escrito": 0.07105902840798792,
+  "sesgo": 0.4283974725956972,
+  "p50": 0.04873803307223673
+ },
+ {
+  "k": "tonica",
+  "nombre": "tiempo en tónica",
+  "grupo": "armonia",
+  "verdad": 0.4438092979127135,
+  "escrito": 0.4154207001771118,
+  "sesgo": -0.37628026481713306,
+  "p50": 0.43471337579617836
+ },
+ {
+  "k": "cromat",
+  "nombre": "notas fuera de la escala",
+  "grupo": "armonia",
+  "verdad": 0.0627345064699121,
+  "escrito": 0.0777479765936907,
+  "sesgo": 0.3691712688169109,
+  "p50": 0.06204756980351603
+ },
+ {
+  "k": "bloqueLargo",
+  "nombre": "golpes largos a tres voces o más",
+  "grupo": "voces",
+  "verdad": 0.4716706762897621,
+  "escrito": 0.4193408213607445,
+  "sesgo": -0.34886569952678403,
+  "p50": 0.62
+ },
+ {
+  "k": "span",
+  "nombre": "de la voz de abajo a la de arriba, en semitonos",
+  "grupo": "voces",
+  "verdad": 7.360275009723038,
+  "escrito": 7.764039652245164,
+  "sesgo": 0.34196853270454275,
+  "p50": 7.851380042462845
+ },
+ {
+  "k": "ambito",
+  "nombre": "ámbito de la línea por compás, en semitonos",
+  "grupo": "melodia",
+  "verdad": 1.9222391215672001,
+  "escrito": 1.778526525424839,
+  "sesgo": -0.3379053370501239,
+  "p50": 1.675392670157068
+ },
+ {
+  "k": "uniMueve",
+  "nombre": "el unísono se mueve más que el bloque",
+  "grupo": "voces",
+  "verdad": 0.08281560940471548,
+  "escrito": 0.05092697776886962,
+  "sesgo": -0.32795710731646394,
+  "p50": 0.11909051909051915
+ },
+ {
+  "k": "resuelve",
+  "nombre": "V que va a I",
+  "grupo": "armonia",
+  "verdad": 0.599553877495054,
+  "escrito": 0.5587554112554113,
+  "sesgo": -0.32638772991714143,
+  "p50": 0.5714285714285714
+ },
+ {
+  "k": "sincopa",
+  "nombre": "golpes en semicorchea impar",
+  "grupo": "ritmo",
+  "verdad": 0.14466894452876472,
+  "escrito": 0.13372559968287343,
+  "sesgo": -0.31374586244447794,
+  "p50": 0.19267822736030826
+ },
+ {
+  "k": "paralelas",
+  "nombre": "dos voces que se mueven juntas",
+  "grupo": "voces",
+  "verdad": 0.6855216120573173,
+  "escrito": 0.652987123373208,
+  "sesgo": -0.28482410580666867,
+  "p50": 0.7165775401069518
+ },
+ {
+  "k": "rachaLarga",
+  "nombre": "racha de notas repetidas, percentil 90",
+  "grupo": "melodia",
+  "verdad": 3.8,
+  "escrito": 4,
+  "sesgo": 0.2666666666666669,
+  "p50": 4
+ },
+ {
+  "k": "dist2",
+  "nombre": "golpes a distancia de una corchea",
+  "grupo": "ritmo",
+  "verdad": 0.526860553902892,
+  "escrito": 0.5083448913158162,
+  "sesgo": -0.23542640449835364,
+  "p50": 0.5043156596794082
+ },
+ {
+  "k": "salto",
+  "nombre": "la línea salta una cuarta o más",
+  "grupo": "melodia",
+  "verdad": 0.02872285462978911,
+  "escrito": 0.026335116838986945,
+  "sesgo": -0.23520927447345327,
+  "p50": 0.014463840399002495
+ },
+ {
+  "k": "rachaRepite",
+  "nombre": "largo de la racha de notas repetidas",
+  "grupo": "melodia",
+  "verdad": 1.829491868096208,
+  "escrito": 1.9209856842878128,
+  "sesgo": 0.21472911718271417,
+  "p50": 2.0145310435931307
+ },
+ {
+  "k": "cambio",
+  "nombre": "acordes por compás",
+  "grupo": "armonia",
+  "verdad": 0.6355787476280835,
+  "escrito": 0.6105376095591359,
+  "sesgo": -0.20417345282419724,
+  "p50": 0.6223839854413102
+ },
+ {
+  "k": "grado",
+  "nombre": "la línea se mueve por grado",
+  "grupo": "melodia",
+  "verdad": 0.393331998566402,
+  "escrito": 0.36989568274051055,
+  "sesgo": -0.20077250798347318,
+  "p50": 0.3522640061396777
+ },
+ {
+  "k": "cuartas",
+  "nombre": "vecinas a cuarta o quinta",
+  "grupo": "voces",
+  "verdad": 0.30035659112123525,
+  "escrito": 0.2909278461033552,
+  "sesgo": -0.17875480185166992,
+  "p50": 0.22673733804475854
+ },
+ {
+  "k": "texSigue",
+  "nombre": "mismas voces que el golpe anterior",
+  "grupo": "voces",
+  "verdad": 0.7145090707404025,
+  "escrito": 0.6975516712415908,
+  "sesgo": -0.14309073174846748,
+  "p50": 0.7700534759358288
+ },
+ {
+  "k": "repite",
+  "nombre": "la línea repite nota",
+  "grupo": "melodia",
+  "verdad": 0.5147600756801289,
+  "escrito": 0.5327101720125146,
+  "sesgo": 0.1388728676830958,
+  "p50": 0.5796344647519582
+ },
+ {
+  "k": "topSalto",
+  "nombre": "la melodía salta una cuarta o más",
+  "grupo": "melodia",
+  "verdad": 0.09397772822891545,
+  "escrito": 0.09788442023936698,
+  "sesgo": 0.12961783792620185,
+  "p50": 0.08482142857142858
+ },
+ {
+  "k": "topRepite",
+  "nombre": "la melodía (nota de arriba) repite",
+  "grupo": "melodia",
+  "verdad": 0.41398498898315755,
+  "escrito": 0.42556528519605186,
+  "sesgo": 0.12614321187657138,
+  "p50": 0.4573170731707317
+ },
+ {
+  "k": "topRacha",
+  "nombre": "racha de la melodía en la misma nota",
+  "grupo": "melodia",
+  "verdad": 1.6456371021734377,
+  "escrito": 1.6691717056878175,
+  "sesgo": 0.09127645551679872,
+  "p50": 1.6989247311827957
+ },
+ {
+  "k": "golpesFrase",
+  "nombre": "golpes por frase, mediana",
+  "grupo": "ritmo",
+  "verdad": 6.4,
+  "escrito": 6.2,
+  "sesgo": -0.08888888888888896,
+  "p50": 7
+ },
+ {
+  "k": "corcheas",
+  "nombre": "golpes en lugar de corchea",
+  "grupo": "ritmo",
+  "verdad": 0.8553310554712352,
+  "escrito": 0.8662744003171265,
+  "sesgo": 0.08818289898640826,
+  "p50": 0.8073217726396917
+ },
+ {
+  "k": "terceras",
+  "nombre": "vecinas a distancia de tercera",
+  "grupo": "voces",
+  "verdad": 0.5689488313148059,
+  "escrito": 0.5606269131496182,
+  "sesgo": -0.08792548201890002,
+  "p50": 0.6109826589595375
+ },
+ {
+  "k": "giros",
+  "nombre": "cambios de dirección",
+  "grupo": "melodia",
+  "verdad": 0.48152350622024753,
+  "escrito": 0.48853644717859684,
+  "sesgo": 0.08371738517772366,
+  "p50": 0.5384615384615384
+ },
+ {
+  "k": "voces",
+  "nombre": "voces por golpe",
+  "grupo": "voces",
+  "verdad": 2.009276822795765,
+  "escrito": 2.0216667599674727,
+  "sesgo": 0.03430130120674378,
+  "p50": 2.388059701492537
+ },
+ {
+  "k": "unaVoz",
+  "nombre": "golpes a una voz",
+  "grupo": "voces",
+  "verdad": 0.40429859180232286,
+  "escrito": 0.40792591243644977,
+  "sesgo": 0.024080633273643418,
+  "p50": 0.21568627450980393
+ },
+ {
+  "k": "tresMas",
+  "nombre": "golpes a tres voces o más",
+  "grupo": "voces",
+  "verdad": 0.3286825207957551,
+  "escrito": 0.3260032039844699,
+  "sesgo": -0.02038815612219154,
+  "p50": 0.47790055248618785
+ },
+ {
+  "k": "segundas",
+  "nombre": "vecinas a segunda o menos",
+  "grupo": "voces",
+  "verdad": 0.05988520670751657,
+  "escrito": 0.05995902972701815,
+  "sesgo": 0.002037988567149674,
+  "p50": 0.06447534766118837
+ }
+]
