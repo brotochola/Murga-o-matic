@@ -652,14 +652,16 @@ export function componer(M, op) {
     const t1 = o.modula && veces >= 2 ? modular(rngMod, o.estilo, tono) : tono;
     const t2 = o.modula && rngMod.r() < .5 ? modular(rngMod, o.estilo, t1) : t1;
     if (o.cancionFinal) {
-      const can = temaSec('Canción final', 16, { densidad: 'amplio', din: 82, tipo: 'duo', conTercia: false, bateria: false, tempo: Math.round(tPri * .92) });
+      // en el corpus la canción final va casi siempre con batería (150 a 180 s seguidos), a veces con una entrada corta a capela
+      const can = temaSec('Canción final', 16, { densidad: 'amplio', din: 82, tipo: 'duo', conTercia: false, tempo: Math.round(tPri * .92) });
       temaSec('Canción final, con el coro', 16, { din: 92, tipo: 'pleno', tempo: Math.round(tPri * .92), de: can });
     }
     if (o.clarinada) clar('Clarinada', tono);
     const pri = temaSec('Primera parte', 16, { densidad: 'medio', din: 88, momento: [0, .6], ...tono });
     temaSec('Primera parte, sigue', 16, { din: 94, tipo: 'pleno', curva: 6, densidad: 'medio', momento: [.1, .7], ...tono, prepara: veces >= 2 ? (o.clarinada ? null : t1) : t2 });
     if (veces >= 2) {
-      if (o.clarinada) clar('Clarinada del medio', { ...tono, compases: 8, segundos: 20, prepara: t1 });
+      // los pasajes a capela del medio duran 16 s en la mediana del corpus: cuatro compases lentos con sus calderones
+      if (o.clarinada) clar('Clarinada del medio', { ...tono, compases: 4, segundos: 16, prepara: t1 });
       tono = t1;
       const seg = temaSec('Segunda parte', 16, { densidad: 'silabico', din: 92, tempo: tUlt, loop: loopUlt, momento: [.4, 1], ...tono });
       temaSec('Segunda parte, sigue', 16, { din: 98, tipo: 'pleno', tempo: tUlt, loop: loopUlt, densidad: 'silabico', momento: [.5, 1], ...tono, curva: 6, prepara: veces >= 3 ? null : t2 });
