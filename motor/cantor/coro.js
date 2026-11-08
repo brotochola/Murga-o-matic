@@ -114,7 +114,7 @@ export function cantores(P, porQ, { semilla = 1 } = {}) {
       // el primero de cada cuerda puede llevarla: un poco más fuerte y adelantado (variacion.js)
       const lider = c === 0 && cfg.cantores > 1;
       const sem = semilla * 101 + (n++) * 7;
-      res.push({ cuerda: k, tipo: cfg.tipo, semilla: sem, pan: Math.max(-1, Math.min(1, cfg.pan + (c - (cfg.cantores - 1) / 2) * .12)),
+      res.push({ cuerda: k, c, tipo: cfg.tipo, semilla: sem, pan: Math.max(-1, Math.min(1, cfg.pan + (c - (cfg.cantores - 1) / 2) * .12)),
         ganancia: cfg.ganancia / Math.sqrt(cfg.cantores) * (lider ? Math.pow(10, VARIACION.liderDb / 20) : 1) * volumenDe(sem), retraso: lider ? -VARIACION.liderAdelanto : 0, notas });
     });
   }

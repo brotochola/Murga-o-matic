@@ -147,8 +147,15 @@ export function guion(notas, opc = {}) {
 // emisión murguera (más presencia en 2-4 kHz, menos barro en los graves, un poco de saturación). x: Float32Array a sr;
 // g: el guion.
 export function terminar(x, sr, g, opc = {}) {
-  const o = { aire: 0, emision: 0, semilla: 1, curva: TIMBRES.CURVA_DIFONOS || null, brillo: 1, eses: 1, ...opc };
+  const curvaDeLaVoz = TIMBRES['CURVA_DIFONOS' + (opc.voz && opc.voz !== 'es2' ? '_' + opc.voz.toUpperCase() : '')] || TIMBRES.CURVA_DIFONOS || null;
+  const o = { aire: 0, emision: 0, semilla: 1, curva: curvaDeLaVoz, brillo: 1, eses: 1, ...opc };
   if (o.curva && o.brillo !== 1) o.curva = o.curva.map(([f, db]) => [f, db * o.brillo]);
+  if (o.color > 0) {
+    // el color propio de este cantor: unas ondas suaves en dB sobre la escala de frecuencias (de 400 Hz a 5 kHz)
+    const rc = new Rnd((o.semilla || 1) * 61 + 9), ondas = [0, 1, 2].map(() => [rc.u(1.5, 4), rc.u(0, 6.28)]);
+    const base = o.curva || [[100, 0], [10000, 0]], fs = base.map(p => p[0]);
+    o.curva = fs.map((f, i) => { const x = Math.log2(f / 400); let d = 0; for (const [k, ph] of ondas) d += Math.sin(k * x + ph); const w = f < 300 ? 0 : f > 6000 ? .5 : 1; return [f, base[i][1] + o.color * w * d / 1.7]; });
+  }
   const pre = new Float32Array(x.length);
   for (let k = 0; k < x.length; k++) pre[k] = x[k] * g.ganancia(g.inicio + k / sr);
   const bq = (tipo, f, q, db) => {
@@ -248,10 +255,17 @@ export function remuestrear(x, srIn, srOut) {
 // las consonantes. Devuelve las opciones para cantarDifonos.
 // (La tercia canta muy agudo: con el tracto del primo suena menos finita.)
 export const CUERDAS_DIFONOS = { bajos: { tracto: .9 }, segundos: { tracto: .95 }, primos: { tracto: 1 }, sobreprimos: { tracto: 1.03 }, tercia: { tracto: 1 } };
-export function cantorDifonos(cuerda, semilla, V = VARIACION) {
+// Todos salen de la misma voz grabada: para que el unísono suene a coro y no a una voz con eco, cada uno tiene más
+// diferencia de garganta que en el coro de formantes (garganta) y su propio color (timbre: dB de más o de menos en
+// unas pocas zonas del espectro, siempre los mismos para la misma semilla).
+export const DIFERENCIA = { garganta: .05, timbre: 3 };
+// Y no todos con la misma voz: uno de cada dos de cada cuerda canta con es1 (otro hombre, grabado a 16 kHz), que es lo
+// que más los diferencia. El que lleva la cuerda y el solista, con es2.
+export const vozDelCantor = c => c % 2 ? 'es1' : 'es2';
+export function cantorDifonos(cuerda, semilla, V = VARIACION, D = DIFERENCIA) {
   const r = new Rnd(semilla * 17 + 3), T = CUERDAS_DIFONOS[cuerda] || CUERDAS_DIFONOS.primos;
   return {
-    semilla, tracto: T.tracto * r.u(1 - V.garganta, 1 + V.garganta),
+    semilla, tracto: T.tracto * r.u(1 - D.garganta, 1 + D.garganta), color: D.timbre,
     transporte: r.u(-V.desafinacion, V.desafinacion),
     vibrato: r.u(V.vibrato[0], V.vibrato[1]), vibVel: r.u(V.vibratoVel[0], V.vibratoVel[1]), vibEntra: r.u(V.vibratoEntra[0], V.vibratoEntra[1]),
     pique: .45 * r.u(1 - V.pique, 1 + V.pique), consonantes: 1.1 * r.u(1 - V.diccion * .5, 1 + V.diccion * .5),

@@ -11,7 +11,7 @@ con el coro de formantes (con su curva) y con el de difonos (crudo, sin curva ni
 espectros promedio de vocales (banco_medir.ltas) es la curva de los difonos. No hace falta el audio real: el puente es
 la curva de formantes. Escribe CURVA_DIFONOS en motor/cantor/timbre.js.
 
-  uv run herramientas/curva_difonos.py
+  uv run herramientas/curva_difonos.py [--voz es2|es1]
 """
 import json
 import os
@@ -30,10 +30,14 @@ import banco_medir as BM  # noqa: E402
 TRAMO, T0, T1 = "la_trasnochada_2020_presentacion", 0.5, 20.5   # el primer fragmento del banco (a capela)
 
 
+VOZ = sys.argv[sys.argv.index("--voz") + 1] if "--voz" in sys.argv else "es2"
+NOMBRE = "CURVA_DIFONOS" + ("" if VOZ == "es2" else "_" + VOZ.upper())
+
+
 def cantar(trabajo, motor, extra):
     sal = Path(trabajo) / f"canto_{motor}"
     env = {**os.environ, "MURGA_TRABAJO": str(trabajo)}
-    subprocess.run(["node", str(AQUI / "banco_sintetizar.mjs"), "--motor", motor, "--salida", str(sal), "--sala", "0", *extra], check=True, env=env, capture_output=True)
+    subprocess.run(["node", str(AQUI / "banco_sintetizar.mjs"), "--motor", motor, "--voz", VOZ, "--salida", str(sal), "--sala", "0", *extra], check=True, env=env, capture_output=True)
     return BM.ltas(BM.leer(sal / "intro.wav"))
 
 
@@ -43,15 +47,20 @@ def main():
         os.symlink(RAIZ / "murga_trabajo" / "analisis", Path(t) / "analisis")
         (Path(t) / "banco" / "fragmentos.json").write_text(json.dumps([{"id": "intro", "tramo": TRAMO, "murga": "La Trasnochada", "t0": T0, "t1": T1, "capela": True}]))
         objetivo = cantar(t, "formantes", [])
-        crudo = cantar(t, "difonos", ["--curva", "no"])
+        # la curva entera y sin el color de cada cantor (en la página va al 60 %, brillo de cantorDifonos)
+        MIDE = ["--opc", "brillo=1,color=0"]
+        crudo = cantar(t, "difonos", ["--curva", "no", *MIDE])
         ref = [i for i, c in enumerate(BM.CENTROS) if 300 <= c <= 1000]
         suavizar = lambda v, k: np.convolve(np.pad(v, 1, mode="edge"), k, mode="valid")
         def escribir(curva):
             texto = (RAIZ / "motor" / "cantor" / "timbre.js").read_text(encoding="utf-8")
-            texto = texto.split("\n// Curva del coro de difonos")[0].rstrip("\n")
-            texto += ("\n\n// Curva del coro de difonos: herramientas/curva_difonos.py, las mismas notas que CURVA cantadas por el coro de\n"
-                      "// formantes (con su curva, que tiene el timbre del coro real) y por el de difonos.\n"
-                      "export const CURVA_DIFONOS = " + json.dumps([[round(c), round(float(v), 1)] for c, v in zip(BM.CENTROS, curva)]) + ";\n")
+            marca = f"\n// Curva del coro de difonos, voz {VOZ}"
+            antes, _, despues = texto.partition(marca)
+            despues = despues.split("\n// Curva del coro de difonos", 1)
+            resto = ("\n// Curva del coro de difonos" + despues[1]) if len(despues) > 1 else ""
+            texto = (antes.rstrip("\n") + "\n" + marca + ": herramientas/curva_difonos.py --voz " + VOZ + ", las mismas notas que CURVA cantadas\n"
+                     "// por el coro de formantes (con su curva, que tiene el timbre del coro real) y por el de difonos.\n"
+                     f"export const {NOMBRE} = " + json.dumps([[round(c), round(float(v), 1)] for c, v in zip(BM.CENTROS, curva)]) + ";\n" + resto)
             (RAIZ / "motor" / "cantor" / "timbre.js").write_text(texto, encoding="utf-8")
         # primero, la diferencia suavizada (de a tres tercios de octava); después, dos vueltas corrigiendo lo que falta.
         # Sin pasarse de ±24 dB.
@@ -61,7 +70,7 @@ def main():
         curva -= curva[ref].mean()
         for vuelta in range(3):
             escribir(curva)
-            con = cantar(t, "difonos", [])
+            con = cantar(t, "difonos", MIDE)
             print(f"vuelta {vuelta + 1}: error medio {np.abs(objetivo - con).mean():.1f} dB", flush=True)
             if vuelta < 2:
                 curva = tope(curva + suavizar(objetivo - con, [.15, .7, .15]))

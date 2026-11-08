@@ -86,9 +86,27 @@ La curva de ecualización del coro de formantes (`CURVA`) salió de comparar ese
 - **Las eses no pasan por la curva:** se toman de antes de ecualizar y se filtran aparte. Si no, la curva las subiría 20 dB.
 - **Se entiende un poco menos con la curva entera:** con el coro, Whisper erra el 15,6 % de las letras. Con la curva al 60 % erra el 12,4 %, y sin curva el 13,5 %; la diferencia entre estos dos es ruido. Quedó al 60 % (`brillo: .6` en `cantorDifonos`), en lugar de la «emisión» puesta a ojo.
 
+## Que el unísono suene a coro
+
+Todos los cantores salían de la misma voz grabada. Para medir cuánto se parecen, se cantan cuatro primos al unísono y se calcula la correlación entre cada par, en ventanas de 100 ms y con el mejor corrimiento de ±25 ms. Cerca de 1 es una misma voz con eco.
+
+| Cuatro primos al unísono | Correlación media entre cantores |
+|---|---|
+| Formantes | 0,74 |
+| Difonos, todos con es2, garganta ±3 % | 0,90 |
+| Garganta ±6 % | 0,86 |
+| Color propio de cada cantor, ±4 dB | 0,86 |
+| Garganta ±6 % y color | 0,82 |
+| Uno de cada dos con la voz es1 | 0,55 |
+| es1, garganta y color juntos | 0,47 |
+
+Otra voz es lo que más diferencia, porque es otro hombre. Quedó así: en cada cuerda, uno de cada dos canta con es1 (el que lleva la cuerda y el solista, con es2), con garganta ±5 % y un color propio de ±3 dB, unas ondas suaves en el espectro entre 400 Hz y 5 kHz. es1 tiene su propia curva de timbre (`CURVA_DIFONOS_ES1`): cruda es mucho más brillante que es2 (6,7 dB de error medio contra 11,5).
+
+Con el coro de 12 voces, Whisper erra el 12,8 % de las letras, contra el 15,0 % con todos es2. No se entiende peor.
+
 ## En la página
 
-En **Voces**, la opción **Difonos** hace cantar a los trece cantores, en obreros. Una presentación de 4 minutos tarda unos 20 s en una compu de dos núcleos. Con **Sólo un solista**, el primero de los primos canta la melodía con la letra, solo, sobre la batería.
+En **Voces**, la opción **Difonos** hace cantar a los trece cantores, en obreros; la primera vez baja las dos voces (8 MB). Una presentación de 4 minutos tarda unos 20 s en una compu de dos núcleos. Con **Sólo un solista**, el primero de los primos canta la melodía con la letra, solo, sobre la batería.
 
 MBROLA está compilado a WebAssembly (85 KB) con `herramientas/compilar_mbrola.sh` y anda en un obrero. La voz es2 pesa 5,6 MB y se baja la primera vez. Una presentación de 4 minutos se canta en menos de un segundo.
 
@@ -97,6 +115,5 @@ MBROLA es AGPL-3.0. La voz es2 se puede usar sólo con MBROLA y copiar librement
 ## Lo que falta
 
 - **Que no suene a locutor.** Las voces son de habla: las vocales largas se estiran repitiendo el mismo pedazo y pueden sonar quietas.
-- **El coro.** Todos los cantores salen de la misma voz grabada. Con la garganta, la afinación y el vibrato de cada uno se diferencian, pero falta escuchar si el unísono suena a coro o a una voz con eco.
 - **La tercia.** Sonaba demasiado aguda. El compositor la ponía con mediana en Do 5 y hasta Fa 5, que es el registro excepcional. Ahora va de Re 4 a Re 5, con mediana en La 4, como el registro normal de Sin Disfraz (fa4–do5). Sólo cambia la tercia: en 48 piezas de prueba, las demás cuerdas quedan idénticas.
 - **El timbre.** Hay que medirlo contra el coro real, con el banco, para la curva de ecualización.

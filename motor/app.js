@@ -6,7 +6,7 @@ import { MODELO } from './modelo.js';
 import { TIMBRE } from './timbre.js';
 import { metrica, silabear, cantores } from './cantor/coro.js';
 import { cantar } from './cantor/cantor.js';
-import { cantorDifonos } from './cantor/difonos.js';
+import { cantorDifonos, vozDelCantor } from './cantor/difonos.js';
 import { disenar } from './cantor/eq.js';
 import { medir, versosDe } from './cantor/letra.js';
 import { partesAEscribir } from './cantor/letrista.js';
@@ -193,10 +193,10 @@ async function cantarCuerdas(pieza,P,gen){
 // Cantores de difonos (cantor/difonos.js con MBROLA): cada uno canta en un obrero y sale a la frecuencia de la voz
 // (22.050 Hz, o un poco más o menos según su tracto); Web Audio los pasa a la de la página al sumar cada cuerda.
 // Con «sólo un solista», canta el primero de los primos (la melodía) y las otras cuerdas callan.
-let mbHilo=null;
-async function difonosEnHilo(notas,opc){
-  if(!mbHilo)mbHilo=(async()=>{const[{crearMbrola},wasm,voz]=await Promise.all([import("./cantor/mbrola.js"),...["vendor/mbrola/mbrola.wasm","vendor/mbrola/es2"].map(u=>fetch(new URL(u,import.meta.url)).then(x=>{if(!x.ok)throw new Error("no se pudo bajar "+u);return x.arrayBuffer()}))]);return crearMbrola(wasm,new Uint8Array(voz))})();
-  const[{cantarDifonos},mb]=await Promise.all([import("./cantor/difonos.js"),mbHilo]);await pausa();return cantarDifonos(mb,notas,opc)}
+const mbHilo={};
+async function difonosEnHilo(notas,opc){const v=opc.voz||"es2";
+  if(!mbHilo[v])mbHilo[v]=(async()=>{const[{crearMbrola},wasm,voz]=await Promise.all([import("./cantor/mbrola.js"),...["vendor/mbrola/mbrola.wasm","vendor/mbrola/"+v].map(u=>fetch(new URL(u,import.meta.url)).then(x=>{if(!x.ok)throw new Error("no se pudo bajar "+u);return x.arrayBuffer()}))]);return crearMbrola(wasm,new Uint8Array(voz))})();
+  const[{cantarDifonos},mb]=await Promise.all([import("./cantor/difonos.js"),mbHilo[v]]);await pausa();return cantarDifonos(mb,notas,opc)}
 async function cantarDifonosCoro(pieza,P,gen,solo){
   const L=S.letra,letras=letrasPorSeccion();
   L.sil=silabear(pieza,letras);
@@ -205,7 +205,7 @@ async function cantarDifonosCoro(pieza,P,gen,solo){
   const res=new Array(lista.length);let hechos=0,i=0;
   avance(0,`Cantando: 0 de ${lista.length} cantores…`);
   const tarea=async w=>{while(i<lista.length&&gen===S.gen){const j=i++,c=lista[j],o=cantorDifonos(c.cuerda,c.semilla);
-    const msg={motor:"difonos",notas:c.notas,opc:{...o,voz:"es2",retraso:o.retraso+(c.retraso||0)}};let r=null;
+    const msg={motor:"difonos",notas:c.notas,opc:{...o,voz:solo?"es2":vozDelCantor(c.c||0),retraso:o.retraso+(c.retraso||0)}};let r=null;
     if(w){try{r=await enObrero(w,msg)}catch(e){console.warn("canta la página:",e.message);w=null}}
     if(!r)r=await difonosEnHilo(msg.notas,msg.opc);
     res[j]=r;hechos++;avance(hechos/(lista.length+1),`Cantando: ${hechos} de ${lista.length} cantores (${NOMBRES_CUERDA[c.cuerda].toLowerCase()})…`)}};
@@ -484,7 +484,7 @@ $("tema").addEventListener("keydown",e=>{if(e.key==="Enter")otraLetra()});
 
 // ============================================================ controles
 const HINT_VOCES={muestras:"Muestras «aah» de coro: suena a coro, sin palabras.",sintetizadas:"Trece cantores de formantes (voz armada desde cero) cantan una letra escrita para esta melodía. Tarda unos segundos más.",
-  difonos:"Trece cantores armados con pedacitos de voz grabada (difonos de MBROLA), con acento rioplatense: se entiende mucho más la letra. La primera vez baja la voz (5,6 MB).",
+  difonos:"Trece cantores armados con pedacitos de voz grabada (difonos de MBROLA, dos voces), con acento rioplatense: se entiende mucho más la letra. La primera vez baja las voces (8 MB).",
   solista:"Un solo cantor de difonos canta la melodía con la letra, sobre la batería: para escuchar bien cómo canta."};
 function mostrarVoces(){const b=difonos()?"difonos":S.voces;$("voces").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===b));$("vocesHint").textContent=HINT_VOCES[S.voces];$("campoBrillo").hidden=sint();$("campoSolista").hidden=!difonos();$("soloSolista").checked=S.voces==="solista"}
 const elegirVoces=v=>{if(S.voces===v)return;S.voces=v;try{localStorage.setItem("murga.voces",S.voces)}catch(e){}mostrarVoces();generar()};

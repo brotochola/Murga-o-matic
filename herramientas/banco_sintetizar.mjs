@@ -21,7 +21,7 @@ import { sala } from '../motor/cantor/mezcla.js';
 import { versosDe, silabasCantadas, alinear, partes } from '../motor/cantor/letra.js';
 import { VARIACION } from '../motor/cantor/variacion.js';
 import { crearMbrola } from '../motor/cantor/mbrola.js';
-import { cantarDifonos, cantorDifonos, remuestrear } from '../motor/cantor/difonos.js';
+import { cantarDifonos, cantorDifonos, remuestrear, vozDelCantor } from '../motor/cantor/difonos.js';
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TRABAJO = resolve(process.env.MURGA_TRABAJO || join(RAIZ, 'murga_trabajo'));
@@ -31,7 +31,11 @@ const SR = 44100;
 const variacion = arg('variacion') ? JSON.parse(readFileSync(arg('variacion'), 'utf8')) : null;
 const SAL = resolve(arg('salida', join(BANCO, 'sintetico')));
 const MOTOR = arg('motor', 'formantes');
-const mb = MOTOR === 'difonos' ? await crearMbrola(readFileSync(join(RAIZ, 'motor/vendor/mbrola/mbrola.wasm')), readFileSync(join(RAIZ, 'motor/vendor/mbrola', arg('voz', 'es2')))) : null;
+// --voz es2|es1: todos con esa voz (para medir el timbre de cada una); --voz coro: como la página (vozDelCantor)
+const VOZ = arg('voz', 'coro'), mbs = {};
+// --opc brillo=1,color=0: opciones de cada cantor de difonos (las de cantorDifonos), para medir
+const OPC = Object.fromEntries((arg('opc', '') || '').split(',').filter(Boolean).map(e => e.split('=')).map(([k, v]) => [k, +v]));
+if (MOTOR === 'difonos') for (const v of VOZ === 'coro' ? ['es2', 'es1'] : [VOZ]) mbs[v] = await crearMbrola(readFileSync(join(RAIZ, 'motor/vendor/mbrola/mbrola.wasm')), readFileSync(join(RAIZ, 'motor/vendor/mbrola', v)));
 // los difonos llevan su curva adentro (difonos.js, cantor por cantor, sin tocar las eses)
 const LA_CURVA = arg('curva') === 'no' || MOTOR === 'difonos' ? null : CURVA;
 const igualar = (x) => LA_CURVA ? ecualizar(x, SR, LA_CURVA) : Float32Array.from(x);
@@ -106,8 +110,9 @@ for (const f of fragmentos) {
     let r;
     if (MOTOR === 'difonos') {
       // el cantor de difonos de la página: su cuerda (tracto) y sus mañas; sale a la frecuencia de la voz y se pasa a SR
-      const o = { ...cantorDifonos(k, semilla, V), ...(arg('emision') != null ? { emision: +arg('emision') } : {}), ...(arg('curva') === 'no' ? { curva: null } : {}) };
-      const d = cantarDifonos(mb, notas, { ...o, retraso: o.retraso + ret });
+      const voz = VOZ === 'coro' ? vozDelCantor(c) : VOZ;
+      const o = { ...cantorDifonos(k, semilla, V), voz, ...OPC, ...(arg('emision') != null ? { emision: +arg('emision') } : {}), ...(arg('curva') === 'no' ? { curva: null } : {}) };
+      const d = cantarDifonos(mbs[voz], notas, { ...o, retraso: o.retraso + ret });
       const y = remuestrear(d.x, d.sr, SR), desde = Math.round(d.inicio * SR), z = new Float32Array(n);
       for (let s = 0; s < y.length; s++) { const j = desde + s; if (j >= 0 && j < n) z[j] = y[s]; }
       r = { voz: z, ruido: new Float32Array(n) };
