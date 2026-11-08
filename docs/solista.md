@@ -42,16 +42,18 @@ Lo que se canta lo decide `motor/cantor/difonos.js`:
 - **Volumen.** Cada nota suena con su fuerza, las largas crecen un poco y el final de frase se apaga.
 - **Emisión.** Más presencia en 2-4 kHz, menos graves y un poco de saturación. No cambia lo que se entiende.
 - **Aire.** Un ruido que sigue a la voz empeora mucho lo que se entiende (16,4 %), así que quedó afuera.
-- **Eses.** Las de es2 son castellanas: largas (70 ms), fuertes (de 6 a 13 dB debajo de la vocal) y con el silbido en 5 kHz. Ahora:
-  - duran 50 ms;
-  - quedan unos 15 dB debajo de la vocal, con el silbido de 4,7 kHz recortado y más agudos arriba de 7,5 kHz, así el centro pasa de 5,7 a 7,1 kHz, más cerca de la s rioplatense;
-  - antes de consonante se aspiran, como en el Río de la Plata ("lah luceh"): 32 ms, sin agudos, unos 25 dB debajo de la vocal.
+- **Eses.** Las de es2 son castellanas: largas (70 ms), fuertes (de 6 a 13 dB debajo de la vocal) y con el silbido en 5 kHz. Con el acento rioplatense exagerado, como el de un murguista:
+  - la s del final de la palabra no se canta: «lo gurise corren descalzo», «se apagan la luce»;
+  - la de adentro de la palabra se aspira: «fiehta», «dehcalzo». Dura 25 ms, sin agudos, unos 27 dB debajo de la vocal;
+  - las demás duran 35 ms, filtradas, sin lo de arriba de 4 kHz, y quedan unos 24 dB debajo de la vocal.
+
+  Whisper erra el 10,1 % de las letras, contra el 8,5 % de antes. La diferencia son casi todas eses finales que no escribe («Juntamos la moneda para el colectivo»): es el acento, no que no se entienda.
 
 ## Cada cuerda
 
 `cantorDifonos(tipo, semilla)` arma un cantor de cada cuerda:
 
-- **Tracto.** Cada cuerda tiene su largo de tracto: los formantes se multiplican por 0,90 en los bajos, 0,95 en los segundos, 1 en los primos y 1,06 en los sobreprimos y la tercia. Se hace como con una cinta: MBROLA canta más agudo y más largo, y las muestras se tocan más rápido.
+- **Tracto.** Cada cuerda tiene su largo de tracto: los formantes se multiplican por 0,90 en los bajos, 0,95 en los segundos, 1 en los primos y la tercia, y 1,03 en los sobreprimos. La tercia canta muy agudo, y con un tracto más corto sonaba chillona. Se hace como con una cinta: MBROLA canta más agudo y más largo, y las muestras se tocan más rápido.
 - **Mañas.** Cada cantor tiene las suyas, chicas y como en `variacion.js`: ±3 % de garganta, su afinación, su vibrato, cuánto pica al entrar y cuánto alarga las consonantes.
 
 `herramientas/voces_difonos.mjs "frase"` canta la misma frase con cantores de cada cuerda, cada uno en su registro.
@@ -69,5 +71,5 @@ MBROLA es AGPL-3.0. La voz es2 se puede usar sólo con MBROLA y copiar librement
 - **Que no suene a locutor.** Las voces son de habla: las vocales largas se estiran repitiendo el mismo pedazo y pueden sonar quietas.
 - **El acento.** Las voces son españolas, así que no tienen la "sh" rioplatense de «calle» o «llegó» (sale "y").
 - **El coro.** Falta sumar los trece cantores, con sus tiempos corridos, y probarlo en la página.
-- **La tercia.** Canta hasta Fa 5, cinco veces la altura de la voz grabada, y puede sonar finita.
+- **La tercia.** Sonaba demasiado aguda. El compositor la ponía con mediana en Do 5 y hasta Fa 5, que es el registro excepcional. Ahora va de Re 4 a Re 5, con mediana en La 4, como el registro normal de Sin Disfraz (fa4–do5). Sólo cambia la tercia: en 48 piezas de prueba, las demás cuerdas quedan idénticas.
 - **El timbre.** Hay que medirlo contra el coro real, con el banco, para la curva de ecualización.

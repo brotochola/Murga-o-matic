@@ -19,7 +19,7 @@ const VOZ = arg('voz', 'es2'), SR = 44100;
 const EXTRA = Object.fromEntries((arg('opc', '') || '').split(',').filter(Boolean).map(e => e.split('=')).map(([k, v]) => [k, +v]));
 const SAL = join(TRABAJO, 'solista', 'cuerdas'); mkdirSync(SAL, { recursive: true });
 // la melodía del banco va de Sol 3 a Fa# 4: a cada cuerda, a su registro (compositor.js, RANGOS)
-const SUBE = { bajos: -12, segundos: -5, primos: 0, sobreprimos: 5, tercia: 9 };
+const SUBE = { bajos: -12, segundos: -7, primos: 0, sobreprimos: 5, tercia: 8 };   // cerca de la mediana de cada cuerda en lo que compone
 const CUANTOS = { bajos: 2, segundos: 2, primos: 2, sobreprimos: 2, tercia: 1 };
 
 const wav = (ruta, x) => {
@@ -35,7 +35,7 @@ for (const [cuerda, cfg] of Object.entries(CORO)) {
   const partes = [];
   for (let c = 0; c < CUANTOS[cuerda]; c++) {
     const semilla = 100 + Object.keys(CORO).indexOf(cuerda) * 10 + c;
-    const opc = { ...cantorDifonos(cfg.tipo, semilla), ...EXTRA };
+    const opc = { ...cantorDifonos(cuerda, semilla), ...EXTRA };
     const notas = melodia(FRASE, { sube: SUBE[cuerda] });
     const r = cantarDifonos(mb, notas, opc);
     let y = remuestrear(r.x, r.sr, SR);

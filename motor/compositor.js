@@ -6,7 +6,8 @@
 
 export const PB = 16;
 export const CUERDAS = ['bajos', 'segundos', 'primos', 'sobreprimos', 'tercia'];
-export const RANGOS = { bajos: [43, 55], segundos: [48, 62], primos: [54, 69], sobreprimos: [60, 74], tercia: [64, 77] };
+// La tercia, en el registro normal de Sin Disfraz (fa4–do5, excepcional do4–fa5; ver INVESTIGACION.md): más arriba suena chillona
+export const RANGOS = { bajos: [43, 55], segundos: [48, 62], primos: [54, 69], sobreprimos: [60, 74], tercia: [62, 74] };
 const MELODIA = [57, 73];   // la melodía va arriba del bloque
 const mod = (a, n) => ((a % n) + n) % n;
 import { MODOS } from './modos.js';
@@ -499,7 +500,7 @@ function cierre(rng, sec, ev, grado) {
     return mej;
   };
   const notas = [];
-  for (const [k, c] of [['bajos', 48], ['segundos', 55], ['primos', 62], ['sobreprimos', 67], ['tercia', 72]]) {
+  for (const [k, c] of [['bajos', 48], ['segundos', 55], ['primos', 62], ['sobreprimos', 67], ['tercia', 69]]) {
     const p = elegir(k, c);
     if (p !== null) { ev[k].push([q, d, p, 112, k === 'tercia']); if (k !== 'tercia') notas.push(p); }
   }

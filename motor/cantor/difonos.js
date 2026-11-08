@@ -26,12 +26,12 @@ class Rnd { constructor(s) { this.a = (s * 2654435761 + 7) >>> 0; } r() { let t 
 export function guion(notas, opc = {}) {
   const o = {
     vibrato: .14, vibVel: 5.5, vibEntra: .22, deriva: .05, temblor: 0, pique: .45, caida: .8, consonantes: 1, semilla: 1,
-    w: true, transporte: 0, eses: 1, ...opc,
+    w: true, transporte: 0, eses: 1, acento: 1, ...opc,
   };
   const rng = new Rnd(o.semilla);
   const sym = p => { const s = SAMPA[p] || 'a'; return s === 'u' && p === 'w' && o.w ? 'w' : s; };
-  // las eses de las voces castellanas son largas y silban (pico en 5 kHz): cantadas, más cortas
-  const dur = s => (s === 's' ? DURACION.s - .02 * o.eses : DURACION[s] || .05) * o.consonantes;
+  // las eses de las voces castellanas son largas y silban (pico en 5 kHz): cantadas, la mitad
+  const dur = s => (s === 's' ? DURACION.s - .035 * o.eses : DURACION[s] || .05) * o.consonantes;
   const consonante = p => p && !VOCAL(p) && p !== 'j' && p !== 'w';
   const N = notas.length;
   // 1. cuánto se adelanta el ataque de cada nota (se lo roba a la nota anterior, como mucho la mitad)
@@ -55,11 +55,13 @@ export function guion(notas, opc = {}) {
     ata.forEach((p, k) => { const d = dAta[k] * tA[i] / sA; poner(p, t, t + d, i, 'ataque'); t += d; });
     t = n.t0;
     // coda al final, núcleo en el medio
-    const coda = n.sil.coda.map(sym);
-    // la s antes de consonante se aspira, como en el Río de la Plata ("loh guriseh corren"): corta y como un soplo
+    // acento rioplatense, exagerado como en la murga: la s del final de la palabra no se canta ("lo gurise corren") y
+    // la de adentro de la palabra se aspira ("fiehta"): corta y como un soplo
+    let coda = n.sil.coda.map(sym);
+    if (o.acento > 0 && n.sil.fin && coda[coda.length - 1] === 's') coda = coda.slice(0, -1);
     const sigFon = ligada ? (sig.sil.ataque[0] || sig.sil.nucleo[0]) : null;
-    const aspirada = coda.map((p, k) => p === 's' && o.eses > 0 && (k < coda.length - 1 || consonante(sigFon)));
-    let dCoda = coda.map((p, k) => aspirada[k] ? .032 * o.consonantes : dur(p)); const sC = dCoda.reduce((x, y) => x + y, 0);
+    const aspirada = coda.map((p, k) => p === 's' && (o.acento > 0 || o.eses > 0) && (k < coda.length - 1 || consonante(sigFon) || o.acento > 0));
+    let dCoda = coda.map((p, k) => aspirada[k] ? .025 * o.consonantes : dur(p)); const sC = dCoda.reduce((x, y) => x + y, 0);
     if (sC > (b - t) * .35) dCoda = dCoda.map(d => d * (b - t) * .35 / sC);
     const finNuc = b - dCoda.reduce((x, y) => x + y, 0);
     const nuc = (n.sil.nucleo.length ? n.sil.nucleo : ['a']);
@@ -147,9 +149,9 @@ export function terminar(x, sr, g, opc = {}) {
   const filtrar = (z, f) => { let x1 = 0, x2 = 0, y1 = 0, y2 = 0; for (let k = 0; k < z.length; k++) { const v = f.b0 * z[k] + f.b1 * x1 + f.b2 * x2 - f.a1 * y1 - f.a2 * y2; x2 = x1; x1 = z[k]; y2 = y1; y1 = v; z[k] = v; } };
   const eses = opc.eses ?? 1;
   if (eses > 0) {
-    // Las eses: más bajas y sin el silbido de 4-5 kHz (la s rioplatense es más aguda y más suave que la castellana).
-    // Las aspiradas, además, sin agudos: un soplo. Se hace sólo sobre cada s, con rampas de 8 ms.
-    const r = Math.round(.008 * sr), pre = Math.round(.02 * sr);
+    // Las eses: más bajas y filtradas, sin el silbido de arriba de 4 kHz. Las aspiradas, más todavía: un soplo.
+    // Se hace sólo sobre cada s, con rampas de 6 ms.
+    const r = Math.round(.006 * sr), pre = Math.round(.02 * sr);
     for (const s of g.segs) {
       if (s.p !== 's') continue;
       const asp = s.tipo === 'aspirada';
@@ -157,10 +159,10 @@ export function terminar(x, sr, g, opc = {}) {
       const desde = Math.max(0, a - r - pre), hasta = Math.min(y.length, b + r);
       if (hasta - desde < 8) continue;
       const z = y.slice(desde, hasta);
-      filtrar(z, bq('pico', 4700, 1.4, -8 * eses));
-      if (asp) { filtrar(z, bq('agudos', 2500, .7, -12 * eses)); }
-      else filtrar(z, bq('agudos', 7500, .7, 5 * eses));
-      const gan = Math.pow(10, -(asp ? 5 : 2.5) * eses / 20);
+      filtrar(z, bq('pico', 5000, 1.2, -6 * eses));
+      filtrar(z, bq('agudos', asp ? 2500 : 4000, .7, -12 * eses));
+      filtrar(z, bq('agudos', asp ? 2500 : 6000, .7, -8 * eses));
+      const gan = Math.pow(10, -(asp ? 6 : 3) * eses / 20);
       for (let k = Math.max(desde, a - r); k < hasta; k++) {
         const m = Math.min(1, (k - (a - r)) / r, (b + r - k) / r);
         if (m <= 0) continue;
@@ -213,9 +215,10 @@ export function remuestrear(x, srIn, srOut) {
 // Cada cuerda con su largo de tracto (los formantes, más graves en los bajos) y cada cantor con sus mañas, chicas,
 // como en variacion.js: un poco más alto o más bajo, su vibrato, su garganta, cuánto pica al entrar y cuánto alarga
 // las consonantes. Devuelve las opciones para cantarDifonos.
-export const TIPOS_DIFONOS = { bajo: { tracto: .9 }, baritono: { tracto: .95 }, tenor: { tracto: 1 }, tenorAlto: { tracto: 1.06 } };
-export function cantorDifonos(tipo, semilla, V = VARIACION) {
-  const r = new Rnd(semilla * 17 + 3), T = TIPOS_DIFONOS[tipo] || TIPOS_DIFONOS.tenor;
+// (La tercia canta muy agudo: con el tracto del primo suena menos finita.)
+export const CUERDAS_DIFONOS = { bajos: { tracto: .9 }, segundos: { tracto: .95 }, primos: { tracto: 1 }, sobreprimos: { tracto: 1.03 }, tercia: { tracto: 1 } };
+export function cantorDifonos(cuerda, semilla, V = VARIACION) {
+  const r = new Rnd(semilla * 17 + 3), T = CUERDAS_DIFONOS[cuerda] || CUERDAS_DIFONOS.primos;
   return {
     semilla, tracto: T.tracto * r.u(1 - V.garganta, 1 + V.garganta),
     transporte: r.u(-V.desafinacion, V.desafinacion),

@@ -54,6 +54,7 @@ export function silabear(P, letras) {
           const ultima = k === notas.length - 1;
           const vocal = p.nucleo.filter(x => 'aeiou'.includes(x)).slice(-1);
           const parte = k === 0 ? { ataque: p.ataque, nucleo: p.nucleo, coda: ultima ? p.coda : [] } : { ataque: [], nucleo: vocal.length ? vocal : ['a'], coda: ultima ? p.coda : [] };
+          if (ultima && sil.fin !== false) parte.fin = true;   // termina la palabra (el solista se come las eses finales)
           porQ.set(s.inicio + g.q, { sil: parte, texto: sil.texto, d: g.d, parte: !!g.parte, melisma: notas.length > 1 });
         });
       }
