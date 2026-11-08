@@ -1,20 +1,31 @@
 # Informe del trabajo nocturno
 
-2026-11-07 20:33 · Windows · placa NVIDIA
+2026-11-08 07:48 · Windows · placa NVIDIA
+
+## Lo que dejó la noche, en corto
+
+- **Seed-VC se probó con 3 de los 12 fragmentos.** Cada uno tardó unos 80 minutos en esta placa. Lo corté a las 07:48 para no pasar las 12 horas.
+  - En los dos fragmentos de ajuste baja mucho la distancia al coro real: de 6,92 a 3,24. Lo que más mejora es el ataque y el hueco.
+  - En el de control no cambia: de 9,97 a 9,92. Encima, el timbre empeora: de 5,8 a 8,5 dB.
+  - Tres fragmentos no alcanzan para decidir nada.
+  - Es lento y es un modelo de IA, así que no puede ir dentro del generador. Sirve, como mucho, para ver qué le falta al coro sintético: que entre más rápido y que el hueco sea menos marcado.
+- **La variación entre cantores se ajustó y no quedó.** En los fragmentos de ajuste la distancia baja de 6,48 a 4,02, pero en los de control sube de 6,27 a 7,28. El buscador se aprende los fragmentos de ajuste, así que `motor/cantor/variacion.js` sigue con los valores puestos de oído (commit 21f147b).
+- **No corrieron por falta de tiempo:** convertir las cuatro demos y la prueba de si se entiende la letra con Whisper (faltaba bajar whisper-small, 1 GB).
+- **Para seguir:** si se vuelve a correr `uv run herramientas/trabajo_nocturno.py`, retoma la conversión. Como el paso quedó cortado, vuelve a convertir los 12 fragmentos desde el principio: son unas 16 horas.
 
 | Paso | Estado | Duración |
 |---|---|---|
 | Elegir fragmentos de coro real | hecho | 1 min |
 | Volver a cantarlos con el coro sintético de ahora | hecho | 0 min |
 | Medir real contra sintético | hecho | 0 min |
-| Buscar la mejor variación entre cantores (6 h) | hecho | 15 min |
+| Buscar la mejor variación entre cantores (3 h) | hecho | 15 min |
 | Medir con la variación ajustada | hecho | 1 min |
-| Instalar Seed-VC | salteado |  |
-| Elegir voces de referencia | salteado |  |
+| Instalar Seed-VC | hecho | 0 min |
+| Elegir voces de referencia | hecho | 2 min |
 | Ajuste fino de Seed-VC con La Trasnochada | salteado |  |
-| Convertir los fragmentos y medirlos | salteado |  |
-| Convertir las cuatro demos | salteado |  |
-| ¿Se entiende la letra? (Whisper) | salteado |  |
+| Convertir los fragmentos y medirlos | cortado — cortado a las 07:48 por el límite de 12 horas: 3 de 12 fragmentos convertidos (unos 80 min cada uno); las medidas son de esos 3 | 279 min |
+| Convertir las cuatro demos | no corrió — sin tiempo: cada demo tardaría más de una hora |  |
+| ¿Se entiende la letra? (Whisper) | no corrió — sin tiempo: faltaba bajar whisper-small (1 GB) |  |
 
 ## El coro sintético contra el real
 
@@ -60,19 +71,48 @@ Distancia media: ajuste 4.26 · control 5.61
 
 | Qué | Antes | Ajustada |
 |---|---|---|
-| desafinacion | 0.09 | 0.2383 |
-| retraso | 0.03 | 0.0457 |
-| desfase | 0.014 | 0.0084 |
-| vibrato | [0.08, 0.17] | [0.0367, 0.1151] |
-| vibratoVel | [5.0, 6.0] | [5.0, 6.0] |
-| garganta | 0.025 | 0.0472 |
-| pulso | 0.05 | 0.05 |
-| aire | [0.8, 1.25] | [0.8, 1.25] |
-| vocales | 0 | 0.0412 |
-| liderDb | 0 | 1.4945 |
-| liderAdelanto | 0 | 0.0 |
+| desafinacion | 0.17 | 0.2032 |
+| desafinaNota | 0.06 | 0.0 |
+| retraso | 0.008 | 0.017 |
+| desfase | 0.016 | 0.0113 |
+| vibrato | [0.09, 0.24] | [0.02, 0.2044] |
+| vibratoVel | [4.8, 6.2] | [4.8, 6.2] |
+| vibratoEntra | [0.15, 0.4] | [0.15, 0.4] |
+| garganta | 0.03 | 0.0283 |
+| pulso | 0.06 | 0.06 |
+| aire | [0.75, 1.3] | [0.75, 1.3] |
+| vocales | 0.03 | 0.0539 |
+| diccion | 0.25 | 0.25 |
+| pique | 0.4 | 0.4 |
+| volumen | 1.5 | 1.5 |
+| liderDb | 1.0 | 1.8903 |
+| liderAdelanto | 0.006 | 0.0 |
 
-Distancia en los fragmentos de ajuste: 9.29 → 4.26; en los de control: 8.92 → 5.61. Si en los de control no mejora, `motor/cantor/variacion.js` queda como estaba.
+Distancia en los fragmentos de ajuste: 6.48 → 4.02; en los de control: 6.27 → 7.28. Si en los de control no mejora, `motor/cantor/variacion.js` queda como estaba.
+
+## Seed-VC
+
+Las mismas voces, sin convertir y convertidas, mezcladas igual:
+
+Sin convertir:
+
+| Fragmento | timbre dB | unísono ancho (real/sint) | una voz (real/sint) | ataque ms (real/sint) | hueco dB (real/sint) | distancia |
+|---|---|---|---|---|---|---|
+| 01_la_trasnochada_2020_presentacion | 5.2 | — / — | — / — | 66 / 100 | 1.82 / 4.55 | 4.49 |
+| 02_agarrate_catalina_2008_presentacion | 7.2 | 0.46 / 0.92 | 0.43 / 0.55 | 40 / 94 | 2.31 / 4.42 | 9.36 |
+| 03_la_gran_muneca_2016_final_y_retirada (control) | 5.8 | 0.21 / 0.93 | 0.26 / 0.48 | 96 / 100 | 8.34 / 4.02 | 9.97 |
+
+Distancia media: ajuste 6.92 · control 9.97
+
+Convertidas:
+
+| Fragmento | timbre dB | unísono ancho (real/sint) | una voz (real/sint) | ataque ms (real/sint) | hueco dB (real/sint) | distancia |
+|---|---|---|---|---|---|---|
+| 01_la_trasnochada_2020_presentacion | 6.5 | — / — | — / — | 66 / 77 | 1.82 / 2.74 | 2.28 |
+| 02_agarrate_catalina_2008_presentacion | 4.2 | 0.46 / 0.78 | 0.43 / 0.41 | 40 / 76 | 2.31 / 3.21 | 4.20 |
+| 03_la_gran_muneca_2016_final_y_retirada (control) | 8.5 | 0.21 / 0.85 | 0.26 / 0.47 | 96 / 92 | 8.34 / 4.41 | 9.92 |
+
+Distancia media: ajuste 3.24 · control 9.92
 
 ## Para escuchar
 
