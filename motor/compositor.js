@@ -8,7 +8,9 @@ export const PB = 16;
 export const CUERDAS = ['bajos', 'segundos', 'primos', 'sobreprimos', 'tercia'];
 // La tercia, en el registro normal de Sin Disfraz (fa4–do5, excepcional do4–fa5; ver INVESTIGACION.md): más arriba suena chillona.
 // Los bajos son la parte grave de la cuerda de segundos (Sin Disfraz: «bajos y segundos», do3–do4, excepcional sol2–re4).
-export const RANGOS = { bajos: [43, 62], segundos: [48, 62], primos: [54, 69], sobreprimos: [60, 74], tercia: [62, 74] };
+// La tercia, hasta Si 4: en Sin Disfraz (Lamolle y Lombardo) un buen sobreprimo llega fácil a La o Si 4, y la tercia es el
+// sobreprimo que se escapa del coro, no necesariamente el más agudo (llegaba a Re 5, y sonaba muy aguda).
+export const RANGOS = { bajos: [43, 62], segundos: [48, 62], primos: [54, 69], sobreprimos: [60, 74], tercia: [62, 71] };
 const MELODIA = [57, 73];   // la melodía va arriba del bloque
 const mod = (a, n) => ((a % n) + n) % n;
 import { MODOS } from './modos.js';
@@ -526,7 +528,7 @@ function tercia(rng, sec, compuesto, ev, cuanto) {
     const esc = escalaSobre(modo, g.ac);
     let p = g.nota + 12;
     while (p > RANGOS.tercia[1]) p -= 12;
-    if (p < RANGOS.tercia[0]) p += 12;
+    while (p < RANGOS.tercia[0] && p + 12 <= RANGOS.tercia[1]) p += 12;
     const paso = (x, dir) => { let y = x + dir; while (!esc.has(mod(y - tonica, 12))) y += dir; return y; };
     let t = g.q + sec.inicio + 2, fin = g.q + sec.inicio + g.d - 1;
     const din = sec.din - 4;

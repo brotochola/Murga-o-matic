@@ -7,6 +7,7 @@ import { TIMBRE } from './timbre.js';
 import { metrica, silabear, cantores } from './cantor/coro.js';
 import { cantar } from './cantor/cantor.js';
 import { cantorDifonos, vozDelCantor } from './cantor/difonos.js';
+import { cuantoAdorna } from './cantor/adornos.js';
 import { disenar } from './cantor/eq.js';
 import { medir, versosDe } from './cantor/letra.js';
 import { partesAEscribir } from './cantor/letrista.js';
@@ -21,12 +22,17 @@ const mod=(a,n)=>((a%n)+n)%n;
 class Rng{constructor(s){this.a=(s*9973+17)>>>0} rand(){let t=this.a+=0x6d2b79f5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296} uni(a,b){return a+(b-a)*this.rand()}}
 const NOTAS=["Do","Do#","Re","Mib","Mi","Fa","Fa#","Sol","Lab","La","Sib","Si"];
 const NOMBRES_CUERDA={bajos:"Bajos",segundos:"Segundos",primos:"Primos",sobreprimos:"Sobreprimos",tercia:"Tercia"};
+// Cuántos por cuerda y dónde se paran: como en cantor/coro.js (Sin Disfraz: segundos a un costado, sobreprimos en el
+// medio, primos al otro; dos o tres sobreprimos contando la tercia). panDe() da vuelta el lado con la formación de La Teja.
 const CUERDAS={
-  bajos:{cantores:2,pan:-.55,rango:"sol2–sol3"},
-  segundos:{cantores:3,pan:-.25,rango:"do3–re4"},
-  primos:{cantores:4,pan:.05,rango:"fa#3–la4"},
-  sobreprimos:{cantores:3,pan:.35,rango:"do4–re5"},
-  tercia:{cantores:1,pan:.6,rango:"mi4–fa5"}};
+  bajos:{cantores:2,pan:-.72,rango:"sol2–re4"},
+  segundos:{cantores:3,pan:-.42,rango:"do3–re4"},
+  primos:{cantores:5,pan:.42,rango:"fa#3–la4"},
+  sobreprimos:{cantores:2,pan:-.02,rango:"do4–re5"},
+  tercia:{cantores:1,pan:.1,rango:"re4–si4"}};
+const panDe=k=>CUERDAS[k].pan*(S.formacion==="teja"?-1:1);
+// Adornos en las notas largas de las clarinadas y de los finales (cantor/adornos.js): ninguno, algunos o muchos
+const ADORNOS_COR={ninguno:0,algunos:1,muchos:1.8};
 const ESTILOS={todas:"Todas juntas",trasnochada:"La Trasnochada",catalina:"Agarrate Catalina",bastarda:"Doña Bastarda",asaltantes:"Asaltantes con Patente",milonga:"La Nueva Milonga",cabra:"Cayó la Cabra",muneca:"La Gran Muñeca",pasteles:"Metele que son Pasteles"};
 const TEXTO_TIPO={clarinada:"a capela, en bloque",coro:"coro en bloque",pleno:"coro pleno",duo:"pocas voces",llamada:"la batería llama",cierre:"acorde final"};
 
@@ -72,7 +78,7 @@ async function renderCuerda(k,eventos,P,muestras){
   const ataque=Math.round(.09*SR),subida=Math.round(.012*SR),caida=Math.round(.09*SR),xf=Math.round(.1*SR);
   for(let cantor=0;cantor<cfg.cantores;cantor++){
     const banco=BANCOS[cantor%2];const desaf=rng.uni(-9,9);
-    const pan=Math.max(-1,Math.min(1,cfg.pan+rng.uni(-.12,.12)));const gl=Math.cos((pan+1)*Math.PI/4),gr=Math.sin((pan+1)*Math.PI/4);
+    const pan=Math.max(-1,Math.min(1,panDe(k)+rng.uni(-.12,.12)));const gl=Math.cos((pan+1)*Math.PI/4),gr=Math.sin((pan+1)*Math.PI/4);
     for(const[ini,d,m,vel,solo]of eventos){if(solo&&cantor>0)continue;const buf=muestras[banco][m];if(!buf)continue;const x=buf.getChannelData(0);
       const t0=P.T(ini),largo=P.T(ini+d)-t0;
       const dur=largo*(d>=3?.97:.84);const i0=Math.round((t0+rng.uni(0,.022))*SR);
@@ -156,9 +162,10 @@ function enObrero(w,msg){return new Promise((ok,mal)=>{const id=++idObrero;
   w.addEventListener("message",alMsg);w.addEventListener("error",alErr);w.postMessage({id,...msg})})}
 async function cantarLista(lista,alListo,sigue){
   let i=0;const ws=losObreros();
-  const enHilo=async c=>{await pausa();return cantar(c.notas,{sr:SR,tipo:c.tipo,semilla:c.semilla,retraso:c.retraso,separar:true})};
+  const adornosDe=c=>cuantoAdorna(c.cuerda,c.semilla,c.c||0)*(ADORNOS_COR[S.adornos]??1);
+  const enHilo=async c=>{await pausa();return cantar(c.notas,{sr:SR,tipo:c.tipo,semilla:c.semilla,retraso:c.retraso,adornos:adornosDe(c),separar:true})};
   const tarea=async w=>{while(i<lista.length&&sigue()){const j=i++,c=lista[j];let r;
-    if(w){try{r=await enObrero(w,{notas:c.notas,opc:{sr:SR,tipo:c.tipo,semilla:c.semilla,retraso:c.retraso}})}catch(e){console.warn("canta la página:",e.message);w=null;r=await enHilo(c)}}
+    if(w){try{r=await enObrero(w,{notas:c.notas,opc:{sr:SR,tipo:c.tipo,semilla:c.semilla,retraso:c.retraso,adornos:adornosDe(c)}})}catch(e){console.warn("canta la página:",e.message);w=null;r=await enHilo(c)}}
     else r=await enHilo(c);
     if(sigue())alListo(j,r)}};
   await Promise.all(ws.length?ws.map(tarea):[tarea(null)]);
@@ -168,7 +175,7 @@ async function cantarCuerdas(pieza,P,gen){
   if(difonos())return cantarDifonosCoro(pieza,P,gen,S.voces==="solista");
   const L=S.letra,letras=letrasPorSeccion();
   L.sil=silabear(pieza,letras);
-  const lista=cantores(pieza,L.sil.porQ,{semilla:S.seed});
+  const lista=cantores(pieza,L.sil.porQ,{semilla:S.seed,formacion:S.formacion});
   const len=Math.ceil(P.total*SR),acum={};for(const k of ORDEN)acum[k]={VL:new Float32Array(len),VR:new Float32Array(len),NL:new Float32Array(len),NR:new Float32Array(len)};
   let hechos=0;
   avance(0,`Cantando: 0 de ${lista.length} cantores…`);
@@ -200,14 +207,14 @@ async function difonosEnHilo(notas,opc){const v=opc.voz||"es2";
 async function cantarDifonosCoro(pieza,P,gen,solo){
   const L=S.letra,letras=letrasPorSeccion();
   L.sil=silabear(pieza,letras);
-  let lista=cantores(pieza,L.sil.porQ,{semilla:S.seed});
+  let lista=cantores(pieza,L.sil.porQ,{semilla:S.seed,formacion:S.formacion});
   if(solo)lista=[lista.find(x=>x.cuerda==="primos")||lista[0]];
   const res=new Array(lista.length);let hechos=0,i=0;
   avance(0,`Cantando: 0 de ${lista.length} cantores…`);
   // lo que se cambió a mano en «Los cantantes» (y quién canta solo o está callado)
   lista=lista.map(c=>({...c,clave:c.cuerda+(c.c||0)})).filter(c=>!(S.ajustes[c.clave]||{}).mudo&&(!S.soloCantor||solo||c.clave===S.soloCantor));
   const tarea=async w=>{while(i<lista.length&&gen===S.gen){const j=i++,c=lista[j],aj=S.ajustes[c.clave]||{};
-    const o={...cantorDifonos(c.cuerda,c.semilla,{c:solo?0:c.c||0}),voz:solo?"es2":vozDelCantor(c.c||0),...elegidos(aj)};
+    const o={...cantorDifonos(c.cuerda,c.semilla,{c:solo?0:c.c||0}),voz:solo?"es2":vozDelCantor(c.c||0),...elegidos(aj)};o.adornos*=ADORNOS_COR[S.adornos]??1;
     const msg={motor:"difonos",notas:c.notas,opc:{...o,retraso:o.retraso+(c.retraso||0)}};let r=null;
     if(w){try{r=await enObrero(w,msg)}catch(e){console.warn("canta la página:",e.message);w=null}}
     if(!r)r=await difonosEnHilo(msg.notas,msg.opc);
@@ -237,6 +244,7 @@ const PARAMS=[
   ["inclinacion","Brillo",-4,4,.1,v=>`${v>0?"+":""}${v.toFixed(1)} dB/oct`],
   ["color","Color propio",0,10,.5,v=>`±${v} dB`],
   ["consonantes","Dicción",.8,1.6,.01,v=>`× ${v.toFixed(2)}`],
+  ["adornos","Adornos",0,1,.05,v=>v<.01?"canta liso":`${Math.round(v*100)} % de las notas largas`],
   ["retraso","Retraso",-.03,.06,.001,v=>`${Math.round(v*1000)} ms`],
   ["db","Volumen",-12,6,.5,v=>`${v>0?"+":""}${v} dB`],
   ["pan","Paneo",-1,1,.05,v=>v<-.02?`${Math.round(-v*100)} izq.`:v>.02?`${Math.round(v*100)} der.`:"centro"]];
@@ -244,7 +252,7 @@ const CLAVES_CANTOR=["voz",...PARAMS.map(p=>p[0]).filter(k=>k!=="db"&&k!=="pan")
 const elegidos=aj=>Object.fromEntries(CLAVES_CANTOR.filter(k=>aj[k]!=null).map(k=>[k,aj[k]]));
 function guardarAjustes(){try{localStorage.setItem("murga.cantantes",JSON.stringify(S.ajustes))}catch(e){}}
 function losCantantes(){if(!S.pieza)return[];
-  return cantores(S.pieza,S.letra.sil?.porQ||new Map(),{semilla:S.seed}).map(c=>{const n=c.c||0,clave=c.cuerda+n;
+  return cantores(S.pieza,S.letra.sil?.porQ||new Map(),{semilla:S.seed,formacion:S.formacion}).map(c=>{const n=c.c||0,clave=c.cuerda+n;
     return{c,clave,n,base:{...cantorDifonos(c.cuerda,c.semilla,{c:n}),voz:vozDelCantor(n),db:0,pan:c.pan}}})}
 function dibujarCantantes(){
   const caja=$("listaCantantes"),sec=$("cantantes");sec.hidden=!difonos()||!S.pieza;if(sec.hidden)return;
@@ -253,7 +261,7 @@ function dibujarCantantes(){
   const cuantos={};for(const x of lista)cuantos[x.c.cuerda]=(cuantos[x.c.cuerda]||0)+1;
   for(const x of lista){const aj=S.ajustes[x.clave]||{},val=k=>(S.ajustes[x.clave]||{})[k]??x.base[k];
     const d=document.createElement("details");d.className="cantante"+(Object.keys(aj).some(k=>k!=="mudo")?" cambiado":"");
-    const resumenC=()=>`${val("voz")} · garganta ${PARAMS[0][5](val("tracto"))} · ${PARAMS[1][5](val("transporte"))} · ${PARAMS[8][5](val("db"))}`;
+    const resumenC=()=>`${val("voz")} · garganta ${PARAMS[0][5](val("tracto"))} · ${PARAMS[1][5](val("transporte"))} · ${PARAMS.find(p=>p[0]==="db")[5](val("db"))}`;
     d.innerHTML=`<summary><i style="background:var(--${x.c.cuerda})"></i><div><b>${NOMBRE_CANTOR[x.c.cuerda]} ${cuantos[x.c.cuerda]>1?x.n+1:""}${x.n===0&&cuantos[x.c.cuerda]>1?" (lleva la cuerda)":""}</b><small></small></div>
       <span class="acc"><button class="solo" aria-pressed="${S.soloCantor===x.clave}" title="Escucharlo solo">Solo</button><button class="mudo" aria-pressed="${!!aj.mudo}" title="Que no cante">Callar</button></span></summary><div class="params"></div>`;
     d.querySelector("small").textContent=resumenC();
@@ -272,11 +280,15 @@ function dibujarCantantes(){
 // ============================================================ estado
 const ORDEN=["bajos","segundos","primos","sobreprimos","tercia"];
 const LLAMADAS=Object.fromEntries(DATOS.ritmos.map(r=>{const a=DATOS.acompana[r.id];if(!a||!a[0])return[r.id,0];const c4=r.compas*4/r.tpc;return[r.id,Math.ceil((DATOS.frases[a[0]].ultimo+.05)/c4)]}));
-const S={version:2,recita:0,forma:"retirada",estilo:"todas",tonica:9,modo:"menor",ritmo:0,tempo:0,largo:"normal",seed:1,brillo:1,clarinada:true,cancionFinal:true,modula:true,tercia:0,mix:{bajos:1,segundos:1,primos:1,sobreprimos:1,tercia:1,bateria:.42},mute:{},
+const S={version:2,formacion:"union",adornos:"algunos",recita:0,forma:"retirada",estilo:"todas",tonica:9,modo:"menor",ritmo:0,tempo:0,largo:"normal",seed:1,brillo:1,clarinada:true,cancionFinal:true,modula:true,tercia:0,mix:{bajos:1,segundos:1,primos:1,sobreprimos:1,tercia:1,bateria:.42},mute:{},
   voces:"muestras",acordes:{},editando:null,ajustes:{},soloCantor:null,pieza:null,stems:null,P:null,ac:null,nodos:null,inicio:0,offset:0,tocando:false,gen:0,mp3:null,
   letra:{partes:[],textos:[],diags:null,temas:null,editados:new Set(),sel:{i:0,k:0},sil:null,marcas:[],semLetra:1,pendiente:false,cantada:null}};
 const $=id=>document.getElementById(id);
 try{S.ajustes=JSON.parse(localStorage.getItem("murga.cantantes")||"{}")||{}}catch(e){}
+// la formación del coro y los adornos se guardan en este navegador
+try{const c=JSON.parse(localStorage.getItem("murga.coro")||"{}")||{};if(c.formacion==="union"||c.formacion==="teja")S.formacion=c.formacion;if(c.adornos in ADORNOS_COR)S.adornos=c.adornos}catch(e){}
+function guardarCoro(){try{localStorage.setItem("murga.coro",JSON.stringify({formacion:S.formacion,adornos:S.adornos}))}catch(e){}}
+function mostrarCoro(){$("formacion").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===S.formacion));$("adornos").value=S.adornos;$("campoAdornos").hidden=!sint()}
 const sint=()=>S.voces!=="muestras";      // con letra: los cantores de formantes, los de difonos o el solista
 const difonos=()=>S.voces==="difonos"||S.voces==="solista";
 // La versión 1 del compositor, con su modelo del 7 de noviembre: se carga sólo si se elige
@@ -534,7 +546,7 @@ $("tema").addEventListener("keydown",e=>{if(e.key==="Enter")otraLetra()});
 const HINT_VOCES={muestras:"Muestras «aah» de coro: suena a coro, sin palabras.",sintetizadas:"Trece cantores de formantes (voz armada desde cero) cantan una letra escrita para esta melodía. Tarda unos segundos más.",
   difonos:"Trece cantores armados con pedacitos de voz grabada (difonos de MBROLA, tres voces), con acento rioplatense: se entiende mucho más la letra. La primera vez baja las voces (12 MB).",
   solista:"Un solo cantor de difonos canta la melodía con la letra, sobre la batería: para escuchar bien cómo canta."};
-function mostrarVoces(){const b=difonos()?"difonos":S.voces;$("voces").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===b));$("vocesHint").textContent=HINT_VOCES[S.voces];$("campoBrillo").hidden=sint();$("campoSolista").hidden=!difonos();$("soloSolista").checked=S.voces==="solista"}
+function mostrarVoces(){const b=difonos()?"difonos":S.voces;$("voces").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===b));$("vocesHint").textContent=HINT_VOCES[S.voces];$("campoBrillo").hidden=sint();$("campoSolista").hidden=!difonos();$("soloSolista").checked=S.voces==="solista";$("campoAdornos").hidden=!sint()}
 const elegirVoces=v=>{if(S.voces===v)return;S.voces=v;try{localStorage.setItem("murga.voces",S.voces)}catch(e){}mostrarVoces();generar()};
 $("voces").querySelectorAll("button").forEach(b=>b.onclick=()=>{if(b.dataset.v==="difonos"&&difonos())return;elegirVoces(b.dataset.v==="difonos"&&$("soloSolista").checked?"solista":b.dataset.v)});
 $("soloSolista").onchange=e=>elegirVoces(e.target.checked?"solista":"difonos");
@@ -565,6 +577,10 @@ $("recita").onchange=e=>{S.recita=+e.target.value;regen()};
   caja.appendChild(b)}
  caja.parentElement.style.display=DEMOS.length?"":"none"}
 $("tercia").onchange=e=>{S.tercia=+e.target.value;regen()};
+// la formación y los adornos no cambian la pieza: se canta de nuevo, con la misma letra
+$("formacion").querySelectorAll("button").forEach(b=>b.onclick=()=>{if(S.formacion===b.dataset.v)return;S.formacion=b.dataset.v;guardarCoro();mostrarCoro();if(!S.pieza)return;if(sint())cantarDeNuevo();else regen(true)});
+$("adornos").onchange=e=>{S.adornos=e.target.value;guardarCoro();if(S.pieza&&sint())cantarDeNuevo()};
+mostrarCoro();
 $("version").onchange=e=>{S.version=+e.target.value;regen()};
 for(const k of["clarinada","cancionFinal","modula"])$(k).onchange=e=>{S[k]=e.target.checked;regen()};
 
@@ -591,7 +607,7 @@ function midi(){const tpq=480,t16=120;const pistas=[];
   // con letra: cada sílaba como evento de letra en la pista de los primos
   const sil=sint()?silabasPorQ():null;
   pistas.push(pista(meta));
-  ORDEN.forEach((k,ch)=>{const e=[txt(0,3,NOMBRES_CUERDA[k]),[0,0,[0xC0|ch,52]],[0,0,[0xB0|ch,10,Math.round(64+63*CUERDAS[k].pan)]]];
+  ORDEN.forEach((k,ch)=>{const e=[txt(0,3,NOMBRES_CUERDA[k]),[0,0,[0xC0|ch,52]],[0,0,[0xB0|ch,10,Math.round(64+63*panDe(k))]]];
     for(const[ini,d,m,vel]of S.pieza.ev[k]){const on=ini*t16;e.push([on,1,[0x90|ch,m,Math.min(127,vel)]],[on+d*t16-10,0,[0x80|ch,m,0]])}
     if(sil&&k==="primos")for(const[q,x]of sil)if(x.primera)e.push(txt(q*t16,5,x.texto.replace(/‿/g," ")+(x.fin?" ":"-")));
     pistas.push(pista(e))});

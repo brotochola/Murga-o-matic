@@ -163,6 +163,12 @@ Doblan la misma nota, así que lo que suena no cambia, y tampoco los rasgos del 
 
 El banco del coro (`banco_sintetizar.mjs`) reparte las notas transcriptas con la misma regla: ahora cantan 12 cantores en lugar de 10. La versión 1 del compositor queda como estaba.
 
+## 11. La tercia, hasta Si 4
+
+Con el libro entero, el registro de los sobreprimos que dibuja *Sin Disfraz* va de Mi 4 a La 4, con extensión a Do 4 y a Si 4 («un buen sobreprimo llega fácilmente a un la o un si»). La tercia es un sobreprimo de carácter solista, no necesariamente el más agudo. `RANGOS.tercia` pasa de [62, 74] a [62, 71], y la línea de la tercia empieza en la octava que entra en ese registro.
+
+En 56 piezas de prueba, la tercia queda con mediana Sol 4 y techo Si 4 (antes, mediana La 4 y el 23 % de sus notas entre Do 5 y Re 5). Las demás cuerdas no cambian. Los sobreprimos siguen pasando de Si 4 cuando la melodía sube (el 4,5 % de sus notas, casi todas Do 5): son la nota de arriba de los golpes, y el libro dice que cantan «hasta donde lleguen». `probar_compositor.mjs`: 9.720 combinaciones, ninguna excepción.
+
 ## Lo que se probó y no quedó
 
 - **Suavizar los saltos de las voces de abajo en las costuras**, por octava o por la nota del acorde más cercana. Baja los saltos de cuarta, pero sube los de tercera y saca terceras entre voces. En el jurado, sin espiar, no cambió nada (1,32 contra 1,33).

@@ -6,6 +6,7 @@
 // AV: voz; AF: fricción; AH: aire; N: nasalidad; fc/fb: centro y ancho de la fricción
 const V = (F1, F2, F3) => ({ F: [F1, F2, F3], AV: 1, AF: 0, AH: 0, N: 0 });
 import { VARIACION } from './variacion.js';
+import { adornar } from './adornos.js';
 
 export const FONEMAS = {
   a: V(720, 1290, 2500), e: V(470, 1850, 2550), i: V(300, 2250, 2980), o: V(480, 880, 2450), u: V(330, 760, 2350),
@@ -108,6 +109,8 @@ export function cantar(notas, opc = {}) {
   const cAV = new Float32Array(nC), cAF = new Float32Array(nC), cAH = new Float32Array(nC), cN = new Float32Array(nC), cNZ = new Float32Array(nC).fill(270);
   const cF = [0, 1, 2].map(() => new Float32Array(nC)), cFC = new Float32Array(nC).fill(4000), cFB = new Float32Array(nC).fill(2000), cF0 = new Float32Array(nC);
   const cRaf = new Float32Array(nC), cCierre = new Float32Array(nC);
+  // los adornos de las notas largas de las clarinadas y de los finales (adornos.js): altura de más y vibrato
+  const adorno = adornar(ns, { cuanto: opc.adornos ?? 0, semilla: opc.semilla || 1 }), cAd = new Float32Array(nC), cVib = new Float32Array(nC).fill(1);
   // objetivos por segmento, con la vocal vecina para los fonemas sin formantes propios
   let k = 0;
   const vocalCerca = (i) => { for (let d = 1; d < 6; d++) { for (const j of [i - d, i + d]) { const s = seg[j]; if (s && ES_VOCAL(s.p)) return FONEMAS[s.p].F; } } return FONEMAS.a.F; };
@@ -142,6 +145,8 @@ export function cantar(notas, opc = {}) {
     for (let j = 0; j < 3; j++) cF[j][c] = fObj[j];
     // f0: la nota que corresponde (las consonantes del ataque ya van en la altura nueva)
     cF0[c] = (n.midi + desaf + n.dn);
+    const ad = adorno[s.nota];
+    if (ad) { cAd[c] = ad.altura(t); cVib[c] = ad.vibrato(t); }
   }
   // suavizado (coarticulación): formantes 18 ms, amplitudes 5 ms, f0 28 ms (portamento)
   const suavizar = (a, tau) => { const g = 1 - Math.exp(-CR / sr / tau); let y = a[0]; for (let i = 0; i < a.length; i++) { y += (a[i] - y) * g; a[i] = y; } };
@@ -154,12 +159,12 @@ export function cantar(notas, opc = {}) {
     for (let c = 0; c < nC; c++) {
       const t = c * CR / sr;
       if (cF0[c] !== cF0[c - 1]) { tNota = t; if (cAV[c] < .05) y = cF0[c] - rng.u(.3, .6) * pique; }
-      y += (cF0[c] - y) * g;
+      y += (cF0[c] + cAd[c] - y) * g;
       // vibrato: entra a los 0,25 s de la nota, de a poco
       const enNota = t - tNota, vamp = Math.max(0, Math.min(1, (enNota - vibEntra) / .3));
       fase += 2 * Math.PI * vibF * (1 + .06 * Math.sin(t * 1.3 + vibF)) * CR / sr;
       deriva += (rng.r() - .5) * .004 - deriva * .002; vprof += (rng.r() - .5) * .02 - (vprof - 1) * .01;
-      f0s[c] = y + vibA * vprof * vamp * Math.sin(fase) + deriva;
+      f0s[c] = y + vibA * vprof * vamp * cVib[c] * Math.sin(fase) + deriva;
       notaAnt = cF0[c];
     }
   }

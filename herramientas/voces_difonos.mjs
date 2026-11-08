@@ -20,7 +20,7 @@ const EXTRA = Object.fromEntries((arg('opc', '') || '').split(',').filter(Boolea
 const SAL = join(TRABAJO, 'solista', 'cuerdas'); mkdirSync(SAL, { recursive: true });
 // la melodía del banco va de Sol 3 a Fa# 4: a cada cuerda, a su registro (compositor.js, RANGOS)
 const SUBE = { bajos: -12, segundos: -7, primos: 0, sobreprimos: 5, tercia: 8 };   // cerca de la mediana de cada cuerda en lo que compone
-const CUANTOS = { bajos: 2, segundos: 3, primos: 4, sobreprimos: 3, tercia: 1 };   // los de coro.js
+const CUANTOS = Object.fromEntries(Object.entries(CORO).map(([k, c]) => [k, c.cantores]));   // los de coro.js
 
 const wav = (ruta, x) => {
   const b = Buffer.alloc(44 + x.length * 2);

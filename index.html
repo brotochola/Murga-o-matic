@@ -292,6 +292,10 @@ a{color:var(--sobreprimos)}
       <div class="field"><label class="lbl" for="tercia">Cuánto adorna la tercia</label>
         <input id="tercia" type="range" min="0" max="1" step="0.05" value="0">
       </div>
+      <div class="field" id="campoAdornos" hidden><label class="lbl" for="adornos">Adornos en clarinadas y finales</label>
+        <select id="adornos"><option value="ninguno">Ninguno: sonido limpio</option><option value="algunos" selected>Algunos cantores adornan</option><option value="muchos">Muchos adornos</option></select>
+        <p class="hint">En las notas largas, algunos cantores hacen vibratos, trinos, vueltas o se pasan a otra voz del acorde, cada uno a su manera (como cuenta <i>Sin Disfraz</i>).</p>
+      </div>
       <div class="field"><label class="lbl" for="semilla">Semilla</label>
         <div class="seed"><input id="semilla" type="number" min="1" max="99999" value="1" inputmode="numeric"><button class="btn" id="otra">Otra</button></div>
         <p class="hint">Cada número da otra melodía y otra armonía.</p>
@@ -306,6 +310,13 @@ a{color:var(--sobreprimos)}
       </div>
 
       <h2 style="margin-top:20px">Mezcla</h2>
+      <div class="field"><span class="lbl" id="l-formacion">Dónde se para cada cuerda</span>
+        <div class="seg" role="group" aria-labelledby="l-formacion" id="formacion">
+          <button data-v="union" aria-pressed="true">Como La Unión</button>
+          <button data-v="teja" aria-pressed="false">Como La Teja</button>
+        </div>
+        <p class="hint">En las murgas de La Unión, mirando desde el público, los segundos van a la izquierda, los sobreprimos en el medio y los primos a la derecha; en las de La Teja, al revés (<i>Sin Disfraz</i>).</p>
+      </div>
       <div class="mixer" id="mixer"></div>
     </aside>
 
@@ -385,7 +396,7 @@ a{color:var(--sobreprimos)}
     <div>
       <h3>Las voces</h3>
       <ul>
-        <li><b>Muestras de coro:</b> muestras "aah" de FluidR3 y MusyngKite. Cada cuerda tiene de dos a cuatro cantores (la tercia es una voz sola), cada uno con su desafinación, su retraso y su lugar en el estéreo, y el timbre se ecualiza hacia el de un coro de murga medido.</li>
+        <li><b>Muestras de coro:</b> muestras "aah" de FluidR3 y MusyngKite. Cada cuerda tiene de dos a cinco cantores (la tercia es una voz sola), cada uno con su desafinación, su retraso y su lugar en el estéreo, y el timbre se ecualiza hacia el de un coro de murga medido.</li>
         <li><b>Cantores sintéticos:</b> un letrista algorítmico, sin modelos de lenguaje, escribe una letra rioplatense que entra en la melodía, sílaba por nota y con rima. Trece voces de fuente glótica y formantes la cantan. El timbre y las consonantes se calibraron contra La Trasnochada 2020.</li>
       </ul>
     </div>

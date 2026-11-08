@@ -20,6 +20,7 @@ const VOCAL = p => 'aeiou'.includes(p);
 import { VARIACION } from './variacion.js';
 import * as TIMBRES from './timbre.js';
 import { ecualizar } from './eq.js';
+import { adornar, cuantoAdorna } from './adornos.js';
 
 class Rnd { constructor(s) { this.a = (s * 2654435761 + 7) >>> 0; } r() { let t = this.a += 0x6d2b79f5; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; } u(a, b) { return a + (b - a) * this.r(); } }
 
@@ -30,7 +31,7 @@ export function guion(notas, opc = {}) {
     vibrato: .14, vibVel: 5.5, vibEntra: .22, deriva: .05, temblor: 0, pique: .45, caida: .8, consonantes: 1, semilla: 1,
     // eses: 50 ms (esesCortas .57), más bajas y sin filtrar (en terminar: esesFiltro 0, esesDb 8). Cortas y filtradas
     // sonaban a t (Whisper oía «Te íbamos» por «Seguimos») y a chasquido.
-    w: true, transporte: 0, eses: 1, esesCortas: .57, acento: 1, sheismo: 1, golpe: 0, arco: 0, ...opc,
+    w: true, transporte: 0, eses: 1, esesCortas: .57, acento: 1, sheismo: 1, golpe: 0, arco: 0, adornos: 0, ...opc,
   };
   const rng = new Rnd(o.semilla);
   // ll e y: la "sh" rioplatense ("shegó", "cashe"). Estas voces no la tienen: se canta la ll castellana (jj, que ya
@@ -103,6 +104,8 @@ export function guion(notas, opc = {}) {
   { let y = 0; const g = () => { let u = 0; for (let k = 0; k < 4; k++) u += rng.r(); return (u - 2) * 1.7; }; for (let k = 0; k < nT; k++) { y = .55 * y + .45 * g(); tiembla[k] = y; } }
   const temblor = t => { const x = (t - inicio) / .01, k = Math.max(0, Math.min(nT - 2, Math.floor(x))), f = x - k; return tiembla[k] * (1 - f) + tiembla[k + 1] * f; };
   let fase = 0, tPrev = inicio;
+  // los adornos de las notas largas de las clarinadas y de los finales (adornos.js; con su propio azar)
+  const adorno = adornar(notas, { cuanto: o.adornos, semilla: o.semilla });
   const altura = t => {
     const i = notaEn(t), n = notas[i], sig = notas[i + 1];
     let m = n.midi;
@@ -115,9 +118,12 @@ export function guion(notas, opc = {}) {
     // la caída al final de la frase
     if (finales.has(i) && n.t1 - n.t0 > .4) m -= o.caida * suave((t - (n.t1 - .14)) / .14) ** 1.5;
     // vibrato: entra de a poco en las notas largas
-    const enNota = t - n.t0, vamp = suave((enNota - o.vibEntra) / .3) * (n.t1 - n.t0 > .3 ? 1 : 0);
+    const enNota = t - n.t0;
+    let vamp = suave((enNota - o.vibEntra) / .3) * (n.t1 - n.t0 > .3 ? 1 : 0);
     fase += 2 * Math.PI * o.vibVel * velVib * (1 + .05 * Math.sin(1.1 * t + fases[0])) * Math.max(0, t - tPrev); tPrev = t;
     const deriva = o.deriva * (.6 * Math.sin(2 * Math.PI * .7 * t + fases[0]) + .3 * Math.sin(2 * Math.PI * 1.9 * t + fases[1]) + .2 * Math.sin(2 * Math.PI * 3.3 * t + fases[2]));
+    const ad = adorno[i];
+    if (ad) { m += ad.altura(t); vamp *= ad.vibrato(t); }
     return m + o.transporte + o.vibrato * vamp * Math.sin(fase) + deriva + o.temblor * temblor(t);
   };
   const hz = m => 440 * Math.pow(2, (m - 69) / 12);
@@ -324,6 +330,8 @@ export function cantorDifonos(cuerda, semilla, { c = 0, V = VARIACION, D = DIFER
     temblor: .04, brillo: .6,
     // los acentos con golpe de voz: el ataque se acerca al del coro real (de 31 a 18 ms de diferencia en el banco)
     golpe: 3, arco: 1,
+    // cuánto adorna las notas largas de las clarinadas y de los finales (adornos.js; algunos nada)
+    adornos: cuantoAdorna(cuerda, semilla, c),
   };
 }
 

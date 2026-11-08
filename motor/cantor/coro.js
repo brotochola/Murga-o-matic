@@ -1,14 +1,21 @@
 // coro.js — de una pieza del Murga-o-matic + una letra a lo que canta cada cantor.
 import { versosDe, silabasCantadas, alinear, partes } from './letra.js';
 import { VARIACION } from './variacion.js';
+import { contexto } from './adornos.js';
 
+// Los trece del coro y dónde se paran. Sin Disfraz (Lamolle y Lombardo, 1998): tres cuerdas, los segundos (que se
+// dividen en bajos y segundos), los primos (lisos y altos) y los sobreprimos, que son dos o tres contando la tercia.
+// Las murgas de La Unión se paran con los segundos a la izquierda del público, los sobreprimos en el medio y los primos
+// a la derecha; las de La Teja, al revés (formacion: 'teja'). Antes iban de grave a agudo, de izquierda a derecha, y
+// con cuatro primos y tres sobreprimos.
 export const CORO = {
-  bajos: { cantores: 2, tipo: 'bajo', pan: -.55, ganancia: .8 },
-  segundos: { cantores: 3, tipo: 'baritono', pan: -.25, ganancia: .85 },
-  primos: { cantores: 4, tipo: 'tenor', pan: .05, ganancia: 1 },
-  sobreprimos: { cantores: 3, tipo: 'tenorAlto', pan: .35, ganancia: .8 },
-  tercia: { cantores: 1, tipo: 'tenorAlto', pan: .6, ganancia: .7 },
+  bajos: { cantores: 2, tipo: 'bajo', pan: -.72, ganancia: .8 },
+  segundos: { cantores: 3, tipo: 'baritono', pan: -.42, ganancia: .85 },
+  primos: { cantores: 5, tipo: 'tenor', pan: .42, ganancia: 1 },
+  sobreprimos: { cantores: 2, tipo: 'tenorAlto', pan: -.02, ganancia: .8 },
+  tercia: { cantores: 1, tipo: 'tenorAlto', pan: .1, ganancia: .7 },
 };
+export const FORMACIONES = { union: 1, teja: -1 };
 
 // Tiempo de cada semicorchea (igual que la página: cada sección a su tempo, con calderones)
 export function tiempos(P) {
@@ -72,9 +79,11 @@ export function volumenDe(semilla, V = VARIACION) {
   return Math.pow(10, (u * 2 - 1) * V.volumen / 20);
 }
 
-// Qué canta cada cantor: notas con su sílaba y en segundos
-export function cantores(P, porQ, { semilla = 1 } = {}) {
+// Qué canta cada cantor: notas con su sílaba y en segundos. Las notas largas de las clarinadas y de los finales llevan
+// `larga` (adornos.js: qué notas tienen cerca, para que cada cantor las adorne a su manera).
+export function cantores(P, porQ, { semilla = 1, formacion = 'union' } = {}) {
   const { T } = tiempos(P);
+  const larga = contexto(P), lado = FORMACIONES[formacion] ?? 1;
   const res = [];
   let n = 0;
   for (const [k, cfg] of Object.entries(CORO)) {
@@ -104,7 +113,10 @@ export function cantores(P, porQ, { semilla = 1 } = {}) {
         let sil = e[5];
         if (!sil) { sil = { ataque: q - ultLa > 2 ? ['l'] : [], nucleo: ['a'], coda: [] }; }
         const t0 = T(qq), t1 = T(qq + d);
-        lineas[c].push({ t0, t1: t0 + (t1 - t0) * (d >= 3 ? .97 : .9), midi: p, vel: Math.pow((din || 90) / 127, 1.3), sil });
+        const nota = { t0, t1: t0 + (t1 - t0) * (d >= 3 ? .97 : .9), midi: p, vel: Math.pow((din || 90) / 127, 1.3), sil };
+        const ctx = larga(qq, p, t1 - t0);
+        if (ctx) nota.larga = ctx;
+        lineas[c].push(nota);
       }
       ultLa = q + (grupo[0][1] || 1);
     }
@@ -115,7 +127,7 @@ export function cantores(P, porQ, { semilla = 1 } = {}) {
       // el primero de cada cuerda puede llevarla: un poco más fuerte y adelantado (variacion.js)
       const lider = c === 0 && cfg.cantores > 1;
       const sem = semilla * 101 + (n++) * 7;
-      res.push({ cuerda: k, c, tipo: cfg.tipo, semilla: sem, pan: Math.max(-1, Math.min(1, cfg.pan + (c - (cfg.cantores - 1) / 2) * .12)),
+      res.push({ cuerda: k, c, tipo: cfg.tipo, semilla: sem, pan: Math.max(-1, Math.min(1, lado * (cfg.pan + (c - (cfg.cantores - 1) / 2) * .12))),
         ganancia: cfg.ganancia / Math.sqrt(cfg.cantores) * (lider ? Math.pow(10, VARIACION.liderDb / 20) : 1) * volumenDe(sem), retraso: lider ? -VARIACION.liderAdelanto : 0, notas });
     });
   }

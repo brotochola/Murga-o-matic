@@ -180,6 +180,7 @@ Abajo, en **Los cantantes**, cada uno de los trece se puede cambiar a mano:
 
 - **La voz:** es2, es1 o es4.
 - **La forma de cantar:** garganta, afinación, vibrato y su velocidad, brillo, color propio, dicción (cuánto duran las consonantes) y retraso.
+- **Adornos:** qué parte de las notas largas de las clarinadas y de los finales adorna (ver abajo).
 - **En la mezcla:** volumen y paneo.
 - **Solo:** lo hace cantar a él solo, en un par de segundos.
 - **Callar:** lo saca del coro.
@@ -190,8 +191,27 @@ MBROLA está compilado a WebAssembly (85 KB) con `herramientas/compilar_mbrola.s
 
 MBROLA es AGPL-3.0. La voz es2 se puede usar sólo con MBROLA y copiar libremente mientras no se cobre. Los dos avisos están en `motor/vendor/mbrola/`.
 
+## Lo que agregó el libro entero
+
+Con *Sin Disfraz* completo (Lamolle y Lombardo, 1998; resumen en [INVESTIGACION.md](../INVESTIGACION.md)) cambiaron tres cosas del coro. Valen para los dos coros sintéticos, el de formantes y el de difonos.
+
+- **Cuántos por cuerda.** El libro dice que los sobreprimos son dos o tres contando la tercia, y que los primos se dividen en lisos y altos. El coro era 2 bajos, 3 segundos, 4 primos, 3 sobreprimos y la tercia; ahora es 2, 3, **5, 2** y la tercia. Cada cuerda suena igual de fuerte que antes (la ganancia de cada cantor se divide por la raíz de cuántos son).
+- **Dónde se para cada uno.** En las murgas de La Unión, mirando desde el público, los segundos van a la izquierda, los sobreprimos en el centro y los primos a la derecha; en las de La Teja, al revés. El paneo iba de grave a agudo, de izquierda a derecha, que no es ninguna de las dos. Ahora: bajos −0,72, segundos −0,42, sobreprimos −0,02, tercia 0,1 y primos 0,42, cada cantor ±0,12 alrededor. En la página, **Mezcla → Dónde se para cada cuerda** elige La Unión o La Teja (da vuelta todo), también para las muestras y el MIDI.
+- **Adornos en las notas largas** (`motor/cantor/adornos.js`). En las clarinadas y en los acordes finales, dice el libro, algunos cantores adornan la nota de su cuerda con vibratos, trinos o melismas, y hasta se pasan a otra voz; hay directores que prefieren un sonido limpio. `coro.js` marca las notas que se pueden adornar: las de 0,9 s o más en la clarinada y en el acorde final, y las de 1,6 s o más en cualquier lado (los finales de frase). En la presentación de demostración son 185 de 4.346 notas. En cada una, el cantor adorna con una probabilidad propia; un 30 % de los cantores no adorna nunca, y el que lleva la cuerda y los bajos adornan la mitad. Cada adorno es una curva de altura sobre la nota:
+  - **vibrato** más ancho (× 1,7 a 2,3) en la segunda mitad;
+  - **trino** con la nota de arriba de la escala, de 5 a 6,5 vueltas por segundo, durante medio segundo a un segundo (tres vueltas como mínimo);
+  - **vuelta** (grupeto): arriba, la nota, abajo, la nota;
+  - **pasarse** a otra nota del acorde, la que canta otra cuerda, por una nota de paso; a veces vuelve y a veces se queda.
+
+  Las vecinas salen de la escala del tono, corregida con las notas del acorde que suena (si el acorde trae la sensible, la séptima menor no va). Nunca adorna el primer cuarto de la nota ni los últimos 0,3 s. Mientras cambia de nota, el vibrato casi se apaga. En **La pieza → Adornos en clarinadas y finales** se elige ninguno, algunos (× 1) o muchos (× 1,8).
+
+  El guion de MBROLA lleva como mucho 90 puntos de altura por sonido, así que en una nota de 3 s hay un punto cada 33 ms: el trino no pasa de una vuelta cada cinco puntos.
+
+- **La tercia, hasta Si 4.** El libro dibuja el registro de los sobreprimos de Mi 4 a La 4, con extensión hasta Si 4 («un buen sobreprimo llega fácilmente a un la o un si»), y la tercia no es necesariamente el más agudo. Iba de Re 4 a Re 5, con mediana en La 4; ahora va de Re 4 a Si 4, con mediana en Sol 4.
+
 ## Lo que falta
 
 - **Que no suene a locutor.** Las voces son de habla: las vocales largas se estiran repitiendo el mismo pedazo y pueden sonar quietas.
-- **La tercia.** Sonaba demasiado aguda. El compositor la ponía con mediana en Do 5 y hasta Fa 5, que es el registro excepcional. Ahora va de Re 4 a Re 5, con mediana en La 4, como el registro normal de Sin Disfraz (fa4–do5). Sólo cambia la tercia: en 48 piezas de prueba, las demás cuerdas quedan idénticas.
+- **La afinación con intención.** Según el libro, en la murga muchas notas se cantan apenas más altas o más bajas a propósito, y cantadas muy afinadas pierden sabor. Los cantores sintéticos desafinan al azar, no con intención.
+- **La emisión según el registro.** El libro dice que la colocación cambia con la cuerda, el volumen y el registro: en el grave, «voz de segundo»; en el agudo, más nasal. Las voces de MBROLA son de habla, a un solo esfuerzo, y no cambian de color cuando suben.
 - **El timbre.** Hay que medirlo contra el coro real, con el banco, para la curva de ecualización.
