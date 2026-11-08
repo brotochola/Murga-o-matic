@@ -50,7 +50,7 @@ const NOMBRE = {
   entrada: { voces: 'coro solo, seco', voces_mezcla: 'coro con sala', mezcla: 'coro y batería', mezcla_fuerte: 'batería fuerte', tv: 'batería, público y Opus' },
   sep: { ninguno: 'sin separar', htdemucs_ft: 'htdemucs_ft', htdemucs: 'htdemucs', htdemucs_ft_s4: 'htdemucs_ft ×4', htdemucs_6s: 'htdemucs_6s' },
 };
-const describir = c => { const [e, s, t] = c.split('__'); return `${NOMBRE.entrada[e] || e} · ${NOMBRE.sep[s] || s} · ${t.replace(/_/g, ', ').replace('cfg', 'cfg=').replace('beam', 'haz=').replace('desfase', 'desfase=')}`; };
+const describir = c => { const [e, s, t] = c.split('__'); return `${NOMBRE.entrada[e] || e} · ${NOMBRE.sep[s] || s} · ${t.replace(/_/g, ', ').replace('cfg', 'cfg=').replace('beam', 'haz=').replace('desfase', 'desfase=').replace('fp161', 'float16')}`; };
 function tabla(lista, ps) {
   const L = ['| Caso | F1 ±100 ms | ±50 ms | Precisión | Cobertura | Octava | Melodía | Bajo | Voces por golpe (verdad → escritas) | Golpes a una voz | Inventadas | SDR voces | Tiempo por s de audio |', '|---|---|---|---|---|---|---|---|---|---|---|---|---|'];
   for (const c of lista) { const r = fila(c, ps); if (!r) continue; L.push(`| ${describir(c)} | **${pc(r.f100)}** | ${pc(r.f50)} | ${pc(r.prec)} | ${pc(r.cob)} | ${pc(r.octava)} | ${pc(r.melodia)} | ${pc(r.bajo)} | ${nf(r.vv)} → ${nf(r.ve)} | ${pc(r.uv)} → ${pc(r.ue)} | ${r.inventadas} | ${r.sdr == null ? '—' : nf(r.sdr, 1) + ' dB'} | ${nf(r.velocidad)} s |`); }
@@ -93,7 +93,16 @@ L.push('## 2. Las perillas', '', 'Sobre tres piezas (' + var3.join(', ') + '), c
   }
   if (piezasD) L.push('**¿Escribe siempre lo mismo?** Casi. El mismo audio, pasado dos veces con los cortes de 5 s corridos 2,5 s, da transcripciones que coinciden en el ' + pc(2 * n100 / (na + nb)) + ' de las notas a ±100 ms, la misma vara que contra la verdad, y en el ' + pc(2 * n / (na + nb)) + ' a ±60 ms. Lo que cambia de una pasada a la otra es sobre todo el momento exacto del ataque, en hasta 100 ms, y no tanto qué nota escribe. Las diferencias no se juntan cerca de los cortes: el ' + pc(cerca / sinPar) + ' de las notas sin par a ±60 ms cae a menos de 0,5 s de un corte, cuando al azar sería el 40 %. Como las dos pasadas aciertan lo mismo contra la verdad (89 %) y coinciden más que eso entre ellas, los errores son en buena parte los mismos: el transcriptor se equivoca siempre en los mismos lugares. Por eso juntar dos pasadas no mejora. Quedarse con lo que coincide sube la precisión pero pierde un cuarto de las notas, y sumar todo hace lo contrario.', '');
 }
-L.push('Ninguna perilla le gana a lo que ya se usaba (htdemucs_ft y MuScriptor medium, búsqueda voraz): el haz, la guía, los cortes corridos y htdemucs quedan a medio punto o menos, y algunas tardan hasta cuatro veces más. El modelo small es 2,4 veces más rápido pero acierta 3 puntos menos, y la melodía 5,5 menos. El modelo large no se pudo probar: sus pesos piden aceptar la licencia en https://huggingface.co/MuScriptor/muscriptor-large con la cuenta de Hugging Face.', '');
+L.push('Ninguna perilla le gana a lo que ya se usaba (htdemucs_ft y MuScriptor medium, búsqueda voraz): el haz, la guía, los cortes corridos y htdemucs quedan a medio punto o menos, y algunas tardan hasta cuatro veces más. El modelo small es 2,4 veces más rápido pero acierta 3 puntos menos, y la melodía 5,5 menos.', '');
+{
+  const m = fila('tv__htdemucs_ft__medium', var3), g = fila('tv__htdemucs_ft__large_fp161', var3), m16 = fila('tv__htdemucs_ft__medium_fp161', var3);
+  if (m && g) L.push(`**El modelo large es peor.** Acierta ${pc(g.f100)} de las notas contra ${pc(m.f100)} de medium, y la melodía ${pc(g.melodia)} contra ${pc(m.melodia)}. Tarda ${nf(g.velocidad / m.velocidad, 1)} veces más: ${nf(g.velocidad)} s por segundo de audio.`, '',
+    '- **Por qué pierde.** Encuentra casi los mismos pares que medium a ±250 ms (513 contra 512 en p1), pero escribe los ataques 20 a 27 ms antes que medium, que ya iba adelantado. Además, en p2 escribe 190 notas de más.',
+    '- **Aun corrigiendo el adelanto, pierde.** Con su mejor corrimiento (+40 ms) llega a 83,9 %. Medium, con el suyo (+20 ms), llega a 90,5 %.',
+    `- **No es por el float16.** En esta placa de 4 GB, large solo entra en float16, y cargado a mano: la biblioteca sube los pesos en float32 y no caben. Medium en float16 acierta ${m16 ? pc(m16.f100) : 'lo mismo'} contra ${pc(m.f100)} en float32. Y con medium, la carga a mano da exactamente lo mismo que la de la biblioteca: 481 de 481 notas iguales en p3.`,
+    '- **Medium también va adelantado.** Si se corren sus ataques +20 ms, el acierto a ±50 ms sube de 58 % a 71 %, y a ±100 ms casi no cambia. Al análisis no le importa, porque la grilla sale de los mismos ataques.', '',
+    'Se queda medium.', '');
+}
 const conVar = todos.filter(c => ['p1b', 'p3b', 'p1', 'p3'].every(p => casos.get(c).has(p)));
 if (conVar.length) {
   // las mismas dos piezas, cantadas con la variación de antes y con la ajustada

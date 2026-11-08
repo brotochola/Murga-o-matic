@@ -43,6 +43,49 @@ def log(*a):
     print(*a, flush=True)
 
 
+TIPOS = {"F32": torch.float32, "F16": torch.float16, "BF16": torch.bfloat16, "I64": torch.int64, "I32": torch.int32,
+         "I16": torch.int16, "I8": torch.int8, "U8": torch.uint8, "BOOL": torch.bool}
+
+
+def leer_safetensors_float16(ruta):
+    """Lee un .safetensors tensor por tensor con read(), sin mapearlo en memoria: en Windows, torch da
+    "access violation" o "invalid python storage" al mapear los 5,5 GB de large."""
+    sd = {}
+    with open(ruta, "rb") as f:
+        n = int.from_bytes(f.read(8), "little")
+        cab = json.loads(f.read(n))
+        for k, v in cab.items():
+            if k == "__metadata__":
+                continue
+            a, b = v["data_offsets"]
+            f.seek(8 + n + a)
+            t = torch.frombuffer(bytearray(f.read(b - a)), dtype=TIPOS[v["dtype"]]).reshape(v["shape"]) if b > a else torch.empty(v["shape"], dtype=TIPOS[v["dtype"]])
+            sd[k] = t.half() if t.is_floating_point() else t.clone()
+    return sd
+
+
+def cargar_float16_en_placa(nombre):
+    """Como TranscriptionModel.load_model(dtype="float16"), pero sin pasar por float32 en la placa: la biblioteca
+    sube los pesos enteros en float32 (5,5 GB para large) y recién después los achica, y en 4 GB no entra.
+    Acá se arma el modelo en memoria, se cargan los pesos ya en float16 y se sube (2,7 GB). Después se le dice a
+    cada módulo que vive en la placa y se prende el autocast que la biblioteca prende al armarlo en la placa."""
+    import muscriptor.transcription_model as TM
+
+    fuente = TM._resolve_source(nombre)
+    pesos = TM.download_if_necessary(fuente)
+    modelo = TM._build_model(torch.device("cpu"), TM._resolve_config(fuente, pesos))
+    modelo.eval().half()
+    modelo.load_state_dict(TM._remap_single_codebook_keys(leer_safetensors_float16(pesos)))
+    modelo.condition_provider.float()   # como la biblioteca: los conditioners calculan en float32
+    modelo.to(DEV)
+    for mod in modelo.modules():
+        if isinstance(getattr(mod, "device", None), (str, torch.device)):
+            mod.device = torch.device(DEV)
+    modelo.autocast = TM.TorchAutocast(enabled=True, device_type="cuda", dtype=torch.float16)
+    tok = TM.MT3Tokenizer(instrument_vocabulary="MT3_FULL_PLUS", max_shift_steps=1001)
+    return TM.TranscriptionModel(model=modelo, tokenizer=tok, device=torch.device(DEV))
+
+
 def entrada(pieza, cond):
     """El wav de la entrada; tv pasa por Opus 128 kb/s y vuelve a wav, como un video de YouTube."""
     d = COROS / pieza
@@ -124,7 +167,10 @@ class Banco:
             self.libre_transcriptor()
             self.seps = {}
             torch.cuda.empty_cache()
-            self.tr = TranscriptionModel.load_model(weights_path=modelo, device=DEV, dtype="float16" if fp16 else None)
+            if modelo == "large" and fp16 and DEV == "cuda":
+                self.tr = cargar_float16_en_placa(modelo)
+            else:
+                self.tr = TranscriptionModel.load_model(weights_path=modelo, device=DEV, dtype="float16" if fp16 else None)
             self.tr_clave = clave
         return self.tr
 

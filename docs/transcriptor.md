@@ -47,15 +47,26 @@ Sobre tres piezas (p1, p2, p3), con batería, público y Opus, separado con htde
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | coro con sala · sin separar · medium | **89,9 %** | 61,1 % | 90,6 % | 89,2 % | 0,0 % | 82,8 % | 86,7 % | 1,92 → 1,83 | 41,2 % → 37,5 % | 2 | — | 0,41 s |
 | batería, público y Opus · htdemucs_ft · medium | **89,4 %** | 58,4 % | 91,6 % | 87,3 % | 0,1 % | 82,3 % | 84,6 % | 1,92 → 1,78 | 41,2 % → 37,2 % | 0 | 12,1 dB | 0,43 s |
+| batería, público y Opus · htdemucs_ft · large, float16 | **76,9 %** | 32,7 % | 75,1 % | 78,7 % | 0,0 % | 74,0 % | 76,7 % | 1,92 → 1,65 | 41,2 % → 35,6 % | 169 | 12,1 dB | 2,30 s |
 | batería, público y Opus · htdemucs_ft · medium, haz=3 | **89,0 %** | 58,7 % | 91,5 % | 86,7 % | 0,0 % | 82,7 % | 84,0 % | 1,92 → 1,76 | 41,2 % → 37,5 % | 0 | 12,1 dB | 1,71 s |
 | batería, público y Opus · htdemucs_ft · medium, cfg=1.5 | **89,1 %** | 57,2 % | 91,4 % | 86,8 % | 0,2 % | 82,0 % | 84,3 % | 1,92 → 1,76 | 41,2 % → 38,6 % | 0 | 12,1 dB | 0,60 s |
 | batería, público y Opus · htdemucs_ft · medium, desfase=2.5 | **89,1 %** | 57,2 % | 90,6 % | 87,7 % | 0,2 % | 81,3 % | 84,4 % | 1,92 → 1,81 | 41,2 % → 37,5 % | 0 | 12,1 dB | 0,39 s |
+| batería, público y Opus · htdemucs_ft · medium, float16 | **89,6 %** | 58,8 % | 92,0 % | 87,3 % | 0,1 % | 82,5 % | 84,4 % | 1,92 → 1,77 | 41,2 % → 37,5 % | 0 | 12,1 dB | 0,55 s |
 | batería, público y Opus · htdemucs_ft · small | **86,3 %** | 74,9 % | 85,6 % | 87,0 % | 0,4 % | 76,8 % | 83,9 % | 1,92 → 1,82 | 41,2 % → 35,3 % | 0 | 12,1 dB | 0,18 s |
 | batería, público y Opus · htdemucs · medium | **88,5 %** | 58,4 % | 90,6 % | 86,5 % | 0,1 % | 80,8 % | 83,3 % | 1,92 → 1,76 | 41,2 % → 35,6 % | 0 | 16,6 dB | 0,39 s |
 
 **¿Escribe siempre lo mismo?** Casi. El mismo audio, pasado dos veces con los cortes de 5 s corridos 2,5 s, da transcripciones que coinciden en el 90,6 % de las notas a ±100 ms, la misma vara que contra la verdad, y en el 78,8 % a ±60 ms. Lo que cambia de una pasada a la otra es sobre todo el momento exacto del ataque, en hasta 100 ms, y no tanto qué nota escribe. Las diferencias no se juntan cerca de los cortes: el 41,9 % de las notas sin par a ±60 ms cae a menos de 0,5 s de un corte, cuando al azar sería el 40 %. Como las dos pasadas aciertan lo mismo contra la verdad (89 %) y coinciden más que eso entre ellas, los errores son en buena parte los mismos: el transcriptor se equivoca siempre en los mismos lugares. Por eso juntar dos pasadas no mejora. Quedarse con lo que coincide sube la precisión pero pierde un cuarto de las notas, y sumar todo hace lo contrario.
 
-Ninguna perilla le gana a lo que ya se usaba (htdemucs_ft y MuScriptor medium, búsqueda voraz): el haz, la guía, los cortes corridos y htdemucs quedan a medio punto o menos, y algunas tardan hasta cuatro veces más. El modelo small es 2,4 veces más rápido pero acierta 3 puntos menos, y la melodía 5,5 menos. El modelo large no se pudo probar: sus pesos piden aceptar la licencia en https://huggingface.co/MuScriptor/muscriptor-large con la cuenta de Hugging Face.
+Ninguna perilla le gana a lo que ya se usaba (htdemucs_ft y MuScriptor medium, búsqueda voraz): el haz, la guía, los cortes corridos y htdemucs quedan a medio punto o menos, y algunas tardan hasta cuatro veces más. El modelo small es 2,4 veces más rápido pero acierta 3 puntos menos, y la melodía 5,5 menos.
+
+**El modelo large es peor.** Acierta 76,9 % de las notas contra 89,4 % de medium, y la melodía 74,0 % contra 82,3 %. Tarda 5,3 veces más: 2,30 s por segundo de audio.
+
+- **Por qué pierde.** Encuentra casi los mismos pares que medium a ±250 ms (513 contra 512 en p1), pero escribe los ataques 20 a 27 ms antes que medium, que ya iba adelantado. Además, en p2 escribe 190 notas de más.
+- **Aun corrigiendo el adelanto, pierde.** Con su mejor corrimiento (+40 ms) llega a 83,9 %. Medium, con el suyo (+20 ms), llega a 90,5 %.
+- **No es por el float16.** En esta placa de 4 GB, large solo entra en float16, y cargado a mano: la biblioteca sube los pesos en float32 y no caben. Medium en float16 acierta 89,6 % contra 89,4 % en float32. Y con medium, la carga a mano da exactamente lo mismo que la de la biblioteca: 481 de 481 notas iguales en p3.
+- **Medium también va adelantado.** Si se corren sus ataques +20 ms, el acierto a ±50 ms sube de 58 % a 71 %, y a ±100 ms casi no cambia. Al análisis no le importa, porque la grilla sale de los mismos ataques.
+
+Se queda medium.
 
 **Con un coro más parecido al real.** `banco_ajustar.py` ajustó cuánto se diferencian los cantores entre sí para que el coro sintético se parezca al real: más desafinación y más retraso entre cantores, y el que lleva la cuerda más fuerte. Las mismas dos piezas (p1 y p3), cantadas con la variación de antes y con la ajustada:
 
@@ -63,6 +74,8 @@ Ninguna perilla le gana a lo que ya se usaba (htdemucs_ft y MuScriptor medium, b
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | batería, público y Opus · htdemucs_ft · medium · variación de antes | **88,0 %** | 53,3 % | 88,9 % | 87,1 % | 0,3 % | 80,9 % | 83,0 % | 2,03 → 1,93 | 41,0 % → 32,8 % | 0 | 10,2 dB | 0,44 s |
 | batería, público y Opus · htdemucs_ft · medium · variación ajustada | **84,2 %** | 55,0 % | 84,5 % | 83,9 % | 0,1 % | 68,5 % | 79,6 % | 2,03 → 1,93 | 41,0 % → 29,4 % | 1 | 12,1 dB | 0,43 s |
+| batería, público y Opus · htdemucs_ft · medium, float16 · variación de antes | **88,0 %** | 53,9 % | 89,1 % | 86,8 % | 0,3 % | 81,1 % | 82,4 % | 2,03 → 1,91 | 41,0 % → 33,6 % | 0 | 10,2 dB | 0,54 s |
+| batería, público y Opus · htdemucs_ft · medium, float16 · variación ajustada | **84,4 %** | 54,2 % | 84,6 % | 84,1 % | 0,1 % | 68,9 % | 79,6 % | 2,03 → 1,93 | 41,0 % → 29,4 % | 1 | 12,1 dB | 0,52 s |
 | coro solo, seco · sin separar · medium · variación de antes | **83,4 %** | 54,5 % | 82,7 % | 84,1 % | 0,0 % | 77,7 % | 82,4 % | 2,03 → 1,85 | 41,0 % → 34,2 % | 0 | — | 0,50 s |
 | coro solo, seco · sin separar · medium · variación ajustada | **87,9 %** | 58,4 % | 86,7 % | 89,1 % | 0,2 % | 79,8 % | 87,8 % | 2,03 → 1,97 | 41,0 % → 34,7 % | 0 | — | 0,47 s |
 
