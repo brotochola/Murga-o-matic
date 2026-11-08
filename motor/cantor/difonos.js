@@ -17,6 +17,7 @@ export const DURACION = {
   m: .055, n: .05, J: .065, l: .05, L: .06, r: .028, rr: .075, jj: .065, i: .04, u: .04, w: .04,
 };
 const VOCAL = p => 'aeiou'.includes(p);
+import { VARIACION } from './variacion.js';
 
 class Rnd { constructor(s) { this.a = (s * 2654435761 + 7) >>> 0; } r() { let t = this.a += 0x6d2b79f5; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; } u(a, b) { return a + (b - a) * this.r(); } }
 
@@ -25,11 +26,13 @@ class Rnd { constructor(s) { this.a = (s * 2654435761 + 7) >>> 0; } r() { let t 
 export function guion(notas, opc = {}) {
   const o = {
     vibrato: .14, vibVel: 5.5, vibEntra: .22, deriva: .05, temblor: 0, pique: .45, caida: .8, consonantes: 1, semilla: 1,
-    w: true, transporte: 0, ...opc,
+    w: true, transporte: 0, eses: 1, ...opc,
   };
   const rng = new Rnd(o.semilla);
   const sym = p => { const s = SAMPA[p] || 'a'; return s === 'u' && p === 'w' && o.w ? 'w' : s; };
-  const dur = s => (DURACION[s] || .05) * o.consonantes;
+  // las eses de las voces castellanas son largas y silban (pico en 5 kHz): cantadas, más cortas
+  const dur = s => (s === 's' ? DURACION.s - .02 * o.eses : DURACION[s] || .05) * o.consonantes;
+  const consonante = p => p && !VOCAL(p) && p !== 'j' && p !== 'w';
   const N = notas.length;
   // 1. cuánto se adelanta el ataque de cada nota (se lo roba a la nota anterior, como mucho la mitad)
   const tA = notas.map((n, i) => {
@@ -53,7 +56,10 @@ export function guion(notas, opc = {}) {
     t = n.t0;
     // coda al final, núcleo en el medio
     const coda = n.sil.coda.map(sym);
-    let dCoda = coda.map(dur); const sC = dCoda.reduce((x, y) => x + y, 0);
+    // la s antes de consonante se aspira, como en el Río de la Plata ("loh guriseh corren"): corta y como un soplo
+    const sigFon = ligada ? (sig.sil.ataque[0] || sig.sil.nucleo[0]) : null;
+    const aspirada = coda.map((p, k) => p === 's' && o.eses > 0 && (k < coda.length - 1 || consonante(sigFon)));
+    let dCoda = coda.map((p, k) => aspirada[k] ? .032 * o.consonantes : dur(p)); const sC = dCoda.reduce((x, y) => x + y, 0);
     if (sC > (b - t) * .35) dCoda = dCoda.map(d => d * (b - t) * .35 / sC);
     const finNuc = b - dCoda.reduce((x, y) => x + y, 0);
     const nuc = (n.sil.nucleo.length ? n.sil.nucleo : ['a']);
@@ -61,7 +67,7 @@ export function guion(notas, opc = {}) {
     const dCorta = Math.min(.045, (finNuc - t) * .2);
     const dLarga = (finNuc - t - cortas * dCorta) / Math.max(1, largas.length);
     for (const p of nuc) { const d = VOCAL(p) ? dLarga : dCorta; poner(sym(p), t, t + d, i, VOCAL(p) ? 'vocal' : 'semi'); t += d; }
-    coda.forEach((p, k) => { poner(p, t, t + dCoda[k], i, 'coda'); t += dCoda[k]; });
+    coda.forEach((p, k) => { poner(p, t, t + dCoda[k], i, aspirada[k] ? 'aspirada' : 'coda'); t += dCoda[k]; });
     if (sig && !ligada) { const desde = t, hasta = sig.t0 - tA[i + 1]; if (hasta - desde > .004) segs.push({ p: '_', t0: desde, t1: hasta, nota: -1, tipo: 'silencio' }); }
   }
   // 3. la altura (semitonos), como función del tiempo
@@ -122,8 +128,9 @@ export function guion(notas, opc = {}) {
   return { pho: lineas.join('\n') + '\n', inicio, fin, segs, ganancia };
 }
 
-// Después de MBROLA: el volumen de cada nota, un poco de aire (ruido que sigue a la voz) y la emisión murguera
-// (más presencia en 2-4 kHz, menos barro en los graves, un poco de saturación). x: Float32Array a sr; g: el guion.
+// Después de MBROLA: el volumen de cada nota, las eses más suaves, un poco de aire (ruido que sigue a la voz) y la
+// emisión murguera (más presencia en 2-4 kHz, menos barro en los graves, un poco de saturación). x: Float32Array a sr;
+// g: el guion.
 export function terminar(x, sr, g, opc = {}) {
   const o = { aire: 0, emision: 0, semilla: 1, ...opc };
   const y = new Float32Array(x.length);
@@ -138,6 +145,29 @@ export function terminar(x, sr, g, opc = {}) {
     return { b0: b0 / a0, b1: b1 / a0, b2: b2 / a0, a1: a1 / a0, a2: a2 / a0 };
   };
   const filtrar = (z, f) => { let x1 = 0, x2 = 0, y1 = 0, y2 = 0; for (let k = 0; k < z.length; k++) { const v = f.b0 * z[k] + f.b1 * x1 + f.b2 * x2 - f.a1 * y1 - f.a2 * y2; x2 = x1; x1 = z[k]; y2 = y1; y1 = v; z[k] = v; } };
+  const eses = opc.eses ?? 1;
+  if (eses > 0) {
+    // Las eses: más bajas y sin el silbido de 4-5 kHz (la s rioplatense es más aguda y más suave que la castellana).
+    // Las aspiradas, además, sin agudos: un soplo. Se hace sólo sobre cada s, con rampas de 8 ms.
+    const r = Math.round(.008 * sr), pre = Math.round(.02 * sr);
+    for (const s of g.segs) {
+      if (s.p !== 's') continue;
+      const asp = s.tipo === 'aspirada';
+      const a = Math.round((s.t0 - g.inicio) * sr), b = Math.round((s.t1 - g.inicio) * sr);
+      const desde = Math.max(0, a - r - pre), hasta = Math.min(y.length, b + r);
+      if (hasta - desde < 8) continue;
+      const z = y.slice(desde, hasta);
+      filtrar(z, bq('pico', 4700, 1.4, -8 * eses));
+      if (asp) { filtrar(z, bq('agudos', 2500, .7, -12 * eses)); }
+      else filtrar(z, bq('agudos', 7500, .7, 5 * eses));
+      const gan = Math.pow(10, -(asp ? 5 : 2.5) * eses / 20);
+      for (let k = Math.max(desde, a - r); k < hasta; k++) {
+        const m = Math.min(1, (k - (a - r)) / r, (b + r - k) / r);
+        if (m <= 0) continue;
+        y[k] = y[k] * (1 - m) + z[k - desde] * gan * m;
+      }
+    }
+  }
   if (o.aire > 0) {
     // ruido entre 1,5 y 5 kHz, con la envolvente de la voz
     const rng = new Rnd(o.semilla * 13 + 1), n = new Float32Array(y.length);
@@ -149,7 +179,7 @@ export function terminar(x, sr, g, opc = {}) {
   }
   if (o.emision > 0) {
     const e = o.emision;
-    filtrar(y, bq('graves', 250, .7, -2.5 * e)); filtrar(y, bq('pico', 2900, 1.1, 4.5 * e)); filtrar(y, bq('agudos', 6000, .7, 2 * e));
+    filtrar(y, bq('graves', 250, .7, -2.5 * e)); filtrar(y, bq('pico', 2900, 1.1, 4.5 * e));
     let m = 0; for (const v of y) m = Math.max(m, Math.abs(v));
     const d = .6 + .4 * e, k = Math.tanh(d);
     for (let i = 0; i < y.length; i++) y[i] = Math.tanh(d * y[i] / (m || 1)) / k * (m || 1);
@@ -180,13 +210,33 @@ export function remuestrear(x, srIn, srOut) {
   return y;
 }
 
-// Un cantor entero: guion → MBROLA → volumen, aire y emisión. mb: lo que devuelve crearMbrola.
-// Devuelve { x, sr, inicio }: las muestras a la frecuencia de la voz, empezando en el segundo `inicio` de la pieza.
+// Cada cuerda con su largo de tracto (los formantes, más graves en los bajos) y cada cantor con sus mañas, chicas,
+// como en variacion.js: un poco más alto o más bajo, su vibrato, su garganta, cuánto pica al entrar y cuánto alarga
+// las consonantes. Devuelve las opciones para cantarDifonos.
+export const TIPOS_DIFONOS = { bajo: { tracto: .9 }, baritono: { tracto: .95 }, tenor: { tracto: 1 }, tenorAlto: { tracto: 1.06 } };
+export function cantorDifonos(tipo, semilla, V = VARIACION) {
+  const r = new Rnd(semilla * 17 + 3), T = TIPOS_DIFONOS[tipo] || TIPOS_DIFONOS.tenor;
+  return {
+    semilla, tracto: T.tracto * r.u(1 - V.garganta, 1 + V.garganta),
+    transporte: r.u(-V.desafinacion, V.desafinacion),
+    vibrato: r.u(V.vibrato[0], V.vibrato[1]), vibVel: r.u(V.vibratoVel[0], V.vibratoVel[1]), vibEntra: r.u(V.vibratoEntra[0], V.vibratoEntra[1]),
+    pique: .45 * r.u(1 - V.pique, 1 + V.pique), consonantes: 1.1 * r.u(1 - V.diccion * .5, 1 + V.diccion * .5),
+    temblor: .04, emision: 1,
+  };
+}
+
+// Un cantor entero: guion → MBROLA → volumen, eses, aire y emisión. mb: lo que devuelve crearMbrola.
+// Devuelve { x, sr, inicio }: las muestras a la frecuencia `sr`, empezando en el segundo `inicio` de la pieza.
+// El largo del tracto (opc.tracto) se hace como con una cinta: MBROLA canta más agudo y más largo, y las muestras se
+// tocan más rápido (sr más alta); la altura y los tiempos vuelven a su lugar y los formantes suben `tracto` veces.
 // (La página las pasa a su frecuencia con Web Audio; en Node, con remuestrear.)
 export function cantarDifonos(mb, notas, opc = {}) {
-  if (!notas.length) return { x: new Float32Array(0), sr: mb.frecuencia, inicio: 0 };
-  const g = guion(notas, opc);
+  const F = mb.frecuencia, a = Math.round(F * (opc.tracto || 1)) / F;
+  if (!notas.length) return { x: new Float32Array(0), sr: F * a, inicio: 0 };
+  const ns = a === 1 ? notas : notas.map(n => ({ ...n, t0: n.t0 * a, t1: n.t1 * a, midi: n.midi - 12 * Math.log2(a) }));
+  const o = a === 1 ? opc : { ...opc, consonantes: (opc.consonantes ?? 1) * a, vibVel: (opc.vibVel ?? 5.5) / a, vibEntra: (opc.vibEntra ?? .22) * a };
+  const g = guion(ns, o);
   const crudo = mb.cantar(g.pho), x = new Float32Array(crudo.length);
   for (let k = 0; k < x.length; k++) x[k] = crudo[k] / 32768;
-  return { x: terminar(x, mb.frecuencia, g, opc), sr: mb.frecuencia, inicio: g.inicio };
+  return { x: terminar(x, F, g, o), sr: F * a, inicio: g.inicio / a };
 }

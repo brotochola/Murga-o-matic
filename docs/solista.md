@@ -40,6 +40,19 @@ Lo que se canta lo decide `motor/cantor/difonos.js`:
 - **Volumen.** Cada nota suena con su fuerza, las largas crecen un poco y el final de frase se apaga.
 - **Emisión.** Más presencia en 2-4 kHz, menos graves y un poco de saturación. No cambia lo que se entiende.
 - **Aire.** Un ruido que sigue a la voz empeora mucho lo que se entiende (16,4 %), así que quedó afuera.
+- **Eses.** Las de es2 son castellanas: largas (70 ms), fuertes (de 6 a 13 dB debajo de la vocal) y con el silbido en 5 kHz. Ahora:
+  - duran 50 ms;
+  - quedan unos 15 dB debajo de la vocal, con el silbido de 4,7 kHz recortado y más agudos arriba de 7,5 kHz, así el centro pasa de 5,7 a 7,1 kHz, más cerca de la s rioplatense;
+  - antes de consonante se aspiran, como en el Río de la Plata ("lah luceh"): 32 ms, sin agudos, unos 25 dB debajo de la vocal.
+
+## Cada cuerda
+
+`cantorDifonos(tipo, semilla)` arma un cantor de cada cuerda:
+
+- **Tracto.** Cada cuerda tiene su largo de tracto: los formantes se multiplican por 0,90 en los bajos, 0,95 en los segundos, 1 en los primos y 1,06 en los sobreprimos y la tercia. Se hace como con una cinta: MBROLA canta más agudo y más largo, y las muestras se tocan más rápido.
+- **Mañas.** Cada cantor tiene las suyas, chicas y como en `variacion.js`: ±3 % de garganta, su afinación, su vibrato, cuánto pica al entrar y cuánto alarga las consonantes.
+
+`herramientas/voces_difonos.mjs "frase"` canta la misma frase con cantores de cada cuerda, cada uno en su registro.
 
 ## En la página
 
@@ -53,5 +66,6 @@ MBROLA es AGPL-3.0. La voz es2 se puede usar sólo con MBROLA y copiar librement
 
 - **Que no suene a locutor.** Las voces son de habla: las vocales largas se estiran repitiendo el mismo pedazo y pueden sonar quietas.
 - **El acento.** Las voces son españolas, así que no tienen la "sh" rioplatense de «calle» o «llegó» (sale "y").
-- **El coro.** Las trece voces tienen que salir de las tres voces de MBROLA, con más o menos altura y largo de tracto, y con la variación de cada cantor.
+- **El coro.** Falta sumar los trece cantores, con sus tiempos corridos, y probarlo en la página.
+- **La tercia.** Canta hasta Fa 5, cinco veces la altura de la voz grabada, y puede sonar finita.
 - **El timbre.** Hay que medirlo contra el coro real, con el banco, para la curva de ecualización.

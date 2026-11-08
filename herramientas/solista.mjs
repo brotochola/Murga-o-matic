@@ -8,7 +8,7 @@
 //     mbrola:es2                               el primer guion, más simple, con el programa mbrola instalado
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { silabasCantadas, partes } from '../motor/cantor/letra.js';
 
@@ -155,6 +155,10 @@ async function cantarFrase(notas) {
   throw new Error('motor desconocido: ' + MOTOR);
 }
 
+// Sólo si se corre directo (otros scripts importan FRASES y melodia)
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) await principal();
+
+async function principal() {
 // las voces: la de la página (motor/vendor/mbrola) o las del paquete mbrola-esN de Debian y Ubuntu
 const voces = {};
 async function vozMbrola(voz) {
@@ -179,3 +183,4 @@ for (const [k, texto] of FRASES.entries()) {
 }
 writeFileSync(join(SAL, 'frases.json'), JSON.stringify({ motor: MOTOR, tempo: TEMPO, frases: lista }, null, 1));
 console.log(`${lista.length} frases → ${SAL}`);
+}
