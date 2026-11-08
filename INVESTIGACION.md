@@ -13,6 +13,7 @@ Según *Sin Disfraz* (Lamolle y Lombardo, 1998), el coro de concurso tiene como 
 | Sobreprimos | puede especializarse en **tercia** | mi4–la4; se extiende a do4 y re5 |
 
 - La voz grave no puede ser demasiado grave, porque hay que proyectar al aire libre (*Sin Disfraz*).
+- El director «da el tono» a la cuerda de primos, que lleva el canto principal, y a esa voz «se pegan» los segundos, los sobreprimos y los bajos; arriba va la tercia, «la voz más característica de la murga» ([Crisis](https://revistacrisis.com.ar/notas/murgas-uruguayas-el-sonido-de-la-bohemia)). El material educativo de Ceibal enumera las voces de grave a agudo: bajos, segundos, primos y sobreprimos, en coros de 13 a 15 ([Ceibal](https://rea.ceibal.edu.uy/elp/murga_son_las_mil_esquinas/coro_de_murga.html)). Ninguna de las dos da registros.
 - La voz principal no suele ser la más aguda (resolución de patrimonio 414/2010, IMPO).
 - La tercia tiene un carácter más solista. No es necesariamente la voz más aguda y a menudo **se separa del coro para contrapuntearlo** (Fornaro, 2002).
 

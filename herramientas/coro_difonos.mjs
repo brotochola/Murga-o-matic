@@ -1,6 +1,6 @@
 // coro_difonos.mjs — las frases del banco del solista cantadas por el coro entero, para medir si se entiende la letra
-// cuando cantan todos: primos con la melodía, segundos una tercera abajo, sobreprimos una tercera arriba y bajos una
-// octava abajo, con la cantidad de cantores, los volúmenes y los corrimientos de coro.js. El mismo coro se canta con
+// cuando cantan todos: primos con la melodía, segundos y bajos una tercera abajo y sobreprimos una tercera arriba,
+// con la cantidad de cantores, los volúmenes y los corrimientos de coro.js. El mismo coro se canta con
 // difonos (difonos.js + MBROLA) y con formantes (cantor.js); herramientas/solista_jurado.py los juzga.
 //
 //   node herramientas/coro_difonos.mjs [--motor difonos|formantes] [--voz coro|es2|es1] [--opc desfase=0,retraso=0]
@@ -25,7 +25,8 @@ const VOCES_PRUEBA = arg('voces') ? arg('voces').split(',') : null;   // --voces
 const EXTRA = Object.fromEntries((arg('opc', '') || '').split(',').filter(Boolean).map(e => e.split('=')).map(([k, v]) => [k, +v]));
 const SAL = join(TRABAJO, 'solista', 'coro_' + MOTOR + (MOTOR === 'difonos' && VOZ !== 'coro' ? '_' + VOZ : '') + (VOCES_PRUEBA ? '_' + VOCES_PRUEBA.join('') : '') + (arg('dif') ? '_' + arg('dif').replace(/[=,]/g, '') : '') + (SEMILLA !== 7 ? '_s' + SEMILLA : '') + (arg('opc') ? '_' + arg('opc').replace(/[=,]/g, '') : '')); mkdirSync(SAL, { recursive: true });
 // cada cuerda: cuánto se corre la melodía (grados de la escala y semitonos)
-const LINEAS = { bajos: { grados: 0, sube: -12 }, segundos: { grados: -2, sube: 0 }, primos: { grados: 0, sube: 0 }, sobreprimos: { grados: 2, sube: 0 } };
+// (los bajos, con los segundos: la cuerda grave, como en compositor.js; antes iban una octava abajo de la melodía)
+const LINEAS = { bajos: { grados: -2, sube: 0 }, segundos: { grados: -2, sube: 0 }, primos: { grados: 0, sube: 0 }, sobreprimos: { grados: 2, sube: 0 } };
 
 const wav = (ruta, x) => {
   const b = Buffer.alloc(44 + x.length * 2);

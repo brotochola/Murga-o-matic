@@ -140,6 +140,29 @@ Ahora la variación saltea las notas de paso (por grado entre dos vecinas, en la
 
 Suma de distancias con dos juegos de semillas, mejora en los cuatro estilos medidos: todas 19,1 → 17,1 y 18,1 → 15,9; Catalina 19,8 → 18,1 y 19,2 → 18,1; Trasnochada 19,6 → 19,1 y 19,3 → 18,5; Doña Bastarda 26,5 → 25,0 y 23,8 → 22,7. En el jurado sin espiar, lo generado queda a 1,15 de un espectáculo que el modelo no vio (real contra real 1,28) y más cerca que la mediana real en el 72 % de los casos. La copia no cambia: 10 notas en la mediana y 16 como máximo.
 
+## 10. Los bajos cantan
+
+Los bajos casi no cantaban: unas 15 notas por pieza, contra más de mil de los primos. El reparto por registro les daba sólo las notas de abajo de Do 3, y en el corpus la nota más grave de los golpes a dos voces o más tiene mediana La 3 (p10 Fa 3, p90 Do 4) y baja de Do 3 en el 1,4 % de los golpes. O sea: los bajos cantaban el 1 % de los golpes.
+
+En *Sin Disfraz* (Lamolle y Lombardo, 1998), los bajos no son una cuerda aparte, sino la parte grave de la cuerda de segundos, «bajos y segundos», entre do3 y do4, y excepcionalmente de sol2 a re4. En la descripción del coro de la revista Crisis, a la voz de los primos «se pegan los segundos, los sobreprimos y los bajos».
+
+Ahora bajos y segundos son una sola cuerda grave:
+
+- **Golpe sin nota propia para bajos o segundos:** cantan la nota más grave del golpe, si está entre Sol 2 y Re 4.
+- **Unísonos:** los bajos también cantan, si les da el registro.
+- **Rango:** el de los bajos sube a Re 4 (`RANGOS.bajos`: [43, 62]).
+
+Doblan la misma nota, así que lo que suena no cambia, y tampoco los rasgos del jurado ni la copia. En 36 piezas de prueba, las notas de cada golpe son idénticas a las de antes. Lo que cambia son los cantores que cantan:
+
+| Notas en 36 piezas | Antes | Ahora |
+|---|---|---|
+| Bajos | 534 | 20.081 |
+| Segundos | 12.879 | 22.452 |
+| Primos | 36.831 | 36.831 |
+| Sobreprimos | 16.752 | 16.752 |
+
+El banco del coro (`banco_sintetizar.mjs`) reparte las notas transcriptas con la misma regla: ahora cantan 12 cantores en lugar de 10. La versión 1 del compositor queda como estaba.
+
 ## Lo que se probó y no quedó
 
 - **Suavizar los saltos de las voces de abajo en las costuras**, por octava o por la nota del acorde más cercana. Baja los saltos de cuarta, pero sube los de tercera y saca terceras entre voces. En el jurado, sin espiar, no cambió nada (1,32 contra 1,33).

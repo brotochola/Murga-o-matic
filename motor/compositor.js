@@ -6,8 +6,9 @@
 
 export const PB = 16;
 export const CUERDAS = ['bajos', 'segundos', 'primos', 'sobreprimos', 'tercia'];
-// La tercia, en el registro normal de Sin Disfraz (fa4–do5, excepcional do4–fa5; ver INVESTIGACION.md): más arriba suena chillona
-export const RANGOS = { bajos: [43, 55], segundos: [48, 62], primos: [54, 69], sobreprimos: [60, 74], tercia: [62, 74] };
+// La tercia, en el registro normal de Sin Disfraz (fa4–do5, excepcional do4–fa5; ver INVESTIGACION.md): más arriba suena chillona.
+// Los bajos son la parte grave de la cuerda de segundos (Sin Disfraz: «bajos y segundos», do3–do4, excepcional sol2–re4).
+export const RANGOS = { bajos: [43, 62], segundos: [48, 62], primos: [54, 69], sobreprimos: [60, 74], tercia: [62, 74] };
 const MELODIA = [57, 73];   // la melodía va arriba del bloque
 const mod = (a, n) => ((a % n) + n) % n;
 import { MODOS } from './modos.js';
@@ -290,20 +291,27 @@ function melodia(rng, E, sec, golpes, lo, hi, guia, sigma = 2.2) {
 const enRango = (k, p) => p >= RANGOS[k][0] && p <= RANGOS[k][1];
 
 // Reparte las notas de un golpe entre las cuerdas, por registro
+// Los bajos y los segundos son una sola cuerda grave: cuando el golpe no les da una nota propia, cantan la más grave
+// (en el corpus, la nota más grave de los golpes a dos voces o más tiene mediana La 3 y casi nunca baja de Do 3; con
+// el reparto por registro solo, los bajos cantaban el 1 % de los golpes). Doblan la misma nota, así que lo que suena
+// (las notas de cada golpe) no cambia.
 function repartir(sec, g, notas, din, ev) {
   const orden = [...new Set(notas)].sort((x, y) => y - x);
   const q = g.q + sec.inicio;
   if (orden.length === 1) {
     // unísono: todos los que llegan cantan la misma nota
     let alguno = false;
-    for (const k of ['segundos', 'primos', 'sobreprimos']) if (enRango(k, orden[0])) { ev[k].push([q, g.d, orden[0], din, false]); alguno = true; }
+    for (const k of ['bajos', 'segundos', 'primos', 'sobreprimos']) if (enRango(k, orden[0])) { ev[k].push([q, g.d, orden[0], din, false]); alguno = true; }
     if (!alguno) ev.primos.push([q, g.d, orden[0], din, false]);
     return;
   }
+  const usadas = new Set();
   for (const p of orden) {
     const k = p >= 65 ? 'sobreprimos' : p >= 56 ? 'primos' : p >= 48 ? 'segundos' : 'bajos';
-    ev[k].push([q, g.d, p, din, false]);
+    ev[k].push([q, g.d, p, din, false]); usadas.add(k);
   }
+  const grave = orden[orden.length - 1];
+  for (const k of ['bajos', 'segundos']) if (!usadas.has(k) && enRango(k, grave)) ev[k].push([q, g.d, grave, din, false]);
 }
 
 // La forma del acorde debajo de la melodía: aprendida; si no hay datos para ese caso, tríada cerrada

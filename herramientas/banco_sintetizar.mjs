@@ -84,8 +84,13 @@ for (const f of fragmentos) {
   let finAnt = -1;
   for (const g of G) {
     const porCuerda = { bajos: [], segundos: [], primos: [], sobreprimos: [], tercia: [] };
-    if (g.ps.length === 1) { for (const k of ['segundos', 'primos', 'sobreprimos']) if (g.ps[0] >= RANGOS[k][0] && g.ps[0] <= RANGOS[k][1]) porCuerda[k].push(g.ps[0]); if (!Object.values(porCuerda).some(l => l.length)) porCuerda.primos.push(g.ps[0]); }
-    else for (const p of g.ps) porCuerda[p >= 70 && g.ps.length >= 3 ? 'tercia' : p >= 65 ? 'sobreprimos' : p >= 56 ? 'primos' : p >= 48 ? 'segundos' : 'bajos'].push(p);
+    if (g.ps.length === 1) { for (const k of ['bajos', 'segundos', 'primos', 'sobreprimos']) if (g.ps[0] >= RANGOS[k][0] && g.ps[0] <= RANGOS[k][1]) porCuerda[k].push(g.ps[0]); if (!Object.values(porCuerda).some(l => l.length)) porCuerda.primos.push(g.ps[0]); }
+    else {
+      for (const p of g.ps) porCuerda[p >= 70 && g.ps.length >= 3 ? 'tercia' : p >= 65 ? 'sobreprimos' : p >= 56 ? 'primos' : p >= 48 ? 'segundos' : 'bajos'].push(p);
+      // bajos y segundos, una sola cuerda grave: si el golpe no les da nota, cantan la más grave (como compositor.js)
+      const grave = g.ps[g.ps.length - 1];
+      for (const k of ['bajos', 'segundos']) if (!porCuerda[k].length && grave >= RANGOS[k][0] && grave <= RANGOS[k][1]) porCuerda[k].push(grave);
+    }
     // sin letra, «la»; acentuada si cae en el tiempo (para el cantor de difonos, que marca los acentos)
     const silabas = silDe.get(g.i) || [{ s: { ...(g.t0 - finAnt > .15 ? LA : A), acento: g.q % 4 === 0 }, t0: g.t0, t1: g.t1 }];
     for (const [k, ps] of Object.entries(porCuerda)) {
