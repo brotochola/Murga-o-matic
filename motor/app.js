@@ -191,11 +191,13 @@ async function cantarCuerdas(pieza,P,gen){
 // ============================================================ estado
 const ORDEN=["bajos","segundos","primos","sobreprimos","tercia"];
 const LLAMADAS=Object.fromEntries(DATOS.ritmos.map(r=>{const a=DATOS.acompana[r.id];if(!a||!a[0])return[r.id,0];const c4=r.compas*4/r.tpc;return[r.id,Math.ceil((DATOS.frases[a[0]].ultimo+.05)/c4)]}));
-const S={recita:0,forma:"retirada",estilo:"todas",tonica:9,modo:"menor",ritmo:0,tempo:0,largo:"normal",seed:1,brillo:1,clarinada:true,cancionFinal:true,modula:true,tercia:0,mix:{bajos:1,segundos:1,primos:1,sobreprimos:1,tercia:1,bateria:.42},mute:{},
+const S={version:2,recita:0,forma:"retirada",estilo:"todas",tonica:9,modo:"menor",ritmo:0,tempo:0,largo:"normal",seed:1,brillo:1,clarinada:true,cancionFinal:true,modula:true,tercia:0,mix:{bajos:1,segundos:1,primos:1,sobreprimos:1,tercia:1,bateria:.42},mute:{},
   voces:"muestras",acordes:{},editando:null,pieza:null,stems:null,P:null,ac:null,nodos:null,inicio:0,offset:0,tocando:false,gen:0,mp3:null,
   letra:{partes:[],textos:[],diags:null,temas:null,editados:new Set(),sel:{i:0,k:0},sil:null,marcas:[],semLetra:1,pendiente:false,cantada:null}};
 const $=id=>document.getElementById(id);
 const sint=()=>S.voces==="sintetizadas";
+// La versión 1 del compositor, con su modelo del 7 de noviembre: se carga sólo si se elige
+let V1=null;const version1=async()=>V1||(V1={componer:(await import("./compositor_v1.js")).componer,MODELO:(await import("./modelo_v1.js")).MODELO});
 
 function estadoTexto(t,err){$("status").textContent=t;$("status").className="status"+(err?" err":"")}
 function avance(x,t){const a=$("avance");if(x==null){a.hidden=true}else{a.hidden=false;a.value=x}if(t!=null)estadoTexto(t)}
@@ -219,7 +221,8 @@ const firmaLetra=()=>JSON.stringify(S.letra.partes.map(p=>[p.nombre,p.versos.map
 async function generar(opc={}){
   const gen=++S.gen;detener(true);S.mp3=null;ocupado("Componiendo…");avance(.02,"Componiendo…");
   try{
-    const pieza=componer(MODELO,{forma:S.forma,estilo:S.estilo,tonica:S.tonica,modo:S.modo,semilla:S.seed,largo:S.largo,tempo:S.tempo||null,ritmo:S.ritmo||null,clarinada:S.clarinada,cancionFinal:S.cancionFinal,modula:S.modula,tercia:S.tercia,recita:S.recita,llamadas:LLAMADAS,acordes:S.acordes});
+    const C=S.version===1?await version1():{componer,MODELO};if(gen!==S.gen)return;
+    const pieza=C.componer(C.MODELO,{forma:S.forma,estilo:S.estilo,tonica:S.tonica,modo:S.modo,semilla:S.seed,largo:S.largo,tempo:S.tempo||null,ritmo:S.ritmo||null,clarinada:S.clarinada,cancionFinal:S.cancionFinal,modula:S.modula,tercia:S.tercia,recita:S.recita,llamadas:LLAMADAS,acordes:S.acordes});
     const{T,fin}=mapaTiempo(pieza);const total=fin+2.5;
     const P={T,total,seed:S.seed,brillo:S.brillo};
     const percP=renderPercusion(P,pieza.secs);
@@ -473,6 +476,7 @@ $("recita").onchange=e=>{S.recita=+e.target.value;regen()};
   caja.appendChild(b)}
  caja.parentElement.style.display=DEMOS.length?"":"none"}
 $("tercia").onchange=e=>{S.tercia=+e.target.value;regen()};
+$("version").onchange=e=>{S.version=+e.target.value;regen()};
 for(const k of["clarinada","cancionFinal","modula"])$(k).onchange=e=>{S[k]=e.target.checked;regen()};
 
 const mixer=$("mixer");

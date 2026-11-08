@@ -275,6 +275,10 @@ a{color:var(--sobreprimos)}
         <div class="seed"><input id="semilla" type="number" min="1" max="99999" value="1" inputmode="numeric"><button class="btn" id="otra">Otra</button></div>
         <p class="hint">Cada número da otra melodía y otra armonía.</p>
       </div>
+      <div class="field"><label class="lbl" for="version">Compositor</label>
+        <select id="version"><option value="2" selected>Versión 2: menos repetición, voces más llenas</option><option value="1">Versión 1: la del 7 de noviembre</option></select>
+        <p class="hint">La versión 2 sigue lo que mide el corpus: las estrofas no se repiten enteras, y el coro no se queda en unísono cuando la melodía cambia una nota.</p>
+      </div>
       <div class="field" id="campoBrillo"><label class="lbl" for="brillo">Timbre de las muestras</label>
         <input id="brillo" type="range" min="0" max="1.5" step="0.1" value="1">
         <div class="hint" style="display:flex;justify-content:space-between"><span>muestra pura</span><span>murga medida</span><span>más filoso</span></div>

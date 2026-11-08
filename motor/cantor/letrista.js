@@ -15,6 +15,7 @@ function funcion(nombre, tipo, forma) {
   if (nombre.startsWith('Bajada')) return 'estribillo final pegadizo, que se repite varias veces mientras la murga se va';
   if (nombre.startsWith('Estribillo')) return 'estribillo con todo el coro: la idea central, fácil de recordar';
   if (/otra vuelta|con todo|repetida/.test(nombre)) return 'segunda estrofa sobre la misma música: sigue la idea, con texto nuevo';
+  if (/sigue/.test(nombre)) return 'otra estrofa con batería y música nueva: sigue la idea, con texto nuevo';
   return forma === 'retirada' ? 'estrofa con batería: recuerda, agradece, critica con ternura' : 'estrofa con batería: presenta, critica, hace reír';
 }
 

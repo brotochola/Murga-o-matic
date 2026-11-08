@@ -116,6 +116,10 @@ function pedirCelda(rng, C, T, p) {
   const desde = p.desde || 0;
   const ei = desde / 8;
   const prueba = (lista, relajar) => {
+    // la costura sólo se puede medir en gestos que arrancan con voces abajo; a los que arrancan en unísono se les
+    // aplica la costura media de los otros, así no salen elegidos de más (antes daban 35 % de unísonos contra 27 %
+    // en los gestos reales)
+    const unisono = new Set(); let sumaCos = 0, nCos = 0;
     const pesos = lista.map(c => {
       if (c.m !== m || c.s !== p.s || c.bat === (p.capela ? 1 : 0)) return 0;
       let w = (c.p === p.parte ? 1.5 : 1) * (p.usadas?.has(c) ? .03 : 1);
@@ -148,12 +152,14 @@ function pedirCelda(rng, C, T, p) {
             const abajo = h[3].map(d => h[2] + off - d);
             let suma = 0;
             for (const a of abajo) suma += Math.min(...p.voces.map(v => Math.abs(v - a)));
-            w *= Math.exp(-(suma / abajo.length) / COSTURA);
-          }
+            const f = Math.exp(-(suma / abajo.length) / COSTURA);
+            w *= f; sumaCos += f; nCos++;
+          } else if (p.voces?.length > 1 && !h[3].length) unisono.add(c);
         }
       }
       return w;
     });
+    if (unisono.size && nCos) { const f = sumaCos / nCos; lista.forEach((c, i) => { if (unisono.has(c)) pesos[i] *= f; }); }
     return pesos.some(x => x > 0) ? lista[rng.indicePeso(pesos)] : null;
   };
   for (const lista of [C.propias, C.todas]) for (let r = 0; r < 3; r++) { const c = prueba(lista, r); if (c) { p.usadas?.add(c); return c; } }
@@ -191,7 +197,11 @@ function planTema(rng, C, T, sec, usadas) {
     if (unidades >= 4) {
       const z1 = seguir(y2, { ini: g => (contraste.includes(g) ? 1 : TONICA(g) ? .05 : .2) });
       const z2 = seguir(z1, { aterriza: true, fin: g => (DOMINANTE(g) ? 1 : TONICA(g) ? .1 : .3) });
-      plan.push(unir(z1.c, z1.off, z2.c, z2.off), plan[1]);
+      // la cuarta frase es nueva y cierra en la tónica: en el corpus el contorno de la melodía vuelve igual a 8 compases
+      // sólo en el 10 % de los casos (en v1, que copiaba la segunda frase, en el 41 %)
+      const w1 = seguir(z2, { ini: g => (TONICA(g) ? 1 : .3) });
+      const w2 = seguir(w1, { aterriza: true, fin: (g, g1) => (TONICA(g) ? (DOMINANTE(g1) ? 1 : .5) : .01) });
+      plan.push(unir(z1.c, z1.off, z2.c, z2.off), unir(w1.c, w1.off, w2.c, w2.off));
     }
   }
   return plan.slice(0, unidades);
@@ -323,20 +333,44 @@ function formaBloque(rng, E, sec, g, top, cuantas, prev) {
   return r;
 }
 
+// Cuántos pasos de escala hay de una nota a otra (con signo), y mover una nota esos pasos por la escala
+function pasosEscala(de, a, enEsc) {
+  if (de === a) return 0;
+  const dir = a > de ? 1 : -1;
+  let n = 0;
+  for (let p = de + dir; dir > 0 ? p <= a : p >= a; p += dir) if (enEsc(p)) n += dir;
+  return n || dir;   // la melodía fue a una nota cromática: cuenta como un paso
+}
+function moverEscala(p, pasos, enEsc) {
+  if (!pasos) return p;
+  const dir = pasos > 0 ? 1 : -1;
+  let q = p, falta = Math.abs(pasos);
+  for (let k = 0; k < 24 && falta; k++) { q += dir; if (enEsc(q)) falta--; }
+  return falta ? null : q;
+}
+
 function voces(rng, E, sec, g, top, tex, ev, din, prev) {
   let abajo;
   if (g.dist) {
-    // la melodía real trae sus voces. Si la nota cambió, las de abajo hacen lo que hace un coro:
-    // acompañan en paralelo si les queda en la escala, se quedan si no chocan, y si no callan.
+    // la melodía real trae sus voces. Si la nota cambió, las de abajo hacen lo que hace un coro: acompañan en paralelo
+    // por la escala (una tercera sigue siendo tercera, mayor o menor según caiga), y si así chocan, se quedan o van a la
+    // nota del acorde más cercana. Si igual no queda ninguna, el acorde se arma de nuevo debajo de la melodía: en el
+    // corpus el coro casi nunca se queda solo porque la melodía cambió una nota (26,8 % de unísonos en los gestos reales).
     const de = g.guia ?? top, salto = top - de;
     const esc = escalaSobre(sec.modo, g.ac);
     const choca = p => [1, 2, 10, 11, 13].includes(top - p);
+    const enEsc = p => esc.has(mod(p - sec.tonica, 12));
+    const pasos = salto ? pasosEscala(de, top, enEsc) : 0;
     abajo = g.dist.map(d => de - d).flatMap(p => {
       if (!salto) return [p];
-      const par = p + salto;
-      if (esc.has(mod(par - sec.tonica, 12)) && !choca(par)) return [par];
-      return choca(p) ? [] : [p];
+      const par = moverEscala(p, pasos, enEsc);
+      if (par !== null && !choca(par)) return [par];
+      if (!choca(p) && enEsc(p)) return [p];
+      for (const dd of [-1, 1, -2, 2]) { const c = p + dd; if (g.ac.pcs.includes(mod(c - sec.tonica, 12)) && !choca(c)) return [c]; }
+      return [];
     }).filter(p => p >= 43 && p < top);
+    abajo = [...new Set(abajo)];
+    if (!abajo.length && g.dist.length) abajo = formaBloque(rng, E, sec, g, top, g.dist.length + 1, prev);
   } else abajo = tex >= 2 ? formaBloque(rng, E, sec, g, top, tex, prev) : [];
   if (sec.tipo === 'duo') abajo = abajo.slice(0, 1);
   if (prev) prev.abajo = abajo.length ? abajo : prev.abajo;
@@ -404,7 +438,7 @@ function tema(rng, E, T, sec, ev, opc = {}) {
   const tops = G.map(g => g.guia);
   const lo = Math.min(MELODIA[0], ...tops), hi = Math.max(MELODIA[1], ...tops);
   // La última unidad de la forma larga vuelve igual a la segunda: sólo se sortea hasta ahí
-  const repiteUlt = !de && unidades >= 4;
+  const repiteUlt = !de && unidades >= 4 && original[3] === original[1];
   const unicos = repiteUlt ? G.filter(g => g.u < 3) : G;
   const guia = de ? (i => de.notas[i] ?? unicos[i].guia) : (i => (unicos[i].evitar !== undefined ? null : unicos[i].guia));
   const sorteadas = melodia(rng, E, sec, unicos, lo, hi, guia, de ? .5 : .75);
@@ -621,15 +655,15 @@ export function componer(M, op) {
     }
     if (o.clarinada) clar('Clarinada', tono);
     const pri = temaSec('Primera parte', 16, { densidad: 'medio', din: 88, momento: [0, .6], ...tono });
-    temaSec('Primera parte, con todo', 16, { din: 94, tipo: 'pleno', curva: 6, ...tono, de: pri, prepara: veces >= 2 ? (o.clarinada ? null : t1) : t2 });
+    temaSec('Primera parte, sigue', 16, { din: 94, tipo: 'pleno', curva: 6, densidad: 'medio', momento: [.1, .7], ...tono, prepara: veces >= 2 ? (o.clarinada ? null : t1) : t2 });
     if (veces >= 2) {
       if (o.clarinada) clar('Clarinada del medio', { ...tono, compases: 8, segundos: 20, prepara: t1 });
       tono = t1;
       const seg = temaSec('Segunda parte', 16, { densidad: 'silabico', din: 92, tempo: tUlt, loop: loopUlt, momento: [.4, 1], ...tono });
-      temaSec('Segunda parte, repetida', 16, { din: 98, tipo: 'pleno', tempo: tUlt, loop: loopUlt, ...tono, curva: 6, de: seg, prepara: veces >= 3 ? null : t2 });
+      temaSec('Segunda parte, sigue', 16, { din: 98, tipo: 'pleno', tempo: tUlt, loop: loopUlt, densidad: 'silabico', momento: [.5, 1], ...tono, curva: 6, prepara: veces >= 3 ? null : t2 });
       if (veces >= 3) {
         const ter = temaSec('Tercera parte', 16, { densidad: 'silabico', din: 98, tempo: tUlt, loop: loopUlt, momento: [.5, 1], ...tono });
-        temaSec('Tercera parte, repetida', 16, { din: 100, tipo: 'pleno', tempo: tUlt, loop: loopUlt, ...tono, curva: 6, de: ter, prepara: t2 });
+        temaSec('Tercera parte, sigue', 16, { din: 100, tipo: 'pleno', tempo: tUlt, loop: loopUlt, densidad: 'silabico', momento: [.6, 1], ...tono, curva: 6, prepara: t2 });
       }
     }
     tono = t2;
@@ -659,11 +693,11 @@ export function componer(M, op) {
     const t1 = o.modula && veces >= 2 ? modular(rngMod, o.estilo, tono) : tono;
     const t2 = o.modula && veces >= 3 ? modular(rngMod, o.estilo, t1) : t1;
     const pri = temaSec('Primera parte', 16, { densidad: 'medio', din: 88, momento: [0, .6], ...tono });
-    temaSec('Primera parte, otra vuelta', 16, { din: 92, tipo: 'pleno', ...tono, de: pri, prepara: t1 });
+    temaSec('Primera parte, sigue', 16, { din: 92, tipo: 'pleno', densidad: 'medio', momento: [.1, .7], ...tono, prepara: t1 });
     if (veces >= 2) {
       tono = t1;
       const seg = temaSec('Segunda parte', 16, { densidad: 'silabico', din: 94, momento: [.3, 1], ...tono });
-      temaSec('Segunda parte, otra vuelta', 16, { din: 97, tipo: 'pleno', ...tono, de: seg });
+      temaSec('Segunda parte, sigue', 16, { din: 97, tipo: 'pleno', densidad: 'silabico', momento: [.4, 1], ...tono });
     }
     const est = temaSec('Estribillo', 16, { densidad: 'medio', din: 98, tipo: 'pleno', curva: 8, tempo: tUlt, momento: [.5, 1], ...tono });
     if (veces >= 2) temaSec('Estribillo, con todo', 16, { din: 102, tipo: 'pleno', curva: 8, tempo: tUlt, ...tono, de: est, prepara: t2 });
