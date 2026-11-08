@@ -7,7 +7,7 @@ Elegís presentación o retirada, murga, tono y largo, y compone una pieza nueva
 - **Batería:** siempre loops reales, del video [17 ritmos fundamentales de murga](https://www.youtube.com/watch?v=0DSJVulzDYw), de La Tríada: Pablo "Lolito" Iribarne (bombo), Raúl García (redoblante) y Gerardo "Batata" Cánepa (platillos). Para cambiar de tempo, cada golpe del loop se corta y se pone en su lugar nuevo, así la afinación no cambia. Cada loop son dos compases tal como los tocaron, de un "1" al siguiente, en un tramo parejo de cada demostración: los bateristas aceleran mientras tocan, así que el largo se mide en el audio y no se calcula con el tempo. `herramientas/recortar_loops.mjs` los rehace desde el video, y con `--revisar` controla que cada vuelta caiga donde la tocaron.
 - **Composición:** recombina gestos reales de dos compases, con su melodía, sus voces y sus acordes, según la forma: pregunta, respuesta, contraste y vuelta. Cada pocas notas cambia una nota débil, y los gestos seguidos vienen de temas distintos: el pasaje igual a un tema real más largo tiene, en la mediana, 10 notas.
 - **Voces:** se eligen arriba de todo.
-  - *Muestras de coro:* cinco cuerdas (bajos, segundos, primos, sobreprimos y tercia) con muestras "aah" de FluidR3 y MusyngKite, tomadas de [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts). Cada cuerda tiene de dos a cuatro cantores (la tercia es una voz sola), y el timbre se ecualiza hacia el de un coro de murga medido.
+  - *Muestras de coro:* cinco cuerdas (bajos, segundos, primos, sobreprimos y tercia) con muestras "aah" de FluidR3 y MusyngKite, tomadas de [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts). Cada cuerda tiene de dos a cinco cantores (la tercia es una voz sola), y el timbre se ecualiza hacia el de un coro de murga medido.
   - *Cantores sintéticos:* un letrista algorítmico escribe una letra rioplatense que entra en la melodía, sílaba por nota y con rima, y trece voces de fuente glótica y formantes la cantan. No usa muestras ni modelos de lenguaje, y anda sin conexión. La letra se puede editar o pedir otra, y un panel muestra paso a paso cómo se hizo cada verso. La voz se calibró contra La Trasnochada 2020. Detalles y mediciones en [docs/cantores_y_letras.md](docs/cantores_y_letras.md).
   - *Difonos:* la misma letra la cantan trece cantores armados con difonos (pedacitos de voz grabada) de [MBROLA](https://github.com/numediart/MBROLA), compilado a WebAssembly, con acento rioplatense exagerado de murguista. Cada cuerda tiene su largo de garganta y cada cantor sus mañas. Se entiende mucho más: con el coro entero, Whisper erra el 13 % de las letras, contra el 45 % del coro de formantes. Con «Sólo un solista» canta uno solo la melodía. En «Los cantantes» se puede cambiar cada uno de los trece (voz, garganta, afinación, vibrato, brillo, dicción, adornos, volumen, paneo) y escucharlo solo ([docs/solista.md](docs/solista.md)).
   - *El coro, como lo cuenta* Sin Disfraz *(Lamolle y Lombardo, 1998):* 2 bajos, 3 segundos, 5 primos, 2 sobreprimos y la tercia, parados como en La Unión (segundos a la izquierda, sobreprimos en el medio, primos a la derecha) o como en La Teja (al revés). En las clarinadas y en los acordes finales, algunos cantores adornan su nota a su manera: vibrato, trino, una vuelta o pasarse a otra voz del acorde ([INVESTIGACION.md](INVESTIGACION.md)).
@@ -24,12 +24,18 @@ La dirección vieja `/cantada/` lleva a la página principal con los cantores si
 
 Fuera de la página, con una placa de video, cada cantor se puede pasar por [Seed-VC](https://github.com/Plachtaa/seed-vc) para que suene a las voces reales de una murga: `herramientas/exportar_voces.mjs` exporta las voces y `transcripcion/convertir_coro.py` las convierte y las vuelve a mezclar. Los pasos están en la [sección 4](docs/cantores_y_letras.md#4-voces-de-verdad-con-seed-vc-fuera-de-la-página).
 
+## Sin conexión
+
+La página se guarda en el navegador y después anda sin internet, en la compu o en el teléfono. Abajo de todo, en **Sin conexión**, «Guardar todo» baja lo que falta (23,5 MB: las tres voces de difonos, las muestras del coro, los loops, el compositor de la versión 1, la partitura y el MP3). Lo que se usa se guarda solo, y apenas se abre la página ya queda guardado lo básico (1,4 MB). En Chrome, Edge y Android aparece «Instalar como app»; en iPhone, Compartir → «Agregar a inicio».
+
+Lo hace `sw.js` (un service worker) con la lista `offline.json`, que tiene cada archivo de la página con un resumen de su contenido. **Cada vez que cambia un archivo de la página hay que correr `node herramientas/offline.mjs` antes del commit**: rehace la lista y la versión de `sw.js`. Así, quien la tiene guardada ve «Hay una versión nueva» y, al recargar, baja sólo los archivos que cambiaron. `herramientas/probar_pagina.mjs` avisa si la lista quedó atrasada.
+
 ## Uso local
 
     node herramientas/servir.js
     # abrir http://localhost:8123
 
-Si se abre `index.html` como archivo, sin servidor, el navegador no deja cargar los audios. La página no usa nada de `murga_trabajo/`.
+Si se abre `index.html` como archivo, sin servidor, el navegador no deja cargar los audios. La página no usa nada de `murga_trabajo/`. En `localhost` la página no se guarda, para no servir archivos viejos mientras se edita; con `?offline=1` en la dirección, sí.
 
 ## Cómo está hecho
 

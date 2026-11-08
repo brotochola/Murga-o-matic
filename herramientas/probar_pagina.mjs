@@ -4,7 +4,7 @@
 //   node herramientas/probar_pagina.mjs --url URL      prueba una página ya publicada
 // Chrome: la variable CHROME, o el chrome-headless-shell que instala Playwright. El perfil va a la carpeta
 // temporal (o a MURGA_PERFIL).
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import http from 'node:http';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -15,8 +15,13 @@ const args = process.argv.slice(2);
 const iUrl = args.indexOf('--url');
 const URL_PUBLICADA = iUrl >= 0 ? args[iUrl + 1] : null;
 const CARPETA = resolve(URL_PUBLICADA ? '.' : args[0] || RAIZ);
-const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json', '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.png': 'image/png' };
+const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json', '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.wasm': 'application/wasm', '.webmanifest': 'application/manifest+json' };
 const esperar = ms => new Promise(r => setTimeout(r, ms));
+// la lista de la página sin conexión tiene que estar al día con los archivos (herramientas/offline.mjs)
+if (!URL_PUBLICADA) {
+  try { execFileSync(process.execPath, [join(RAIZ, 'herramientas', 'offline.mjs'), '--comprobar'], { stdio: 'inherit' }); }
+  catch { console.error('La página sin conexión quedó atrasada: node herramientas/offline.mjs'); process.exitCode = 1; }
+}
 
 function chrome() {
   if (process.env.CHROME) return process.env.CHROME;

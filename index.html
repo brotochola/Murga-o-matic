@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Murga-o-matic</title>
+<meta name="description" content="Generador de murga uruguaya: compone, escribe la letra y la canta un coro de trece. Anda sin conexión.">
+<meta name="theme-color" content="#16182b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="iconos/icono.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="iconos/icono-180.png">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -136,6 +141,11 @@ a{color:var(--sobreprimos)}
 /* letra y proceso */
 .dos{display:grid;gap:18px;margin-top:18px}
 .cantantes{margin-top:18px}
+.sinred{margin-top:18px}
+.sinred .cabeza{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;margin-bottom:6px}
+.sinred .cabeza h2{margin:0}
+.sinred .botones{display:flex;flex-wrap:wrap;gap:8px}
+.sinred progress{width:100%;height:6px;accent-color:var(--accent)}
 .cantantes .cabeza{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;margin-bottom:6px}
 .cantantes .cabeza h2{margin:0}
 .lista-cantantes{display:grid;gap:6px;margin-top:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr))}
@@ -238,6 +248,7 @@ a{color:var(--sobreprimos)}
   <div class="estado-top">
     <progress id="avance" max="1" value="0" hidden></progress>
     <p class="status" id="status" role="status"></p>
+    <div class="aviso" id="avisoVersion" hidden><span>Hay una versión nueva de la página.</span><button class="btn fuerte" id="recargar">Recargar</button></div>
   </div>
 
   <div class="grid">
@@ -383,6 +394,19 @@ a{color:var(--sobreprimos)}
     <div class="lista-cantantes" id="listaCantantes"></div>
   </section>
 
+  <section class="panel sinred" id="sinred" aria-labelledby="t-sinred">
+    <div class="cabeza">
+      <h2 id="t-sinred">Sin conexión</h2>
+      <div class="botones">
+        <button class="btn" id="instalar" hidden>Instalar como app</button>
+        <button class="btn fuerte" id="guardarTodo">Guardar todo</button>
+      </div>
+    </div>
+    <p class="hint" id="sinredTexto" role="status">La página se puede guardar en este navegador para usarla sin internet.</p>
+    <p class="hint" id="sinredIos" hidden>En iPhone o iPad, para tenerla como app: botón Compartir → «Agregar a inicio».</p>
+    <progress id="sinredAvance" max="1" value="0" hidden></progress>
+  </section>
+
   <section class="notes">
     <div>
       <h3>Cómo arma cada pieza</h3>
@@ -403,13 +427,14 @@ a{color:var(--sobreprimos)}
     <div>
       <h3>De dónde sale</h3>
       <p>Del análisis de presentaciones, canciones finales y retiradas: voces separadas con Demucs y transcriptas con MuScriptor. Los números están en <a href="https://github.com/brotochola/Murga-o-matic/blob/main/docs/analisis_de_los_midis.md" target="_blank" rel="noopener">el análisis</a> y en <a href="https://github.com/brotochola/Murga-o-matic/blob/main/docs/cantores_y_letras.md" target="_blank" rel="noopener">cantores y letras</a>.</p>
-      <p>Registros según "Sin Disfraz" (Lamolle y Lombardo, 1998): segundos do3–do4, primos sol3–sol4, sobreprimos mi4–la4 hasta re5.</p>
+      <p>Registros según "Sin Disfraz" (Lamolle y Lombardo, 1998): segundos do3–do4, primos sol3–sol4, sobreprimos mi4–la4 hasta si4.</p>
       <p>Batería: Pablo "Lolito" Iribarne (bombo), Raúl García (redoblante) y Gerardo "Batata" Cánepa (platillos), del video <a href="https://www.youtube.com/watch?v=0DSJVulzDYw" target="_blank" rel="noopener">17 ritmos fundamentales de murga</a>. MP3 con <a href="https://github.com/zhuker/lamejs" target="_blank" rel="noopener">lamejs</a> (LAME, LGPL); partitura con abcjs, jsPDF y svg2pdf.js.</p>
     </div>
   </section>
 </div>
 
 <script type="module" src="motor/app.js"></script>
+<script type="module" src="motor/sinconexion.js"></script>
 
 </body>
 </html>
