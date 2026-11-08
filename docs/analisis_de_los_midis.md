@@ -1,6 +1,6 @@
-# Qué canta una murga de verdad: análisis de 41 tramos de La Trasnochada y Agarrate Catalina, más La Gran Muñeca y Metele que son Pasteles
+# Qué canta una murga de verdad: análisis de 85 tramos de La Trasnochada y Agarrate Catalina, más otras 13 murgas
 
-Este documento mide lo que canta el coro en 19 espectáculos: 267 minutos de canto, 76.678 notas y 32.513 golpes de coro. Es la base del generador: cada regla de acá es algo que el Murga-o-matic hace porque el corpus lo hace.
+Este documento mide lo que canta el coro en 42 espectáculos: 515 minutos de canto, 150.573 notas y 62.734 golpes de coro. Es la base del generador: cada regla de acá es algo que el Murga-o-matic hace porque el corpus lo hace.
 
 Todo sale de las herramientas de `herramientas/`, en Node y sin dependencias. Este archivo lo escribe `node herramientas/informe.js`: no se edita a mano.
 
@@ -10,19 +10,19 @@ Todo sale de las herramientas de `herramientas/`, en Node y sin dependencias. Es
 
 ## 0. Lo esencial
 
-1. **Se canta en bloque, y el bloque no cambia a cada rato.** El 78 % de los golpes tiene las mismas voces que el anterior. La textura se mantiene por frase: esto es lo primero que delata a un generador que decide nota por nota.
-2. **La melodía es la nota de arriba del bloque.** Se mueve poco: repite el 45 % de las veces, va por grado el 36 %, salta una tercera el 11 % y más que eso el 9 %.
-3. **Se recita y se aterriza.** El 40 % de los golpes está en una racha de tres o más notas iguales: el coro dice el texto sobre una nota y después se mueve (baja un grado 35 %, sube un grado 26 %).
-4. **Las frases son cortas y terminan en nota larga.** Duran 1,6 compases de cuatro tiempos, unos 7 golpes, y el 74 % termina en una nota larga. Hay aire: nadie canta durante el 12 % del tiempo.
+1. **Se canta en bloque, y el bloque no cambia a cada rato.** El 77 % de los golpes tiene las mismas voces que el anterior. La textura se mantiene por frase: esto es lo primero que delata a un generador que decide nota por nota.
+2. **La melodía es la nota de arriba del bloque.** Se mueve poco: repite el 45 % de las veces, va por grado el 36 %, salta una tercera el 11 % y más que eso el 8 %.
+3. **Se recita y se aterriza.** El 40 % de los golpes está en una racha de tres o más notas iguales: el coro dice el texto sobre una nota y después se mueve (baja un grado 34 %, sube un grado 27 %).
+4. **Las frases son cortas y terminan en nota larga.** Duran 1,6 compases de cuatro tiempos, unos 7 golpes, y el 69 % termina en una nota larga. Hay aire: nadie canta durante el 13 % del tiempo.
 5. **El pulso es de corcheas.** El 81 % de los ataques cae en lugar de corchea. Lo más común es la línea pareja de corcheas, y las frases arrancan en cualquier corchea del compás, no sólo en el 1.
-6. **El coro va en terceras.** Dos voces vecinas están a tercera el 62 % de las veces. Las voces interiores casi no saltan: 2,5 % de saltos de cuarta o más.
+6. **El coro va en terceras.** Dos voces vecinas están a tercera el 63 % de las veces. Las voces interiores casi no saltan: 2,2 % de saltos de cuarta o más.
 7. **En los apoyos, la melodía está en el acorde.** El 82 % de las notas fuertes es nota del acorde; en las débiles, el 77 %.
-8. **La armonía es tónica y dominante, con color.** En mayor, I 42 %; en menor, i 39 % y V7 15 %. El paso más común es V7 a tónica. Hay dominantes secundarias (I7 hacia el cuarto grado, II7, III7) y bVI y bVII en menor.
-9. **La presentación entra a capela.** Mediana de 32 segundos sin batería, y después un bloque largo al mismo tempo, cerca de 124 negras por minuto.
-10. **La retirada acelera.** Empieza cerca de 113 y termina cerca de 136: el último tempo es 24 % más rápido que el primero. Tiene pasajes a capela en el medio, la presentación casi nunca.
-11. **Las tonalidades suben.** De 53 cambios de tono, 11 son un semitono arriba en el mismo modo: es el cambio más común.
-12. **El unísono es real, y es ancho.** El transcriptor anota una voz en el 27 % de los golpes, y en el 81 % de ellos no hay rastro de otra voz, ni arriba ni abajo. Con una ventana angosta parecen impuros (19 % de la energía en los parciales): trece personas no afinan exacto, y la energía se reparte alrededor de cada parcial (36 % con una ventana de ±3 %).
-13. **Cada murga tiene su modo.** La Trasnochada: presentación menor (88 %), retirada mayor (80 %); Agarrate Catalina: presentación mayor (71 %), retirada menor (63 %). De La Gran Muñeca y Metele que son Pasteles hay muy pocos tramos para decir algo.
+8. **La armonía es tónica y dominante, con color.** En mayor, I 40 %; en menor, i 41 % y V7 15 %. El paso más común es V7 a tónica. Hay dominantes secundarias (I7 hacia el cuarto grado, II7, III7) y bVI y bVII en menor.
+9. **La presentación entra a capela.** Mediana de 31 segundos sin batería, y después un bloque largo al mismo tempo, cerca de 123 negras por minuto.
+10. **La retirada acelera.** Empieza cerca de 119 y termina cerca de 135: el último tempo es 16 % más rápido que el primero. Tiene pasajes a capela en el medio, la presentación casi nunca.
+11. **Las tonalidades suben.** De 113 cambios de tono, 18 son un semitono arriba en el mismo modo: es el cambio más común.
+12. **El unísono es real, y es ancho.** El transcriptor anota una voz en el 26 % de los golpes, y en el 82 % de ellos no hay rastro de otra voz, ni arriba ni abajo. Con una ventana angosta parecen impuros (19 % de la energía en los parciales): trece personas no afinan exacto, y la energía se reparte alrededor de cada parcial (36 % con una ventana de ±3 %).
+13. **Cada murga tiene su modo.** La Trasnochada: presentación menor (88 %), retirada mayor (80 %); Agarrate Catalina: presentación mayor (71 %), retirada menor (63 %). De Asaltantes con Patente y Cayó la Cabra y Curtidores de Hongos y Doña Bastarda y Falta y Resto y La Gran Muñeca y La Nueva Milonga y Los Diablos Verdes y Metele que son Pasteles y Nos Obligan a Salir y Patos Cabreros y Queso Magro y Un Título Viejo hay muy pocos tramos para decir algo.
 
 ---
 
@@ -30,47 +30,91 @@ Todo sale de las herramientas de `herramientas/`, en Node y sin dependencias. Es
 
 | Tramo | Espectáculo | Largo | Notas | Quitadas | Compases | Tonalidades |
 |---|---|---|---|---|---|---|
-| Catalina 2008 presentacion | El viaje | 4:07 | 1251 | 3 % | 157 | Mib mayor |
+| Catalina 2008 presentacion | El viaje | 4:07 | 1251 | 3 % | 160 | Mib mayor |
 | Catalina 2008 retirada | El viaje | 7:30 | 2236 | 9 % | 269 | Fa menor, Fa mayor |
-| Catalina 2010 presentacion | Civilización | 4:42 | 1537 | 3 % | 167 | Sib menor, La mayor |
-| Catalina 2010 retirada | Civilización | 10:48 | 2946 | 5 % | 405 | Sol mayor, Lab menor |
-| Catalina 2011 final y retirada | Gente común | 10:53 | 1877 | 42 % | 353 | Sol menor, Fa# mayor |
+| Catalina 2010 presentacion | Civilización | 4:42 | 1537 | 3 % | 159 | Sib menor, La mayor |
+| Catalina 2010 retirada | Civilización | 10:48 | 2946 | 5 % | 419 | Sol mayor, Lab menor |
+| Catalina 2011 final y retirada | Gente común | 10:53 | 1877 | 42 % | 356 | Sol menor, Fa# mayor |
 | Catalina 2011 presentacion | Gente común | 4:37 | 1490 | 2 % | 196 | Re mayor |
-| Catalina 2012 presentacion | La comunidad | 3:47 | 917 | 11 % | 103 | Sol menor, Re menor |
-| Catalina 2012 retirada | La comunidad | 6:56 | 2260 | 5 % | 241 | Do# menor, Do mayor |
-| Catalina 2019 presentacion | — | 5:05 | 1357 | 3 % | 209 | Sib mayor, La mayor |
-| Catalina 2019 retirada | — | 9:33 | 2389 | 13 % | 314 | Mib mayor, Do menor |
-| Catalina 2020 final y retirada | — | 11:29 | 2941 | 26 % | 356 | La menor, Sib mayor |
-| Catalina 2020 presentacion | — | 4:55 | 1415 | 3 % | 165 | Mi mayor |
-| Catalina 2022 cancion final | — | 1:39 | 213 | 1 % | 57 | Do# menor |
-| Catalina 2022 presentacion | — | 5:10 | 1737 | 3 % | 179 | Fa mayor, Re menor |
-| Catalina 2022 retirada | — | 7:46 | 2698 | 2 % | 268 | Fa mayor, Mi mayor |
-| Muñeca 2016 final y retirada | — | 9:31 | 2848 | 4 % | 260 | Mi mayor, Do mayor |
-| Muñeca 2016 presentacion | — | 2:55 | 948 | 4 % | 83 | Re menor, Mib menor |
-| Muñeca 2020 presentacion | — | 3:14 | 1171 | 7 % | 113 | Si mayor, Mi mayor |
-| Muñeca 2020 retirada | — | 6:49 | 1861 | 3 % | 234 | Mib mayor, Lab mayor |
-| Trasnochada 2017 final y retirada | — | 10:23 | 2884 | 4 % | 392 | Mib mayor, Fa# mayor |
-| Trasnochada 2017 presentacion | — | 4:30 | 1419 | 3 % | 151 | Fa# menor, Fa menor |
-| Trasnochada 2019 final y retirada | — | 12:00 | 3159 | 11 % | 407 | Si menor, Sib mayor |
-| Trasnochada 2019 presentacion | — | 3:59 | 1312 | 3 % | 146 | Lab menor, Sol menor |
-| Trasnochada 2020 cancion final | El puerto de la memoria | 3:10 | 1038 | 4 % | 87 | Sol mayor, Do mayor |
-| Trasnochada 2020 presentacion | El puerto de la memoria | 3:40 | 1335 | 4 % | 106 | Do# menor, Do menor |
-| Trasnochada 2020 retirada | El puerto de la memoria | 9:51 | 3200 | 17 % | 338 | Fa# menor, Mi mayor |
-| Trasnochada 2022 final y retirada | Popular | 12:50 | 3149 | 14 % | 428 | Lab mayor, La mayor |
-| Trasnochada 2022 presentacion | Popular | 4:14 | 1550 | 4 % | 161 | Do menor, Si menor |
-| Trasnochada 2023 final y retirada | La historia del Mago Flores | 10:03 | 2287 | 6 % | 328 | La menor, Sib mayor |
-| Trasnochada 2023 presentacion | La historia del Mago Flores | 4:12 | 1144 | 14 % | 134 | Lab mayor, Sol mayor |
-| Trasnochada 2024 final y retirada | La misma luna | 11:26 | 2716 | 26 % | 349 | Fa# mayor, Mib menor |
-| Trasnochada 2024 presentacion | La misma luna | 2:52 | 991 | 5 % | 83 | Sib menor, Fa# mayor |
-| Trasnochada 2025 final y retirada | Belleza | 8:49 | 2623 | 12 % | 278 | Re mayor, Do menor |
-| Trasnochada 2025 presentacion | Belleza | 3:00 | 967 | 4 % | 99 | Do menor, Si menor |
-| Trasnochada 2026 cancion final | Los falsificadores de siempre | 2:36 | 505 | 2 % | 81 | Lab menor, Do# menor |
-| Trasnochada 2026 presentacion | Los falsificadores de siempre | 3:44 | 1246 | 2 % | 112 | La menor, Do mayor |
-| Trasnochada 2026 retirada | Los falsificadores de siempre | 7:59 | 2435 | 3 % | 271 | Sol mayor, Sol menor |
-| Pasteles 2020 presentacion | — | 4:35 | 1328 | 21 % | 176 | Fa# mayor, Si mayor |
-| Pasteles 2020 retirada | — | 8:06 | 2595 | 2 % | 299 | Mib mayor, Lab mayor |
-| Pasteles 2023 final y retirada | — | 11:01 | 3450 | 24 % | 317 | Mi mayor, Si mayor |
-| Pasteles 2023 presentacion | — | 2:52 | 1253 | 3 % | 92 | Re mayor, Sib menor |
+| Catalina 2012 presentacion | La comunidad | 3:47 | 917 | 11 % | 107 | Sol menor, Re menor |
+| Catalina 2012 retirada | La comunidad | 6:56 | 2260 | 5 % | 238 | Do# menor, Do mayor |
+| Catalina 2019 presentacion | — | 5:05 | 1357 | 3 % | 203 | Sib mayor, La mayor |
+| Catalina 2019 retirada | — | 9:33 | 2389 | 13 % | 312 | Mib mayor, Do menor |
+| Catalina 2020 final y retirada | — | 11:29 | 2941 | 26 % | 351 | La menor, Sib mayor |
+| Catalina 2020 presentacion | — | 4:55 | 1415 | 3 % | 157 | Mi mayor |
+| Catalina 2022 cancion final | — | 1:39 | 213 | 1 % | 56 | Do# menor |
+| Catalina 2022 presentacion | — | 5:10 | 1737 | 3 % | 185 | Fa mayor, Re menor |
+| Catalina 2022 retirada | — | 7:46 | 2698 | 2 % | 281 | Fa mayor, Mi mayor |
+| Patente 2023 presentacion | Quién da más | 2:38 | 953 | 2 % | 77 | Sol menor, Re mayor |
+| Patente 2023 retirada | Quién da más | 8:10 | 2591 | 4 % | 281 | Mib mayor, Mib menor |
+| Patente 2024 retirada | — | 6:56 | 2018 | 21 % | 267 | Sol mayor |
+| Patente 2025 presentacion | Qué querés inventar | 2:53 | 986 | 15 % | 98 | Fa mayor |
+| Patente 2025 retirada | Qué querés inventar | 6:05 | 1694 | 8 % | 218 | Sol menor, Re mayor |
+| Cabra 2025 final y retirada | — | 9:20 | 1756 | 5 % | 320 | Lab menor, Sol mayor |
+| Cabra 2025 presentacion | — | 3:20 | 675 | 10 % | 101 | Sib mayor, Sol menor |
+| Cabra 2026 presentacion | La república de la vereda | 3:11 | 1106 | 2 % | 97 | Do menor, Do mayor |
+| Cabra 2026 retirada | La república de la vereda | 10:47 | 2301 | 22 % | 336 | Sol mayor, Lab menor |
+| Hongos 2025 presentacion | — | 3:43 | 1236 | 3 % | 120 | Mib menor, Mib mayor |
+| Hongos 2025 retirada | — | 7:02 | 1842 | 4 % | 222 | Sol mayor, Sol menor |
+| Bastarda 2024 presentacion | — | 3:51 | 904 | 6 % | 132 | Mib menor, Sol mayor |
+| Bastarda 2024 retirada | — | 6:02 | 1660 | 4 % | 190 | La menor, La mayor |
+| Bastarda 2025 presentacion | — | 3:04 | 940 | 12 % | 103 | Do# menor |
+| Bastarda 2025 retirada | — | 5:46 | 1496 | 9 % | 214 | Si menor, Do menor |
+| Bastarda 2026 presentacion | Patria o tumba | 4:26 | 1013 | 4 % | 156 | La menor |
+| Bastarda 2026 retirada | Patria o tumba | 7:24 | 2159 | 3 % | 266 | Si menor, Si mayor |
+| Resto 2026 presentacion | — | 3:20 | 740 | 3 % | 111 | Mi menor |
+| Resto 2026 retirada | — | 8:17 | 2025 | 26 % | 272 | Do mayor, Do menor |
+| Muñeca 2016 final y retirada | — | 9:31 | 2848 | 4 % | 264 | Mi mayor, Do mayor |
+| Muñeca 2016 presentacion | — | 2:55 | 948 | 4 % | 85 | Re menor, Mib menor |
+| Muñeca 2020 presentacion | — | 3:14 | 1171 | 7 % | 114 | Si mayor, Mi mayor |
+| Muñeca 2020 retirada | — | 6:49 | 1861 | 3 % | 246 | Mib mayor, Lab mayor |
+| Muñeca 2023 presentacion | — | 3:34 | 1345 | 17 % | 109 | Sol mayor, Si menor |
+| Muñeca 2023 retirada | — | 6:06 | 1802 | 3 % | 188 | Lab mayor, Lab menor |
+| Muñeca 2024 presentacion | — | 3:01 | 1078 | 4 % | 119 | Mi menor, Lab mayor |
+| Muñeca 2024 retirada | — | 7:54 | 1794 | 13 % | 264 | Sol menor, Sib mayor |
+| Muñeca 2025 presentacion | — | 3:25 | 901 | 4 % | 113 | Sol mayor, Sol menor |
+| Muñeca 2025 retirada | — | 6:50 | 1813 | 9 % | 229 | Fa# menor, Fa# mayor |
+| Muñeca 2026 presentacion | — | 3:51 | 1236 | 2 % | 144 | Mi menor, Sib mayor |
+| Muñeca 2026 retirada | — | 7:24 | 2165 | 3 % | 268 | Re menor, Fa mayor |
+| Milonga 2023 final y retirada | — | 9:35 | 2732 | 4 % | 331 | Sib menor, Lab menor |
+| Milonga 2023 presentacion | — | 3:43 | 1608 | 4 % | 128 | Si menor, Fa# mayor |
+| Milonga 2024 presentacion | — | 4:18 | 1580 | 4 % | 149 | Sol menor, Lab menor |
+| Milonga 2024 retirada | — | 6:47 | 2860 | 8 % | 241 | Lab mayor, Do menor |
+| Milonga 2026 presentacion | — | 3:45 | 1529 | 4 % | 126 | Do menor, Si menor |
+| Milonga 2026 retirada | — | 7:42 | 2340 | 6 % | 257 | Mib mayor, Mib menor |
+| Trasnochada 2017 final y retirada | — | 10:23 | 2884 | 4 % | 378 | Mib mayor, Fa# mayor |
+| Trasnochada 2017 presentacion | — | 4:30 | 1419 | 3 % | 145 | Fa# menor, Fa menor |
+| Trasnochada 2019 final y retirada | — | 12:00 | 3159 | 11 % | 409 | Si menor, Sib mayor |
+| Trasnochada 2019 presentacion | — | 3:59 | 1312 | 3 % | 139 | Lab menor, Sol menor |
+| Trasnochada 2020 cancion final | El puerto de la memoria | 3:10 | 1038 | 4 % | 85 | Sol mayor, Do mayor |
+| Trasnochada 2020 presentacion | El puerto de la memoria | 3:40 | 1335 | 4 % | 105 | Do# menor, Do menor |
+| Trasnochada 2020 retirada | El puerto de la memoria | 9:51 | 3200 | 17 % | 323 | Fa# menor, Mi mayor |
+| Trasnochada 2022 final y retirada | Popular | 12:50 | 3149 | 14 % | 431 | Lab mayor, La mayor |
+| Trasnochada 2022 presentacion | Popular | 4:14 | 1550 | 4 % | 160 | Do menor, Si menor |
+| Trasnochada 2023 final y retirada | La historia del Mago Flores | 10:03 | 2287 | 6 % | 320 | La menor, Sib mayor |
+| Trasnochada 2023 presentacion | La historia del Mago Flores | 4:12 | 1144 | 14 % | 133 | Lab mayor, Sol mayor |
+| Trasnochada 2024 final y retirada | La misma luna | 11:26 | 2716 | 26 % | 341 | Fa# mayor, Mib menor |
+| Trasnochada 2024 presentacion | La misma luna | 2:52 | 991 | 5 % | 85 | Sib menor, Fa# mayor |
+| Trasnochada 2025 final y retirada | Belleza | 8:49 | 2623 | 12 % | 281 | Re mayor, Do menor |
+| Trasnochada 2025 presentacion | Belleza | 3:00 | 967 | 4 % | 98 | Do menor, Si menor |
+| Trasnochada 2026 cancion final | Los falsificadores de siempre | 2:36 | 505 | 2 % | 84 | Lab menor, Do# menor |
+| Trasnochada 2026 presentacion | Los falsificadores de siempre | 3:44 | 1246 | 2 % | 111 | La menor, Do mayor |
+| Trasnochada 2026 retirada | Los falsificadores de siempre | 7:59 | 2435 | 3 % | 269 | Sol mayor, Sol menor |
+| Verdes 2026 presentacion | — | 4:17 | 1403 | 2 % | 155 | Fa# mayor, Si mayor |
+| Verdes 2026 retirada | — | 6:06 | 2158 | 5 % | 179 | Sib menor, La mayor |
+| Pasteles 2020 presentacion | — | 4:35 | 1328 | 21 % | 164 | Fa# mayor, Si mayor |
+| Pasteles 2020 retirada | — | 8:06 | 2595 | 2 % | 321 | Mib mayor, Lab mayor |
+| Pasteles 2023 final y retirada | — | 11:01 | 3450 | 24 % | 313 | Mi mayor, Si mayor |
+| Pasteles 2023 presentacion | — | 2:52 | 1253 | 3 % | 90 | Re mayor, Sib menor |
+| Salir 2023 presentacion | — | 3:46 | 1552 | 5 % | 138 | Si menor, Do mayor |
+| Salir 2023 retirada | — | 8:24 | 2854 | 10 % | 302 | Si menor, Re mayor |
+| Salir 2024 presentacion | — | 2:54 | 1214 | 4 % | 105 | La menor, La mayor |
+| Cabreros 2026 presentacion | — | 3:23 | 1132 | 5 % | 118 | Si menor, Sol menor |
+| Cabreros 2026 retirada | — | 9:24 | 2523 | 7 % | 313 | Mi mayor, Fa menor |
+| Magro 2024 presentacion | — | 4:11 | 1727 | 2 % | 126 | Lab mayor, Fa menor |
+| Magro 2024 retirada | — | 6:29 | 2370 | 3 % | 233 | Do mayor, Si menor |
+| Viejo 2026 presentacion | — | 3:12 | 1035 | 3 % | 110 | Sol menor, Fa# menor |
+| Viejo 2026 retirada | — | 11:35 | 3049 | 5 % | 381 | Si menor, Do# menor |
 
 
 ### 1.1 Cómo se mide
@@ -84,7 +128,7 @@ Todo sale de las herramientas de `herramientas/`, en Node y sin dependencias. Es
 
 ### 1.2 Lo que hubo que sacar
 
-Se quitaron 9.342 notas. Por motivo: trabas del transcriptor 70 %, choque a un semitono 20 %, ajena a lo que suena 7 %, demasiado corta 1 %, aislada 1 %, fuera de registro 1 %, eterna 0 %. Tres fallas del transcriptor enseñaron algo:
+Se quitaron 15.319 notas. Por motivo: trabas del transcriptor 64 %, choque a un semitono 24 %, ajena a lo que suena 9 %, demasiado corta 1 %, aislada 1 %, fuera de registro 0 %, eterna 0 %. Tres fallas del transcriptor enseñaron algo:
 
 - **La cadena de notas abiertas.** MuScriptor le pasa al pedazo siguiente las notas que quedaron sonando. Si un pedazo sale mal, arrastra la basura hasta el final: tres tramos llegaron a más de 60 notas abiertas, y el peor dio 55 511 notas donde hay unas 5 000. En los tramos sanos nunca hubo más de 6. Con un tope de 8 que corta la cadena (`murga_lote.py`) bastó un solo corte en cada uno para rehacerlos, y el pedazo que explotó se descarta entero (`limpiar.js`).
 - **Las trabas.** Cuando el modelo no entiende el audio repite un acorde a tiempo fijo, hasta 140 veces. Una línea silábica real sobre un acorde dura unos 10 golpes y tiene ritmo. Las trabas caen en recitados y en pasajes casi inaudibles: en Agarrate Catalina 2019, "Recitado y Retirada", aparecen justo al principio.
@@ -95,11 +139,11 @@ Se quitaron 9.342 notas. Por motivo: trabas del transcriptor 70 %, choque a un s
 
 ### 2.1 Dónde ataca el coro
 
-Medido en los 4.130 compases con batería, donde se sabe dónde está el 1. Cada compás de esta tabla son cuatro negras.
+Medido en los 8.195 compases con batería, donde se sabe dónde está el 1. Cada compás de esta tabla son cuatro negras.
 
 | Lugar | **1** | · | 1y | · | **2** | · | 2y | · | **3** | · | 3y | · | **4** | · | 4y | · |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| % de los ataques | 9,9 | 2,2 | 10,0 | 2,2 | 10,7 | 2,3 | 10,7 | 2,6 | 9,8 | 2,5 | 9,9 | 2,4 | 9,8 | 2,2 | 10,4 | 2,3 |
+| % de los ataques | 10,3 | 2,2 | 9,9 | 2,4 | 10,4 | 2,3 | 10,3 | 2,5 | 10,0 | 2,3 | 10,0 | 2,4 | 10,0 | 2,3 | 10,3 | 2,2 |
 
 
 ### 2.2 Las células más comunes
@@ -108,34 +152,34 @@ Cada célula son dos negras en semicorcheas: `x` es un ataque.
 
 | Célula | Parte |
 |---|---|
-| `x.x.x.x.` | 12,2 % |
-| `........` | 7,0 % |
-| `..x.x.x.` | 5,5 % |
-| `....x.x.` | 5,5 % |
-| `x.......` | 4,8 % |
-| `......x.` | 4,8 % |
-| `x.x.x...` | 4,0 % |
-| `..x...x.` | 3,9 % |
+| `x.x.x.x.` | 12,6 % |
+| `........` | 7,5 % |
+| `..x.x.x.` | 5,4 % |
+| `......x.` | 4,6 % |
+| `....x.x.` | 4,5 % |
+| `x.......` | 4,3 % |
+| `x.x.x...` | 3,8 % |
+| `..x...x.` | 3,7 % |
+| `x...x...` | 3,4 % |
 | `x.x.....` | 3,1 % |
-| `x...x.x.` | 2,9 % |
-| `x...x...` | 2,5 % |
-| `x.x...x.` | 2,4 % |
+| `x...x.x.` | 3,0 % |
+| `x.x...x.` | 2,7 % |
 
 
 ### 2.3 Densidad y frases
 
-| Medida | Agarrate Catalina | La Gran Muñeca | La Trasnochada | Metele que son Pasteles |
-|---|---|---|---|---|
-| golpes por compás | 4,01 | 5,16 | 4,67 | 4,59 |
-| golpes en lugar de corchea | 0,82 | 0,84 | 0,81 | 0,80 |
-| notas largas (negra con puntillo o más) | 0,17 | 0,12 | 0,11 | 0,13 |
-| largo mediano de frase, en compases | 1,50 | 1,56 | 1,63 | 1,69 |
-| golpes por frase, mediana | 5,00 | 8,00 | 8,00 | 8,00 |
-| frases que terminan en nota larga | 0,82 | 0,79 | 0,70 | 0,57 |
-| parte del tiempo sin nadie cantando | 0,07 | 0,11 | 0,15 | 0,23 |
+| Medida | Agarrate Catalina | Asaltantes con Patente | Cayó la Cabra | Doña Bastarda | La Gran Muñeca | La Nueva Milonga | La Trasnochada | Metele que son Pasteles |
+|---|---|---|---|---|---|---|---|---|
+| golpes por compás | 4,01 | 3,92 | 3,79 | 4,18 | 4,28 | 5,04 | 4,67 | 4,59 |
+| golpes en lugar de corchea | 0,82 | 0,84 | 0,86 | 0,82 | 0,82 | 0,77 | 0,81 | 0,80 |
+| notas largas (negra con puntillo o más) | 0,17 | 0,10 | 0,16 | 0,17 | 0,11 | 0,10 | 0,11 | 0,13 |
+| largo mediano de frase, en compases | 1,50 | 1,63 | 1,44 | 1,63 | 1,38 | 1,88 | 1,63 | 1,69 |
+| golpes por frase, mediana | 5,00 | 8,00 | 7,00 | 7,00 | 6,00 | 9,00 | 8,00 | 8,00 |
+| frases que terminan en nota larga | 0,82 | 0,63 | 0,81 | 0,72 | 0,69 | 0,64 | 0,70 | 0,57 |
+| parte del tiempo sin nadie cantando | 0,07 | 0,21 | 0,17 | 0,15 | 0,16 | 0,10 | 0,15 | 0,23 |
 
 
-Compases consecutivos con casi el mismo ritmo: 16 %. Pares de dos compases: 7 %. La repetición de la canción está más lejos, entre estrofas, y dentro de una frase hay secuencias: el mismo motivo un grado más arriba.
+Compases consecutivos con casi el mismo ritmo: 17 %. Pares de dos compases: 7 %. La repetición de la canción está más lejos, entre estrofas, y dentro de una frase hay secuencias: el mismo motivo un grado más arriba.
 
 ## 3. El coro
 
@@ -143,10 +187,10 @@ Compases consecutivos con casi el mismo ritmo: 16 %. Pares de dos compases: 7 %.
 
 | Voces | Golpes cortos | Golpes largos |
 |---|---|---|
-| 1 | 28 % | 23 % |
-| 2 | 26 % | 19 % |
-| 3 | 34 % | 37 % |
-| 4 | 12 % | 22 % |
+| 1 | 26 % | 21 % |
+| 2 | 25 % | 17 % |
+| 3 | 37 % | 39 % |
+| 4 | 12 % | 23 % |
 
 
 Las cifras de una voz son confiables: la regla 12 muestra que son unísonos reales, o solistas. Al revés no tanto: en los golpes a tres voces suele haber alguna más arriba que el transcriptor no anotó, así que la cantidad de voces está más bien subestimada.
@@ -169,21 +213,21 @@ Las cifras de una voz son confiables: la regla 12 muestra que son unísonos real
 
 | Movimiento | Parte |
 |---|---|
-| repite | 56 % |
+| repite | 57 % |
 | grado | 35 % |
 | tercera | 6 % |
 | cuarta/quinta | 2 % |
 | salto | 0 % |
 
 
-| Medida | Agarrate Catalina | La Gran Muñeca | La Trasnochada | Metele que son Pasteles |
-|---|---|---|---|---|
-| voces por golpe | 2,39 | 2,46 | 2,38 | 2,96 |
-| vecinas a distancia de tercera | 0,66 | 0,56 | 0,59 | 0,64 |
-| dos voces que se mueven juntas | 0,81 | 0,64 | 0,70 | 0,73 |
-| golpes con la melodía doblada a la octava | 0,27 | 0,08 | 0,16 | 0,30 |
-| golpes largos a tres voces o más | 0,61 | 0,68 | 0,54 | 0,77 |
-| mismas voces que el golpe anterior | 0,76 | 0,80 | 0,79 | 0,69 |
+| Medida | Agarrate Catalina | Asaltantes con Patente | Cayó la Cabra | Doña Bastarda | La Gran Muñeca | La Nueva Milonga | La Trasnochada | Metele que son Pasteles |
+|---|---|---|---|---|---|---|---|---|
+| voces por golpe | 2,39 | 2,45 | 2,06 | 2,32 | 2,46 | 2,57 | 2,38 | 2,96 |
+| vecinas a distancia de tercera | 0,66 | 0,74 | 0,64 | 0,71 | 0,62 | 0,60 | 0,59 | 0,64 |
+| dos voces que se mueven juntas | 0,81 | 0,80 | 0,76 | 0,73 | 0,70 | 0,65 | 0,70 | 0,73 |
+| golpes con la melodía doblada a la octava | 0,27 | 0,08 | 0,10 | 0,08 | 0,08 | 0,35 | 0,16 | 0,30 |
+| golpes largos a tres voces o más | 0,61 | 0,79 | 0,58 | 0,58 | 0,68 | 0,68 | 0,54 | 0,77 |
+| mismas voces que el golpe anterior | 0,76 | 0,81 | 0,83 | 0,75 | 0,77 | 0,77 | 0,79 | 0,69 |
 
 
 ## 4. La melodía
@@ -192,11 +236,11 @@ Las cifras de una voz son confiables: la regla 12 muestra que son unísonos real
 
 | Respecto de la raíz | Lugares fuertes | Lugares débiles |
 |---|---|---|
+| 5 | 27 % | 26 % |
 | raíz | 26 % | 23 % |
-| 5 | 26 % | 25 % |
-| 3 | 14 % | 13 % |
+| 3 | 13 % | 12 % |
+| b3 | 9 % | 9 % |
 | b7 | 9 % | 9 % |
-| b3 | 8 % | 8 % |
 | 4 | 5 % | 6 % |
 | 9 | 4 % | 6 % |
 | 6 | 3 % | 4 % |
@@ -204,18 +248,18 @@ Las cifras de una voz son confiables: la regla 12 muestra que son unísonos real
 
 ### 4.2 Recitado y aterrizaje
 
-Hay 2.798 rachas de tres o más notas iguales, de 4 golpes de mediana y hasta 12 en las más largas. Después de una racha, la línea hace esto:
+Hay 5.516 rachas de tres o más notas iguales, de 4 golpes de mediana y hasta 12 en las más largas. Después de una racha, la línea hace esto:
 
 | Sigue | Parte |
 |---|---|
-| baja un grado | 35 % |
-| sube un grado | 26 % |
+| baja un grado | 34 % |
+| sube un grado | 27 % |
 | sube saltando | 20 % |
-| baja saltando | 17 % |
+| baja saltando | 16 % |
 | igual | 2 % |
 
 
-El 12 % de las veces, esa nota siguiente es una nota larga.
+El 13 % de las veces, esa nota siguiente es una nota larga.
 
 ### 4.3 Un ejemplo
 
@@ -234,39 +278,39 @@ Es un mismo gesto, repetir una nota y caer un grado a una nota larga, que sube u
 
 ### 5.1 Los acordes
 
-**En mayor** (62 % del tiempo):
+**En mayor** (53 % del tiempo):
 
 | Acorde | Parte |  | Paso | Parte |
 |---|---|---|---|---|
-| I | 42 % |  | V7 → I | 8 % |
-| IV | 14 % |  | I → IV | 7 % |
-| V7 | 13 % |  | IV → I | 7 % |
-| vi | 5 % |  | I → V7 | 6 % |
-| V | 5 % |  | I → V | 3 % |
-| II7 | 4 % |  | ii → I | 3 % |
-| ii | 3 % |  | V → I | 3 % |
-| III7 | 3 % |  | IV → V7 | 2 % |
-| iv | 2 % |  | I → ii | 2 % |
+| I | 40 % |  | V7 → I | 7 % |
+| V7 | 13 % |  | I → IV | 7 % |
+| IV | 13 % |  | I → V7 | 6 % |
+| vi | 6 % |  | IV → I | 6 % |
+| V | 5 % |  | ii → I | 3 % |
+| II7 | 4 % |  | IV → V7 | 3 % |
+| ii | 3 % |  | I → V | 3 % |
+| iv | 3 % |  | V → I | 2 % |
+| I7 | 3 % |  | I → ii | 2 % |
 
 
-**En menor** (38 % del tiempo):
+**En menor** (47 % del tiempo):
 
 | Acorde | Parte |  | Paso | Parte |
 |---|---|---|---|---|
-| i | 39 % |  | V7 → i | 10 % |
+| i | 41 % |  | V7 → i | 10 % |
 | V7 | 15 % |  | i → V7 | 7 % |
 | iv | 9 % |  | i → iv | 5 % |
-| bVI | 7 % |  | iv → i | 3 % |
-| bVII | 6 % |  | i → bVII | 3 % |
-| bIII | 5 % |  | i → bVI | 2 % |
-| I7 | 5 % |  | bVII → i | 2 % |
-| V | 2 % |  | bVI → V7 | 2 % |
-| II7 | 1 % |  | V → i | 2 % |
+| bVI | 8 % |  | iv → i | 4 % |
+| bIII | 5 % |  | i → bVI | 3 % |
+| I7 | 5 % |  | i → bVII | 2 % |
+| bVII | 4 % |  | bVI → V7 | 2 % |
+| V | 3 % |  | iv → V7 | 2 % |
+| bVII7 | 1 % |  | bVII → i | 2 % |
 
 
 ### 5.2 Ritmo armónico
 
-Mediana de 0,62 cambios de acorde por compás. El cambio cae por igual en las tres negras siguientes al 1, y a menudo un acorde dura dos compases.
+Mediana de 0,59 cambios de acorde por compás. El cambio cae por igual en las tres negras siguientes al 1, y a menudo un acorde dura dos compases.
 
 ### 5.3 Validación
 
@@ -291,10 +335,43 @@ La detección de acordes se comparó con cifrados humanos de La Cuerda: *Saludo*
 | Catalina 2022 cancion final | — | 117 | 117 | 0 | 0 |
 | Catalina 2022 presentacion | 41 s | 124 | 124 | 0 | 0 |
 | Catalina 2022 retirada | — | 115 | 144 | 2 | 0 |
+| Patente 2023 presentacion | 12 s | 111 | 111 | 0 | 1 |
+| Patente 2023 retirada | — | 150 | 130 | 3 | 1 |
+| Patente 2024 retirada | 43 s | 143 | 138 | 2 | 0 |
+| Patente 2025 presentacion | 16 s | 121 | 121 | 1 | 0 |
+| Patente 2025 retirada | — | 127 | 121 | 3 | 2 |
+| Cabra 2025 final y retirada | 18 s | 118 | 139 | 6 | 3 |
+| Cabra 2025 presentacion | 27 s | 90 | 130 | 0 | 2 |
+| Cabra 2026 presentacion | — | 88 | 115 | 0 | 0 |
+| Cabra 2026 retirada | — | 119 | 108 | 4 | 5 |
+| Hongos 2025 presentacion | 33 s | 124 | 124 | 1 | 1 |
+| Hongos 2025 retirada | 36 s | 93 | 130 | 2 | 4 |
+| Bastarda 2024 presentacion | 39 s | 90 | 131 | 0 | 0 |
+| Bastarda 2024 retirada | 91 s | 122 | 122 | 1 | 1 |
+| Bastarda 2025 presentacion | 11 s | 124 | 124 | 0 | 0 |
+| Bastarda 2025 retirada | 87 s | 137 | 136 | 1 | 3 |
+| Bastarda 2026 presentacion | — | 149 | 129 | 1 | 0 |
+| Bastarda 2026 retirada | 26 s | 128 | 141 | 2 | 0 |
+| Resto 2026 presentacion | 20 s | 137 | 117 | 1 | 0 |
+| Resto 2026 retirada | — | 130 | 122 | 4 | 2 |
 | Muñeca 2016 final y retirada | 30 s | 94 | 114 | 2 | 3 |
 | Muñeca 2016 presentacion | 20 s | 107 | 107 | 0 | 1 |
 | Muñeca 2020 presentacion | 12 s | 126 | 132 | 0 | 1 |
 | Muñeca 2020 retirada | 30 s | 119 | 139 | 2 | 2 |
+| Muñeca 2023 presentacion | 38 s | 117 | 117 | 1 | 1 |
+| Muñeca 2023 retirada | 35 s | 125 | 125 | 1 | 1 |
+| Muñeca 2024 presentacion | 43 s | 126 | 126 | 0 | 1 |
+| Muñeca 2024 retirada | 96 s | 120 | 132 | 2 | 2 |
+| Muñeca 2025 presentacion | 40 s | 126 | 126 | 1 | 1 |
+| Muñeca 2025 retirada | 41 s | 100 | 131 | 1 | 2 |
+| Muñeca 2026 presentacion | 41 s | 126 | 126 | 0 | 1 |
+| Muñeca 2026 retirada | 32 s | 115 | 138 | 3 | 3 |
+| Milonga 2023 final y retirada | 47 s | 124 | 131 | 3 | 3 |
+| Milonga 2023 presentacion | 35 s | 123 | 123 | 0 | 1 |
+| Milonga 2024 presentacion | — | 134 | 130 | 0 | 0 |
+| Milonga 2024 retirada | 57 s | 127 | 127 | 0 | 1 |
+| Milonga 2026 presentacion | 53 s | 116 | 116 | 1 | 1 |
+| Milonga 2026 retirada | 62 s | 109 | 135 | 1 | 2 |
 | Trasnochada 2017 final y retirada | — | 119 | 130 | 4 | 3 |
 | Trasnochada 2017 presentacion | 32 s | 119 | 119 | 0 | 1 |
 | Trasnochada 2019 final y retirada | 15 s | 109 | 139 | 2 | 2 |
@@ -313,32 +390,43 @@ La detección de acordes se comparó con cifrados humanos de La Cuerda: *Saludo*
 | Trasnochada 2026 cancion final | — | 115 | 115 | 0 | 0 |
 | Trasnochada 2026 presentacion | 18 s | 116 | 116 | 0 | 0 |
 | Trasnochada 2026 retirada | 72 s | 132 | 132 | 2 | 0 |
+| Verdes 2026 presentacion | — | 150 | 128 | 1 | 2 |
+| Verdes 2026 retirada | — | 100 | 126 | 3 | 1 |
 | Pasteles 2020 presentacion | 18 s | 133 | 139 | 3 | 0 |
 | Pasteles 2020 retirada | 75 s | 150 | 136 | 1 | 1 |
 | Pasteles 2023 final y retirada | — | 88 | 135 | 3 | 2 |
 | Pasteles 2023 presentacion | 37 s | 123 | 128 | 0 | 1 |
+| Salir 2023 presentacion | — | 117 | 117 | 0 | 0 |
+| Salir 2023 retirada | 36 s | 123 | 139 | 2 | 1 |
+| Salir 2024 presentacion | 16 s | 117 | 117 | 0 | 1 |
+| Cabreros 2026 presentacion | 42 s | 123 | 128 | 1 | 1 |
+| Cabreros 2026 retirada | 33 s | 120 | 141 | 5 | 4 |
+| Magro 2024 presentacion | 13 s | 121 | 121 | 1 | 1 |
+| Magro 2024 retirada | 37 s | 135 | 135 | 0 | 1 |
+| Viejo 2026 presentacion | — | 113 | 129 | 1 | 1 |
+| Viejo 2026 retirada | — | 97 | 139 | 5 | 2 |
 
 
 La retirada tiene dos velocidades: una parte lenta, un puente a capela y una parte rápida que termina en la bajada. Los tempos de los pasajes a capela no se pueden medir bien: no hay pulso de batería y el coro respira, por eso el generador los pone un poco más lentos y los estira en los finales de frase.
 
 ## 7. Las murgas
 
-| Medida | Agarrate Catalina | La Gran Muñeca | La Trasnochada | Metele que son Pasteles |
-|---|---|---|---|---|
-| golpes por compás | 4,01 | 5,16 | 4,67 | 4,59 |
-| notas largas (negra con puntillo o más) | 0,17 | 0,12 | 0,11 | 0,13 |
-| la línea repite nota | 0,45 | 0,63 | 0,67 | 0,60 |
-| la línea se mueve por grado | 0,47 | 0,35 | 0,30 | 0,33 |
-| ámbito de la línea por compás, en semitonos | 2,01 | 1,65 | 1,40 | 1,95 |
-| la melodía (nota de arriba) repite | 0,34 | 0,43 | 0,50 | 0,51 |
-| la melodía salta una cuarta o más | 0,10 | 0,08 | 0,08 | 0,12 |
-| acordes por compás | 0,62 | 0,68 | 0,63 | 0,51 |
-| tiempo en tónica | 0,43 | 0,46 | 0,44 | 0,56 |
-| notas fuera de la escala | 0,05 | 0,10 | 0,06 | 0,10 |
-| voces por golpe | 2,39 | 2,46 | 2,38 | 2,96 |
-| vecinas a distancia de tercera | 0,66 | 0,56 | 0,59 | 0,64 |
-| de la voz de abajo a la de arriba, en semitonos | 8,39 | 7,46 | 7,58 | 8,93 |
-| dos voces que se mueven juntas | 0,81 | 0,64 | 0,70 | 0,73 |
+| Medida | Agarrate Catalina | Asaltantes con Patente | Cayó la Cabra | Doña Bastarda | La Gran Muñeca | La Nueva Milonga | La Trasnochada | Metele que son Pasteles |
+|---|---|---|---|---|---|---|---|---|
+| golpes por compás | 4,01 | 3,92 | 3,79 | 4,18 | 4,28 | 5,04 | 4,67 | 4,59 |
+| notas largas (negra con puntillo o más) | 0,17 | 0,10 | 0,16 | 0,17 | 0,11 | 0,10 | 0,11 | 0,13 |
+| la línea repite nota | 0,45 | 0,52 | 0,59 | 0,61 | 0,61 | 0,65 | 0,67 | 0,60 |
+| la línea se mueve por grado | 0,47 | 0,42 | 0,45 | 0,35 | 0,35 | 0,29 | 0,30 | 0,33 |
+| ámbito de la línea por compás, en semitonos | 2,01 | 1,64 | 1,51 | 1,60 | 1,50 | 1,65 | 1,40 | 1,95 |
+| la melodía (nota de arriba) repite | 0,34 | 0,39 | 0,44 | 0,42 | 0,44 | 0,55 | 0,50 | 0,51 |
+| la melodía salta una cuarta o más | 0,10 | 0,06 | 0,10 | 0,10 | 0,08 | 0,08 | 0,08 | 0,12 |
+| acordes por compás | 0,62 | 0,55 | 0,58 | 0,60 | 0,61 | 0,66 | 0,63 | 0,51 |
+| tiempo en tónica | 0,43 | 0,41 | 0,46 | 0,45 | 0,46 | 0,42 | 0,44 | 0,56 |
+| notas fuera de la escala | 0,05 | 0,05 | 0,08 | 0,06 | 0,09 | 0,07 | 0,06 | 0,10 |
+| voces por golpe | 2,39 | 2,45 | 2,06 | 2,32 | 2,46 | 2,57 | 2,38 | 2,96 |
+| vecinas a distancia de tercera | 0,66 | 0,74 | 0,64 | 0,71 | 0,62 | 0,60 | 0,59 | 0,64 |
+| de la voz de abajo a la de arriba, en semitonos | 8,39 | 7,18 | 6,84 | 7,12 | 7,18 | 9,12 | 7,58 | 8,93 |
+| dos voces que se mueven juntas | 0,81 | 0,80 | 0,76 | 0,73 | 0,70 | 0,65 | 0,70 | 0,73 |
 
 
 La diferencia más clara es cómo se mueven las líneas: **La Trasnochada recita** (repite nota el 67 % de las veces, por grado el 30 %) y **Agarrate Catalina camina** (repite el 45 %, por grado el 47 %). El generador conserva esa diferencia porque cada murga usa sólo sus gestos.
@@ -375,38 +463,46 @@ Mide 40 rasgos y puntúa de 0 a 10 según cuánto cae cada uno dentro de lo norm
 
 |  | Total | Ritmo | Melodía | Armonía | Voces |
 |---|---|---|---|---|---|
-| tramos reales | 8,9 | 9,0 | 8,8 | 8,9 | 8,9 |
-| presentación · todas juntas | 8,4 | 9,5 | 9,0 | 7,0 | 8,3 |
-| presentación · La Trasnochada | 8,8 | 9,3 | 8,8 | 8,6 | 8,7 |
-| presentación · Agarrate Catalina | 8,5 | 9,5 | 7,4 | 8,1 | 9,1 |
-| presentación · La Gran Muñeca | 8,0 | 9,0 | 8,9 | 7,2 | 6,8 |
-| presentación · Metele que son Pasteles | 8,2 | 8,7 | 7,9 | 7,7 | 8,7 |
-| retirada · todas juntas | 8,7 | 9,3 | 8,7 | 7,7 | 9,0 |
-| retirada · La Trasnochada | 8,7 | 9,2 | 9,3 | 8,2 | 8,2 |
-| retirada · Agarrate Catalina | 7,9 | 8,9 | 6,9 | 7,7 | 8,3 |
-| retirada · La Gran Muñeca | 8,3 | 9,3 | 9,0 | 7,4 | 7,4 |
-| retirada · Metele que son Pasteles | 8,1 | 7,7 | 7,8 | 8,0 | 8,8 |
-| tonto · azar | 5,0 | 5,3 | 2,2 | 5,7 | 6,7 |
-| tonto · monótono | 2,2 | 1,3 | 0,8 | 2,9 | 3,7 |
+| tramos reales | 9,0 | 9,1 | 8,8 | 8,8 | 9,1 |
+| presentación · todas juntas | 9,4 | 9,8 | 9,3 | 8,6 | 9,8 |
+| presentación · La Trasnochada | 9,2 | 9,9 | 8,8 | 8,8 | 9,4 |
+| presentación · Agarrate Catalina | 8,8 | 8,6 | 8,5 | 8,6 | 9,4 |
+| presentación · La Gran Muñeca | 9,3 | 9,2 | 9,4 | 8,9 | 9,6 |
+| presentación · Metele que son Pasteles | 8,6 | 8,7 | 7,7 | 8,9 | 9,1 |
+| presentación · Doña Bastarda | 9,1 | 9,7 | 9,2 | 9,2 | 8,2 |
+| presentación · Asaltantes con Patente | 8,8 | 9,7 | 9,1 | 7,9 | 8,4 |
+| presentación · La Nueva Milonga | 8,8 | 9,4 | 7,9 | 8,6 | 9,2 |
+| presentación · Cayó la Cabra | 9,2 | 9,3 | 9,4 | 9,2 | 9,0 |
+| retirada · todas juntas | 9,4 | 9,8 | 9,0 | 8,9 | 9,8 |
+| retirada · La Trasnochada | 9,3 | 9,9 | 8,7 | 9,5 | 9,3 |
+| retirada · Agarrate Catalina | 8,6 | 8,6 | 7,4 | 8,6 | 9,6 |
+| retirada · La Gran Muñeca | 9,3 | 9,5 | 9,2 | 8,6 | 9,7 |
+| retirada · Metele que son Pasteles | 9,0 | 8,9 | 7,8 | 9,7 | 9,6 |
+| retirada · Doña Bastarda | 9,3 | 9,9 | 9,6 | 9,0 | 8,7 |
+| retirada · Asaltantes con Patente | 9,2 | 9,6 | 9,2 | 9,0 | 9,1 |
+| retirada · La Nueva Milonga | 9,0 | 9,7 | 7,6 | 9,2 | 9,3 |
+| retirada · Cayó la Cabra | 9,2 | 9,2 | 9,4 | 9,4 | 8,8 |
+| tonto · azar | 4,7 | 5,4 | 1,7 | 5,1 | 6,6 |
+| tonto · monótono | 1,9 | 1,1 | 0,7 | 2,2 | 3,8 |
 
 
 Las notas más bajas de Catalina no son un defecto: el jurado usa una vara hecha sobre todo con La Trasnochada, y lo real de Catalina también baja con ella. Lo justo es juzgar cada estilo contra su murga y contra la otra:
 
 |  | Contra La Trasnochada | Contra Agarrate Catalina |
 |---|---|---|
-| Motor, estilo Trasnochada | 8,1 | 7,8 |
+| Motor, estilo Trasnochada | 9,1 | 8,1 |
 | Trasnochada real | 8,8 | 7,8 |
-| Motor, estilo Catalina | 6,8 | 8,5 |
+| Motor, estilo Catalina | 7,5 | 9,3 |
 | Catalina real | 7,3 | 8,8 |
 
 
 ### 9.2 Sin haber visto
 
-Se saca un espectáculo entero, se genera con el resto y se mide la distancia a ese espectáculo, en desvíos estándar por rasgo. Mediana del motor: **1,34**. Mediana entre dos espectáculos reales: **1,32**. En 59 % de los casos el motor queda más cerca del espectáculo que la mediana de los otros espectáculos reales. En estos rasgos, una pieza generada no se distingue de otro espectáculo real. El rasgo que más lo separa son los saltos de las líneas interiores, que en lo real casi no existen. Apretar la selección en las costuras entre gestos no los corrigió, así que su origen sigue abierto.
+Se saca un espectáculo entero, se genera con el resto y se mide la distancia a ese espectáculo, en desvíos estándar por rasgo. Mediana del motor: **1,17**. Mediana entre dos espectáculos reales: **1,28**. En 69 % de los casos el motor queda más cerca del espectáculo que la mediana de los otros espectáculos reales. En estos rasgos, una pieza generada no se distingue de otro espectáculo real. El rasgo que más lo separa son los saltos de las líneas interiores, que en lo real casi no existen. Apretar la selección en las costuras entre gestos no los corrigió, así que su origen sigue abierto.
 
 ### 9.3 ¿Copia?
 
-Se busca el pasaje más largo de cada pieza generada igual a uno del corpus, con los mismos intervalos y el mismo ritmo, en 300 piezas. Mediana 9 notas, máximo 17. Con celdas de cuatro compases y casi sin variación llegaba a 32 notas: era un collage. Por eso la unidad es de dos compases, y hay un tope de notas seguidas sin cambiar. Las rachas de notas iguales no cuentan: repetir una nota no es copiar.
+Se busca el pasaje más largo de cada pieza generada igual a uno del corpus, con los mismos intervalos y el mismo ritmo, en 540 piezas. Mediana 10 notas, máximo 16. Con celdas de cuatro compases y casi sin variación llegaba a 32 notas: era un collage. Por eso la unidad es de dos compases, y hay un tope de notas seguidas sin cambiar. Las rachas de notas iguales no cuentan: repetir una nota no es copiar.
 
 Lo que los números no pueden decir lo dice el oído: si suena a murga lo juzga quien la conoce.
 

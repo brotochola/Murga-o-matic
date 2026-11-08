@@ -1,68 +1,73 @@
 {
- "tramos": 41,
+ "tramos": 85,
  "cambios": {
-  "total": 135,
+  "total": 281,
   "porTipo": {
-   "otro tono, mismo modo": 70,
-   "otro tono y otro modo": 49,
-   "mismo tono, cambia el modo": 9,
-   "a la relativa": 7
+   "otro tono, mismo modo": 126,
+   "otro tono y otro modo": 95,
+   "mismo tono, cambia el modo": 38,
+   "a la relativa": 22
   },
   "porClave": {
-   "MM1": 10,
-   "mm1": 9,
-   "mM8": 8,
-   "Mm5": 8,
-   "MM7": 8,
-   "Mm0": 7,
-   "MM5": 6,
-   "Mm2": 6,
-   "mm5": 6,
-   "Mm1": 5,
-   "mm8": 5,
-   "mM3": 5,
-   "MM8": 4,
-   "mm10": 4,
+   "Mm0": 23,
+   "Mm5": 18,
+   "mM8": 16,
+   "mm1": 16,
+   "MM5": 15,
+   "mM0": 15,
+   "MM1": 13,
+   "mM3": 13,
+   "MM7": 12,
+   "mm5": 11,
+   "mm8": 10,
+   "Mm9": 9,
+   "Mm2": 7,
+   "Mm1": 6,
+   "MM8": 6,
+   "mm7": 6,
+   "mM4": 6,
+   "mM2": 5,
+   "Mm4": 5,
+   "mm10": 5,
+   "mm9": 5,
+   "Mm11": 5,
+   "Mm8": 4,
+   "mM5": 4,
+   "MM9": 4,
+   "MM4": 4,
+   "mm3": 4,
    "mM11": 3,
    "mM6": 3,
-   "mM2": 2,
+   "MM6": 3,
+   "mM1": 3,
+   "mM7": 3,
    "Mm10": 2,
-   "mm7": 2,
    "mm2": 2,
-   "Mm9": 2,
-   "Mm4": 2,
-   "mm9": 2,
-   "mM5": 2,
+   "Mm7": 2,
    "mm4": 2,
    "MM11": 2,
-   "mM0": 2,
-   "MM4": 2,
-   "mM4": 2,
-   "Mm11": 2,
-   "Mm8": 1,
+   "MM10": 2,
    "mm6": 1,
-   "Mm7": 1,
-   "MM10": 1,
+   "mm11": 1,
+   "MM3": 1,
+   "Mm6": 1,
    "mM9": 1,
    "mM10": 1,
-   "MM6": 1,
-   "MM2": 1,
-   "mm3": 1,
-   "MM9": 1
+   "MM2": 1
   },
-  "enCostura": 35,
-  "conDominante": 15
+  "enCostura": 74,
+  "conDominante": 30
  },
  "paralelos": {
-  "total": 9,
-  "menorAMayor": 2,
-  "mayorAMenor": 7,
-  "enCostura": 3,
-  "conDominante": 2,
-  "tonicaVieja": 4,
+  "total": 38,
+  "menorAMayor": 15,
+  "mayorAMenor": 23,
+  "enCostura": 9,
+  "conDominante": 5,
+  "tonicaVieja": 20,
   "porParte": {
-   "retirada": 5,
-   "presentacion": 3,
+   "retirada": 21,
+   "presentacion": 16,
    "final_y_retirada": 1
   },
   "ejemplos": [
@@ -94,6 +99,96 @@
     "despues": "Sibm"
    },
    {
+    "tramo": "cayo_la_cabra_2025_presentacion",
+    "t": "2:13",
+    "de": "Sol menor",
+    "a": "mayor",
+    "donde": "batería",
+    "antes": "Fa7",
+    "despues": "Sol"
+   },
+   {
+    "tramo": "cayo_la_cabra_2026_presentacion",
+    "t": "2:06",
+    "de": "Do menor",
+    "a": "mayor",
+    "donde": null,
+    "antes": "Do",
+    "despues": "Sol7"
+   },
+   {
+    "tramo": "cayo_la_cabra_2026_retirada",
+    "t": "5:57",
+    "de": "Do menor",
+    "a": "mayor",
+    "donde": null,
+    "antes": "Do7",
+    "despues": "Sol"
+   },
+   {
+    "tramo": "cayo_la_cabra_2026_retirada",
+    "t": "9:40",
+    "de": "Mib menor",
+    "a": "mayor",
+    "donde": "silencio",
+    "antes": "Sib7",
+    "despues": "Lab"
+   },
+   {
+    "tramo": "curtidores_de_hongos_2025_presentacion",
+    "t": "2:00",
+    "de": "Mib mayor",
+    "a": "menor",
+    "donde": null,
+    "antes": "Lab",
+    "despues": "Mibm"
+   },
+   {
+    "tramo": "curtidores_de_hongos_2025_retirada",
+    "t": "3:55",
+    "de": "Sol mayor",
+    "a": "menor",
+    "donde": null,
+    "antes": "Sol7",
+    "despues": "Do"
+   },
+   {
+    "tramo": "dona_bastarda_2024_retirada",
+    "t": "3:19",
+    "de": "La mayor",
+    "a": "menor",
+    "donde": null,
+    "antes": "La",
+    "despues": "Mi7"
+   },
+   {
+    "tramo": "dona_bastarda_2026_retirada",
+    "t": "0:36",
+    "de": "Si menor",
+    "a": "mayor",
+    "donde": null,
+    "antes": "Do#7",
+    "despues": "Fa#7"
+   },
+   {
+    "tramo": "dona_bastarda_2026_retirada",
+    "t": "2:59",
+    "de": "Si mayor",
+    "a": "menor",
+    "donde": null,
+    "antes": "Sim",
+    "despues": "Fa7"
+   },
+   {
+    "tramo": "falta_y_resto_2026_retirada",
+    "t": "6:39",
+    "de": "Do menor",
+    "a": "mayor",
+    "donde": "silencio",
+    "antes": "Fam",
+    "despues": "Dom"
+   },
+   {
     "tramo": "la_gran_muneca_2016_presentacion",
     "t": "1:50",
     "de": "Mib mayor",
@@ -101,6 +196,105 @@
     "donde": null,
     "antes": "Mib",
     "despues": "Sib7"
+   },
+   {
+    "tramo": "la_gran_muneca_2023_retirada",
+    "t": "3:36",
+    "de": "Lab mayor",
+    "a": "menor",
+    "donde": null,
+    "antes": "Mib7",
+    "despues": "Labm"
+   },
+   {
+    "tramo": "la_gran_muneca_2023_retirada",
+    "t": "4:56",
+    "de": "Lab menor",
+    "a": "mayor",
+    "donde": null,
+    "antes": "Labm",
+    "despues": "Do#m"
+   },
+   {
+    "tramo": "la_gran_muneca_2025_presentacion",
+    "t": "0:20",
+    "de": "Sol menor",
+    "a": "mayor",
+    "donde": null,
+    "antes": "Solm",
+    "despues": "Dom"
+   },
+   {
+    "tramo": "la_gran_muneca_2025_presentacion",
+    "t": "1:14",
+    "de": "Sol mayor",
+    "a": "menor",
+    "donde": null,
+    "antes": "Sol7",
+    "despues": "Solm"
+   },
+   {
+    "tramo": "la_gran_muneca_2025_presentacion",
+    "t": "2:04",
+    "de": "Sol menor",
+    "a": "mayor",
+    "donde": null,
+    "antes": "Solm",
+    "despues": "Sol"
+   },
+   {
+    "tramo": "la_gran_muneca_2025_presentacion",
+    "t": "2:59",
+    "de": "Sol mayor",
+    "a": "menor",
+    "donde": null,
+    "antes": "Sol7",
+    "despues": "Sim"
+   },
+   {
+    "tramo": "la_gran_muneca_2026_presentacion",
+    "t": "1:30",
+    "de": "Sol menor",
+    "a": "mayor",
+    "donde": null,
+    "antes": "Sol",
+    "despues": "Do7"
+   },
+   {
+    "tramo": "la_nueva_milonga_2024_presentacion",
+    "t": "3:28",
+    "de": "Lab menor",
+    "a": "mayor",
+    "donde": null,
+    "antes": "Mi",
+    "despues": "Mib"
+   },
+   {
+    "tramo": "la_nueva_milonga_2024_retirada",
+    "t": "1:23",
+    "de": "Sol mayor",
+    "a": "menor",
+    "donde": null,
+    "antes": "Solm",
+    "despues": "Lab"
+   },
+   {
+    "tramo": "la_nueva_milonga_2026_retirada",
+    "t": "2:20",
+    "de": "Mib mayor",
+    "a": "menor",
+    "donde": null,
+    "antes": "Mib",
+    "despues": "Sib"
+   },
+   {
+    "tramo": "la_nueva_milonga_2026_retirada",
+    "t": "5:44",
+    "de": "Mib mayor",
+    "a": "menor",
+    "donde": null,
+    "antes": "Do7",
+    "despues": "Lab"
    },
    {
     "tramo": "la_trasnochada_2019_presentacion",
@@ -146,66 +340,145 @@
     "donde": null,
     "antes": "Re7",
     "despues": "Solm"
+   },
+   {
+    "tramo": "los_diablos_verdes_2026_presentacion",
+    "t": "2:17",
+    "de": "Si mayor",
+    "a": "menor",
+    "donde": "batería",
+    "antes": "Mi",
+    "despues": "Sibm"
+   },
+   {
+    "tramo": "los_diablos_verdes_2026_retirada",
+    "t": "1:41",
+    "de": "La mayor",
+    "a": "menor",
+    "donde": null,
+    "antes": "Si7",
+    "despues": "Lam"
+   },
+   {
+    "tramo": "nos_obligan_a_salir_2024_presentacion",
+    "t": "1:16",
+    "de": "La mayor",
+    "a": "menor",
+    "donde": null,
+    "antes": "Fa",
+    "despues": "Sol7"
+   },
+   {
+    "tramo": "patos_cabreros_2026_retirada",
+    "t": "6:29",
+    "de": "Fa mayor",
+    "a": "menor",
+    "donde": "batería",
+    "antes": "Do7",
+    "despues": "Fa7"
+   },
+   {
+    "tramo": "queso_magro_2024_presentacion",
+    "t": "3:18",
+    "de": "Fa menor",
+    "a": "mayor",
+    "donde": null,
+    "antes": "Fam",
+    "despues": "Sib"
+   },
+   {
+    "tramo": "un_titulo_viejo_2026_presentacion",
+    "t": "2:26",
+    "de": "Sol mayor",
+    "a": "menor",
+    "donde": null,
+    "antes": "Sol",
+    "despues": "Re7"
+   },
+   {
+    "tramo": "un_titulo_viejo_2026_retirada",
+    "t": "10:10",
+    "de": "Do# menor",
+    "a": "mayor",
+    "donde": null,
+    "antes": "Si7",
+    "despues": "Do#m"
+   },
+   {
+    "tramo": "un_titulo_viejo_2026_retirada",
+    "t": "11:06",
+    "de": "Do# mayor",
+    "a": "menor",
+    "donde": "silencio",
+    "antes": "Do#7",
+    "despues": "Do#m"
    }
   ]
  },
  "llegadas": {
   "menor": {
-   "total": 136,
-   "contrario": 11,
-   "conSeptima": 3,
-   "haciaIV": 5,
-   "queda": 1,
-   "enCostura": 1
+   "total": 352,
+   "contrario": 28,
+   "conSeptima": 6,
+   "haciaIV": 8,
+   "queda": 5,
+   "enCostura": 5
   },
   "mayor": {
-   "total": 213,
-   "contrario": 5,
+   "total": 326,
+   "contrario": 14,
    "conSeptima": 0,
-   "haciaIV": 0,
-   "queda": 1,
+   "haciaIV": 3,
+   "queda": 3,
    "enCostura": 1
   }
  },
  "confirmados": {
-  "total": 62,
+  "total": 135,
   "porClave": {
-   "mm1": 8,
-   "Mm0": 6,
-   "MM1": 5,
-   "mM8": 5,
-   "Mm2": 4,
-   "MM7": 4,
-   "MM5": 3,
-   "Mm9": 2,
-   "MM8": 2,
-   "Mm1": 2,
-   "mm8": 2,
+   "Mm0": 19,
+   "mm1": 13,
+   "mM0": 10,
+   "mM8": 8,
+   "MM5": 7,
+   "mM3": 7,
+   "MM1": 6,
+   "Mm9": 6,
+   "MM7": 6,
+   "Mm2": 5,
+   "Mm5": 4,
+   "MM9": 3,
+   "MM4": 3,
+   "MM8": 3,
+   "Mm1": 3,
+   "mm9": 3,
+   "mm5": 3,
+   "mm8": 3,
+   "mM2": 2,
+   "Mm8": 2,
+   "Mm4": 2,
+   "MM6": 2,
    "mM11": 2,
-   "mM3": 2,
-   "mM2": 1,
-   "Mm8": 1,
-   "Mm4": 1,
+   "Mm11": 2,
    "mm10": 1,
-   "MM4": 1,
+   "MM10": 1,
+   "mm7": 1,
+   "mM1": 1,
    "MM11": 1,
+   "MM3": 1,
+   "mM7": 1,
    "mm2": 1,
-   "mm5": 1,
-   "Mm11": 1,
-   "MM6": 1,
    "mm4": 1,
-   "MM9": 1,
-   "Mm5": 1,
-   "mm9": 1,
-   "mM6": 1
+   "mM6": 1,
+   "mM4": 1
   },
   "porTipo": {
-   "otro tono, mismo modo": 33,
-   "otro tono y otro modo": 19,
-   "mismo tono, cambia el modo": 6,
-   "a la relativa": 4
+   "otro tono, mismo modo": 59,
+   "otro tono y otro modo": 34,
+   "mismo tono, cambia el modo": 29,
+   "a la relativa": 13
   },
-  "cambianModo": 29,
+  "cambianModo": 76,
   "ejemplos": [
    {
     "tramo": "agarrate_catalina_2008_retirada",
@@ -334,6 +607,222 @@
     "contexto": "Si Lam La7 Sibm | Lab | Sol7 | Fa7"
    },
    {
+    "tramo": "cayo_la_cabra_2025_final_y_retirada",
+    "t": "3:23",
+    "de": "La mayor",
+    "a": "Sol mayor",
+    "clave": "MM10",
+    "donde": "silencio",
+    "contexto": "Sol7 | Mi7"
+   },
+   {
+    "tramo": "cayo_la_cabra_2025_presentacion",
+    "t": "2:13",
+    "de": "Sol menor",
+    "a": "Sol mayor",
+    "clave": "mM0",
+    "donde": "batería",
+    "contexto": "Do7 Sib Fa7 Sol"
+   },
+   {
+    "tramo": "cayo_la_cabra_2025_presentacion",
+    "t": "2:37",
+    "de": "Sol mayor",
+    "a": "Do# mayor",
+    "clave": "MM6",
+    "donde": null,
+    "contexto": "Lab Do Sim Solm | Do#"
+   },
+   {
+    "tramo": "cayo_la_cabra_2025_presentacion",
+    "t": "2:53",
+    "de": "Do# mayor",
+    "a": "Sib mayor",
+    "clave": "MM9",
+    "donde": null,
+    "contexto": "Lab7 Sibm Fa#7 Lab | Solm"
+   },
+   {
+    "tramo": "cayo_la_cabra_2026_retirada",
+    "t": "1:51",
+    "de": "Sol mayor",
+    "a": "Re mayor",
+    "clave": "MM7",
+    "donde": "silencio",
+    "contexto": "Re"
+   },
+   {
+    "tramo": "cayo_la_cabra_2026_retirada",
+    "t": "2:35",
+    "de": "Re mayor",
+    "a": "Sol mayor",
+    "clave": "MM5",
+    "donde": "batería",
+    "contexto": "Mim La7 Re | Sol | Lam"
+   },
+   {
+    "tramo": "cayo_la_cabra_2026_retirada",
+    "t": "4:58",
+    "de": "Sol mayor",
+    "a": "Do menor",
+    "clave": "Mm5",
+    "donde": null,
+    "contexto": "Solm Si7 | Dom"
+   },
+   {
+    "tramo": "cayo_la_cabra_2026_retirada",
+    "t": "5:57",
+    "de": "Do menor",
+    "a": "Do mayor",
+    "clave": "mM0",
+    "donde": null,
+    "contexto": "Dom Do7 Sol | Do"
+   },
+   {
+    "tramo": "cayo_la_cabra_2026_retirada",
+    "t": "6:17",
+    "de": "Do mayor",
+    "a": "Lab menor",
+    "clave": "Mm8",
+    "donde": null,
+    "contexto": "Lam Sol Lam Sibm | Do#7"
+   },
+   {
+    "tramo": "cayo_la_cabra_2026_retirada",
+    "t": "8:32",
+    "de": "Lab menor",
+    "a": "Mib menor",
+    "clave": "mm7",
+    "donde": "batería",
+    "contexto": "La Lab Fa#m Lab7 | Sib | Lab7 | Fa7"
+   },
+   {
+    "tramo": "curtidores_de_hongos_2025_presentacion",
+    "t": "1:12",
+    "de": "Do menor",
+    "a": "Mib mayor",
+    "clave": "mM3",
+    "donde": null,
+    "contexto": "Lab Sim Dom"
+   },
+   {
+    "tramo": "curtidores_de_hongos_2025_presentacion",
+    "t": "2:00",
+    "de": "Mib mayor",
+    "a": "Mib menor",
+    "clave": "Mm0",
+    "donde": null,
+    "contexto": "Lab Mib Lab Mibm | Si"
+   },
+   {
+    "tramo": "curtidores_de_hongos_2025_retirada",
+    "t": "1:32",
+    "de": "Mi menor",
+    "a": "Sol mayor",
+    "clave": "mM3",
+    "donde": null,
+    "contexto": "Mim Fa#7 Sim | Re7 | Sol"
+   },
+   {
+    "tramo": "curtidores_de_hongos_2025_retirada",
+    "t": "3:55",
+    "de": "Sol mayor",
+    "a": "Sol menor",
+    "clave": "Mm0",
+    "donde": null,
+    "contexto": "Sol7 Do | Sib | Fa# | Solm"
+   },
+   {
+    "tramo": "curtidores_de_hongos_2025_retirada",
+    "t": "6:01",
+    "de": "Sol menor",
+    "a": "Sib mayor",
+    "clave": "mM3",
+    "donde": "silencio",
+    "contexto": "Solm | Fa7 | Sib"
+   },
+   {
+    "tramo": "dona_bastarda_2024_retirada",
+    "t": "1:36",
+    "de": "Do# menor",
+    "a": "Re mayor",
+    "clave": "mM1",
+    "donde": null,
+    "contexto": "Mib7 Fa#7 | Re | La7"
+   },
+   {
+    "tramo": "dona_bastarda_2024_retirada",
+    "t": "1:58",
+    "de": "Re mayor",
+    "a": "La mayor",
+    "clave": "MM7",
+    "donde": null,
+    "contexto": "Re Sol Re | La7 | Mi"
+   },
+   {
+    "tramo": "dona_bastarda_2024_retirada",
+    "t": "3:19",
+    "de": "La mayor",
+    "a": "La menor",
+    "clave": "Mm0",
+    "donde": null,
+    "contexto": "Mi La | Mi7 | Lam | La7"
+   },
+   {
+    "tramo": "dona_bastarda_2025_retirada",
+    "t": "2:17",
+    "de": "Si menor",
+    "a": "Do menor",
+    "clave": "mm1",
+    "donde": null,
+    "contexto": "Fa#7 Do Sol7 | Dom | Rem"
+   },
+   {
+    "tramo": "dona_bastarda_2025_retirada",
+    "t": "4:08",
+    "de": "Do menor",
+    "a": "Lab mayor",
+    "clave": "mM8",
+    "donde": null,
+    "contexto": "Dom Lab Sib7 Lab7 | Dom"
+   },
+   {
+    "tramo": "dona_bastarda_2025_retirada",
+    "t": "5:25",
+    "de": "Lab mayor",
+    "a": "Do# menor",
+    "clave": "Mm5",
+    "donde": null,
+    "contexto": "Lab Mib7 Lab Sol7 Lab | Do#m | Si7 | La"
+   },
+   {
+    "tramo": "dona_bastarda_2026_retirada",
+    "t": "0:36",
+    "de": "Si menor",
+    "a": "Si mayor",
+    "clave": "mM0",
+    "donde": null,
+    "contexto": "Sim Do#7 Fa#7 | Si"
+   },
+   {
+    "tramo": "dona_bastarda_2026_retirada",
+    "t": "2:59",
+    "de": "Si mayor",
+    "a": "Si menor",
+    "clave": "Mm0",
+    "donde": null,
+    "contexto": "Labm Fa#7 Sim Fa7 | La7 | Sim"
+   },
+   {
+    "tramo": "falta_y_resto_2026_retirada",
+    "t": "6:39",
+    "de": "Do menor",
+    "a": "Do mayor",
+    "clave": "mM0",
+    "donde": "silencio",
+    "contexto": "Dom Fam Dom | Si | Sol7 | Do7"
+   },
+   {
     "tramo": "la_gran_muneca_2016_final_y_retirada",
     "t": "1:19",
     "de": "Mi menor",
@@ -404,6 +893,258 @@
     "clave": "Mm1",
     "donde": null,
     "contexto": "Sib7 Labm Si Lab7 | Mim | Si | Lam"
+   },
+   {
+    "tramo": "la_gran_muneca_2023_retirada",
+    "t": "3:36",
+    "de": "Lab mayor",
+    "a": "Lab menor",
+    "clave": "Mm0",
+    "donde": null,
+    "contexto": "Sib7 Mib7 Sibm Mib7 Labm | Si"
+   },
+   {
+    "tramo": "la_gran_muneca_2023_retirada",
+    "t": "4:56",
+    "de": "Lab menor",
+    "a": "Lab mayor",
+    "clave": "mM0",
+    "donde": null,
+    "contexto": "Do#m | Fam | Lab"
+   },
+   {
+    "tramo": "la_gran_muneca_2024_retirada",
+    "t": "0:55",
+    "de": "La mayor",
+    "a": "Si menor",
+    "clave": "Mm2",
+    "donde": null,
+    "contexto": "Fa#m Sol La7 Re Mib7 | Sim"
+   },
+   {
+    "tramo": "la_gran_muneca_2024_retirada",
+    "t": "4:27",
+    "de": "Sib mayor",
+    "a": "Sol menor",
+    "clave": "Mm9",
+    "donde": "silencio",
+    "contexto": "Sib Mib Solm | Rem"
+   },
+   {
+    "tramo": "la_gran_muneca_2025_presentacion",
+    "t": "0:20",
+    "de": "Sol menor",
+    "a": "Sol mayor",
+    "clave": "mM0",
+    "donde": null,
+    "contexto": "Lab7 Solm Fa# Fa7 Solm Dom | Re7 | Sib"
+   },
+   {
+    "tramo": "la_gran_muneca_2025_presentacion",
+    "t": "1:14",
+    "de": "Sol mayor",
+    "a": "Sol menor",
+    "clave": "Mm0",
+    "donde": null,
+    "contexto": "Mim Re La7 Solm Lam Sol7 Solm | Dom | Solm"
+   },
+   {
+    "tramo": "la_gran_muneca_2025_presentacion",
+    "t": "2:04",
+    "de": "Sol menor",
+    "a": "Sol mayor",
+    "clave": "mM0",
+    "donde": null,
+    "contexto": "Solm Sib7 Solm | Sol | Do | Sol | Lam"
+   },
+   {
+    "tramo": "la_gran_muneca_2025_retirada",
+    "t": "3:47",
+    "de": "Do# mayor",
+    "a": "Fa# menor",
+    "clave": "Mm5",
+    "donde": null,
+    "contexto": "Do#7 Fa#m Do#7 | Fa#m | Do#7"
+   },
+   {
+    "tramo": "la_gran_muneca_2026_presentacion",
+    "t": "0:26",
+    "de": "Re mayor",
+    "a": "Sib mayor",
+    "clave": "MM8",
+    "donde": null,
+    "contexto": "La7 Fam | Sol | Sib"
+   },
+   {
+    "tramo": "la_gran_muneca_2026_presentacion",
+    "t": "0:39",
+    "de": "Sib mayor",
+    "a": "Re mayor",
+    "clave": "MM4",
+    "donde": "silencio",
+    "contexto": "Sib Fa | Sib | Re"
+   },
+   {
+    "tramo": "la_gran_muneca_2026_presentacion",
+    "t": "1:41",
+    "de": "Sol mayor",
+    "a": "Sib mayor",
+    "clave": "MM3",
+    "donde": null,
+    "contexto": "Sol7 | Re7 | Mib | Sol7"
+   },
+   {
+    "tramo": "la_gran_muneca_2026_presentacion",
+    "t": "3:36",
+    "de": "Do menor",
+    "a": "Mib mayor",
+    "clave": "mM3",
+    "donde": "silencio",
+    "contexto": "Dom Sol7 Dom Lab Sib7 | Si | Labm"
+   },
+   {
+    "tramo": "la_gran_muneca_2026_retirada",
+    "t": "1:11",
+    "de": "Sol mayor",
+    "a": "Lab mayor",
+    "clave": "MM1",
+    "donde": null,
+    "contexto": "Sol La7 Sol La7 Mib7 | Fa7 | Do# | Lab"
+   },
+   {
+    "tramo": "la_gran_muneca_2026_retirada",
+    "t": "1:57",
+    "de": "Lab mayor",
+    "a": "Fa mayor",
+    "clave": "MM9",
+    "donde": null,
+    "contexto": "Mibm Sibm Lab Mib | Do7 | Fa | Solm | Fa"
+   },
+   {
+    "tramo": "la_gran_muneca_2026_retirada",
+    "t": "3:39",
+    "de": "Fa mayor",
+    "a": "Re menor",
+    "clave": "Mm9",
+    "donde": null,
+    "contexto": "Do7 Sib | La | Sib"
+   },
+   {
+    "tramo": "la_nueva_milonga_2023_final_y_retirada",
+    "t": "4:55",
+    "de": "Sib menor",
+    "a": "Sol menor",
+    "clave": "mm9",
+    "donde": null,
+    "contexto": "Fa7 Sib | Solm | Mib"
+   },
+   {
+    "tramo": "la_nueva_milonga_2023_final_y_retirada",
+    "t": "6:30",
+    "de": "Sol menor",
+    "a": "Mib mayor",
+    "clave": "mM8",
+    "donde": null,
+    "contexto": "Solm Dom Mib | Lab | Mib"
+   },
+   {
+    "tramo": "la_nueva_milonga_2023_final_y_retirada",
+    "t": "7:11",
+    "de": "Mib mayor",
+    "a": "Sol menor",
+    "clave": "Mm4",
+    "donde": null,
+    "contexto": "Mib | Sib | Fa7 | Solm"
+   },
+   {
+    "tramo": "la_nueva_milonga_2023_final_y_retirada",
+    "t": "7:25",
+    "de": "Sol menor",
+    "a": "Lab menor",
+    "clave": "mm1",
+    "donde": "batería",
+    "contexto": "Fa# Solm | Do#7 | Labm"
+   },
+   {
+    "tramo": "la_nueva_milonga_2024_presentacion",
+    "t": "2:18",
+    "de": "Sol menor",
+    "a": "Lab menor",
+    "clave": "mm1",
+    "donde": "batería",
+    "contexto": "Mib7 Labm Sibm Mi7 Mib Sib7 | Fa#7 | Labm | Mi7"
+   },
+   {
+    "tramo": "la_nueva_milonga_2024_presentacion",
+    "t": "3:28",
+    "de": "Lab menor",
+    "a": "Lab mayor",
+    "clave": "mM0",
+    "donde": null,
+    "contexto": "Labm Mib Do#m Mi | Mib | Lab"
+   },
+   {
+    "tramo": "la_nueva_milonga_2024_retirada",
+    "t": "0:31",
+    "de": "Si menor",
+    "a": "Sol mayor",
+    "clave": "mM8",
+    "donde": null,
+    "contexto": "Sol Fa# | Sol"
+   },
+   {
+    "tramo": "la_nueva_milonga_2026_presentacion",
+    "t": "0:36",
+    "de": "Si menor",
+    "a": "Do menor",
+    "clave": "mm1",
+    "donde": null,
+    "contexto": "Sol Sim Fam | Solm"
+   },
+   {
+    "tramo": "la_nueva_milonga_2026_retirada",
+    "t": "0:40",
+    "de": "Do# menor",
+    "a": "Mib mayor",
+    "clave": "mM2",
+    "donde": null,
+    "contexto": "Do#m La7 Sib7 | Mib7"
+   },
+   {
+    "tramo": "la_nueva_milonga_2026_retirada",
+    "t": "2:20",
+    "de": "Mib mayor",
+    "a": "Mib menor",
+    "clave": "Mm0",
+    "donde": null,
+    "contexto": "Lab Fa7 Mib Sib | Mib | Do#7"
+   },
+   {
+    "tramo": "la_nueva_milonga_2026_retirada",
+    "t": "2:56",
+    "de": "Mib menor",
+    "a": "Sib mayor",
+    "clave": "mM7",
+    "donde": null,
+    "contexto": "Sib7 Si Mib Do#7 Fa7 | Sib7 | Fa7 | Fa# | Mi"
+   },
+   {
+    "tramo": "la_nueva_milonga_2026_retirada",
+    "t": "3:32",
+    "de": "Sib mayor",
+    "a": "Mib mayor",
+    "clave": "MM5",
+    "donde": null,
+    "contexto": "Sib7 Dom Sib | Fa7 | Labm"
+   },
+   {
+    "tramo": "la_nueva_milonga_2026_retirada",
+    "t": "5:44",
+    "de": "Mib mayor",
+    "a": "Mib menor",
+    "clave": "Mm0",
+    "donde": null,
+    "contexto": "Sib7 Do7 Lab | Fa#7"
    },
    {
     "tramo": "la_trasnochada_2017_final_y_retirada",
@@ -676,6 +1417,33 @@
     "contexto": "Solm Mib Do7 La7 | Sol"
    },
    {
+    "tramo": "los_diablos_verdes_2026_presentacion",
+    "t": "0:51",
+    "de": "Re mayor",
+    "a": "Fa# mayor",
+    "clave": "MM4",
+    "donde": "batería",
+    "contexto": "La Sim Do7 Fa# Sol | Sib7 | Fa#7 | Si"
+   },
+   {
+    "tramo": "los_diablos_verdes_2026_retirada",
+    "t": "1:41",
+    "de": "La mayor",
+    "a": "La menor",
+    "clave": "Mm0",
+    "donde": null,
+    "contexto": "Mi7 Si7 Lam"
+   },
+   {
+    "tramo": "los_diablos_verdes_2026_retirada",
+    "t": "2:44",
+    "de": "La menor",
+    "a": "Sib menor",
+    "clave": "mm1",
+    "donde": null,
+    "contexto": "Sim Lam | Si | Sibm | Mibm | Sibm"
+   },
+   {
     "tramo": "metele_que_son_pasteles_2020_presentacion",
     "t": "3:20",
     "de": "Fa# mayor",
@@ -764,25 +1532,188 @@
     "clave": "mM6",
     "donde": null,
     "contexto": "Lab Mi7 Re Sol Mim | La | Re"
+   },
+   {
+    "tramo": "nos_obligan_a_salir_2023_presentacion",
+    "t": "0:48",
+    "de": "Do mayor",
+    "a": "Si menor",
+    "clave": "Mm11",
+    "donde": null,
+    "contexto": "Dom Mi7 Do7 | Mim | Sim"
+   },
+   {
+    "tramo": "nos_obligan_a_salir_2023_retirada",
+    "t": "4:41",
+    "de": "Si menor",
+    "a": "Re mayor",
+    "clave": "mM3",
+    "donde": "silencio",
+    "contexto": "Sol | La7 | Re"
+   },
+   {
+    "tramo": "nos_obligan_a_salir_2024_presentacion",
+    "t": "1:16",
+    "de": "La mayor",
+    "a": "La menor",
+    "clave": "Mm0",
+    "donde": null,
+    "contexto": "Mi7 Do Sol7 Lam Do Fa | Sol7 | Lam | Do"
+   },
+   {
+    "tramo": "patos_cabreros_2026_presentacion",
+    "t": "1:36",
+    "de": "Si menor",
+    "a": "Sol menor",
+    "clave": "mm8",
+    "donde": null,
+    "contexto": "Sim Re7 | Do | Solm"
+   },
+   {
+    "tramo": "patos_cabreros_2026_presentacion",
+    "t": "2:52",
+    "de": "Sol menor",
+    "a": "Do menor",
+    "clave": "mm5",
+    "donde": null,
+    "contexto": "Sol7 Do7 Fam Mib | Fa | Dom | Sol7"
+   },
+   {
+    "tramo": "patos_cabreros_2026_retirada",
+    "t": "1:32",
+    "de": "Si mayor",
+    "a": "Mi mayor",
+    "clave": "MM5",
+    "donde": "batería",
+    "contexto": "Si7 Mi Si7 | Mi"
+   },
+   {
+    "tramo": "patos_cabreros_2026_retirada",
+    "t": "5:27",
+    "de": "Mi mayor",
+    "a": "Do# menor",
+    "clave": "Mm9",
+    "donde": null,
+    "contexto": "Si7 Mi Do#m | La"
+   },
+   {
+    "tramo": "patos_cabreros_2026_retirada",
+    "t": "6:04",
+    "de": "Do# menor",
+    "a": "Fa mayor",
+    "clave": "mM4",
+    "donde": null,
+    "contexto": "Mib7 Do# La7 Do Fa | Lam | Sib"
+   },
+   {
+    "tramo": "patos_cabreros_2026_retirada",
+    "t": "6:29",
+    "de": "Fa mayor",
+    "a": "Fa menor",
+    "clave": "Mm0",
+    "donde": "batería",
+    "contexto": "Sib Lam Mi7 Do7 Fa7 | Fam | Do#"
+   },
+   {
+    "tramo": "queso_magro_2024_presentacion",
+    "t": "2:19",
+    "de": "Lab mayor",
+    "a": "Fa menor",
+    "clave": "Mm9",
+    "donde": null,
+    "contexto": "Do# Mibm Fam Mib Sibm | Fam | Mib | Fam"
+   },
+   {
+    "tramo": "queso_magro_2024_presentacion",
+    "t": "3:18",
+    "de": "Fa menor",
+    "a": "Fa mayor",
+    "clave": "mM0",
+    "donde": null,
+    "contexto": "Fam Sib | Fa"
+   },
+   {
+    "tramo": "queso_magro_2024_retirada",
+    "t": "1:46",
+    "de": "Sib mayor",
+    "a": "Si menor",
+    "clave": "Mm1",
+    "donde": null,
+    "contexto": "Sib Si Fam | Sim | Mi7 | Sol | Fa# | Si"
+   },
+   {
+    "tramo": "queso_magro_2024_retirada",
+    "t": "4:20",
+    "de": "Sol mayor",
+    "a": "Do mayor",
+    "clave": "MM5",
+    "donde": null,
+    "contexto": "Sol Lam Sol7 | Lam | Fa"
+   },
+   {
+    "tramo": "un_titulo_viejo_2026_presentacion",
+    "t": "1:31",
+    "de": "Re menor",
+    "a": "Sol menor",
+    "clave": "mm5",
+    "donde": null,
+    "contexto": "Re7 Sib Sol7 | Fa7 | Dom | Solm"
+   },
+   {
+    "tramo": "un_titulo_viejo_2026_presentacion",
+    "t": "2:26",
+    "de": "Sol mayor",
+    "a": "Sol menor",
+    "clave": "Mm0",
+    "donde": null,
+    "contexto": "Sol Do Sol Re7 | Sol | Dom | Solm"
+   },
+   {
+    "tramo": "un_titulo_viejo_2026_retirada",
+    "t": "4:35",
+    "de": "Re menor",
+    "a": "Si menor",
+    "clave": "mm9",
+    "donde": "silencio",
+    "contexto": "Sim | La7"
+   },
+   {
+    "tramo": "un_titulo_viejo_2026_retirada",
+    "t": "10:10",
+    "de": "Do# menor",
+    "a": "Do# mayor",
+    "clave": "mM0",
+    "donde": null,
+    "contexto": "Do#m Si7 Do#m | Lab7 | Do#"
+   },
+   {
+    "tramo": "un_titulo_viejo_2026_retirada",
+    "t": "11:06",
+    "de": "Do# mayor",
+    "a": "Do# menor",
+    "clave": "Mm0",
+    "donde": "silencio",
+    "contexto": "Do#m | Si7 | Do#m"
    }
   ]
  },
  "antes": {
   "todos": {
-   "otro": 47,
-   "tónica del viejo": 40,
-   "dominante del nuevo": 15,
-   "tónica del nuevo (ya)": 11,
-   "dominante del viejo": 10,
-   "IV del nuevo": 10,
-   "iv menor del nuevo": 2
+   "otro": 104,
+   "tónica del viejo": 77,
+   "dominante del nuevo": 30,
+   "tónica del nuevo (ya)": 22,
+   "dominante del viejo": 21,
+   "IV del nuevo": 19,
+   "iv menor del nuevo": 8
   },
   "paralelos": {
-   "tónica del viejo": 4,
-   "dominante del nuevo": 2,
-   "IV del nuevo": 2,
-   "otro": 1
+   "tónica del viejo": 20,
+   "otro": 8,
+   "dominante del nuevo": 5,
+   "IV del nuevo": 4,
+   "iv menor del nuevo": 1
   }
  },
- "vuelve": 3
+ "vuelve": 5
 }

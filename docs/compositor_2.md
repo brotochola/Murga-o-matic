@@ -1,6 +1,6 @@
 # Compositor 2: qué cambió y por qué
 
-La versión 1 del compositor es la que se aprobó de oído el 7 de noviembre de 2026. La versión 2 corrige siete cosas en las que lo generado se apartaba de las murgas reales. Cada cambio se midió contra el corpus antes de quedarse. Los que no movían nada fuera del ruido se descartaron.
+La versión 1 del compositor es la que se aprobó de oído el 7 de noviembre de 2026. La versión 2 corrige ocho cosas en las que lo generado se apartaba de las murgas reales. Cada cambio se midió contra el corpus antes de quedarse. Los que no movían nada fuera del ruido se descartaron.
 
 La página deja elegir la versión en **Compositor**. La versión 1 viene con su modelo y sus modos de ese día (`motor/compositor_v1.js`, `motor/modelo_v1.js`, `motor/modos_v1.js`), así suena exactamente igual que antes.
 
@@ -98,6 +98,22 @@ La repetición en las retiradas queda más cerca de las reales:
 | Ahora | 9 % | 17 % | 14 % | 11 % | 13 % |
 
 En los rasgos de nota no cambia nada fuera del ruido. Con dos juegos de semillas, la suma de distancias da: todas 18,7 → 17,4 y 20,2 → 19,2; Catalina 20,6 → 20,7 y 21,7 → 20,8; Trasnochada 19,5 → 19,6 y 20,9 → 20,3.
+
+## 8. El modelo aprende de 85 tramos
+
+El corpus pasó de 41 a 85 tramos: se sumaron presentaciones y retiradas de 2023 a 2026 de Doña Bastarda, Asaltantes con Patente, La Nueva Milonga, Cayó la Cabra, La Gran Muñeca y siete murgas más (`transcripcion/videos.csv`). Las cuatro primeras tienen estilo propio en la página. Las demás entran en "todas".
+
+Al aprender se descartan ahora las celdas cuya melodía abarca más de 16 semitonos en dos compases: 33 de 3060. Casi siempre son un salto de octava del transcriptor, cuando la voz de arriba se calla y la de abajo pasa a ser "la melodía". Con esas celdas, en el estilo de La Nueva Milonga salían notas que no se pueden cantar (La 1 a Si 1).
+
+Mismo compositor, modelo de antes contra modelo nuevo, en suma de distancias con dos juegos de semillas, medido contra los 85 tramos:
+
+| Estilo | Modelo de antes | Modelo nuevo |
+|---|---|---|
+| Todas | 21,0 · 19,8 | 19,1 · 18,1 |
+| Agarrate Catalina | 21,9 · 22,4 | 19,8 · 19,2 |
+| La Trasnochada | 19,5 · 18,2 | 19,6 · 19,3 |
+
+Lo que más se mueve es la síncopa: 12 % → 16 % de golpes en semicorchea impar (real 19 %). Es el cambio 6, que recién ahora llega al modelo. En el jurado sin espiar, lo generado queda a 1,17 de un espectáculo que el modelo no vio. Dos espectáculos reales quedan entre sí a 1,28. El motor queda más cerca que la mediana real en el 69 % de los casos. La copia: en 540 piezas de los 9 estilos, el pasaje más largo igual a uno real tiene 10 notas en la mediana y 16 como máximo.
 
 ## Lo que se probó y no quedó
 

@@ -79,6 +79,11 @@ function celdasDe(v, parte, estilo) {
       // en semicorchea impar contra 18,6 % en los tramos; con 50 %, 14,3 %, y lo generado se acerca a lo real en los tres
       // estilos (docs/compositor_2.md). Los gestos con la grilla corrida igual se van por los apoyos fuera del acorde.
       if (fuertes < 2 || enAcorde / fuertes < .6 || pares / gs.length < .5 || suena / span < .3) continue;
+      // una melodía que abarca más de 16 semitonos en dos compases es casi siempre un salto de octava del transcriptor
+      // (la voz de arriba se calla y la de abajo pasa a ser "la melodía"): con esas celdas el compositor llegaba a
+      // poner notas que no se pueden cantar (La Nueva Milonga, 33 celdas de 3060)
+      const tops = gs.map(x => x.ps[x.ps.length - 1]);
+      if (Math.max(...tops) - Math.min(...tops) > 16) continue;
       const t0 = aSeg(gs[0].q), t1 = aSeg(gs[gs.length - 1].q);
       const tonica = 60 + t;
       R.push({

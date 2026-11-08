@@ -8,7 +8,7 @@ import { rasgos, notasDePieza, normas, rasgosReal, RASGOS } from './jurado.js';
 import { cargarAnalisis } from './medir.js';
 const SEM0 = +(process.env.SEM0 || 0);
 const estilo = process.argv[2] || 'catalina', N = +(process.argv[3] || 16);
-const reales = cargarAnalisis().filter(a => a.notas?.length > 200 && (estilo === 'todas' || a.murga.toLowerCase().includes(estilo === 'catalina' ? 'catalina' : estilo === 'trasnochada' ? 'trasnochada' : estilo === 'muneca' ? 'muñeca' : 'pasteles')));
+const reales = cargarAnalisis().filter(a => a.notas?.length > 200 && (estilo === 'todas' || a.murga.toLowerCase().includes(estilo === 'muneca' ? 'muñeca' : estilo)));
 const NR = normas(cargarAnalisis().filter(a => a.notas?.length > 200).map(rasgosReal));
 const R = reales.map(rasgosReal);
 const med = (L, k) => { const v = L.map(r => r[k]).filter(Number.isFinite).sort((a, b) => a - b); return v[v.length >> 1]; };

@@ -2,6 +2,15 @@
 
 Pregunta: en los cambios de sección, ¿las murgas pasan de mayor a menor o al revés? En particular, ¿pasan de Do menor a Do mayor después de un Sol7, o al revés? La respuesta sale de los 41 tramos transcriptos del corpus (267 minutos) con `herramientas/cambios_de_modo.js`.
 
+> **Con 85 tramos (8 de noviembre de 2026).** El corpus pasó a 85 tramos de 13 murgas (515 minutos), con presentaciones y retiradas de 2023 a 2026. Hay 281 cambios que duran, y 135 confirmados. La conclusión se refuerza: entre los confirmados, el 56 % cambia de modo, y **de mayor al menor de la misma tónica es ahora el cambio más común** (19 casos; del menor al mayor de la misma tónica, 10). Ahora, "mismo tono, cambia el modo" es el 21 % de los confirmados (antes, el 10 %). Antes del cambio suena la dominante del tono nuevo en el 13 % de los casos. Las llegadas V → I en el modo contrario quedan en 8 % en menor y 4 % en mayor. `motor/modos.js` ya está rehecho con estos números. Las tablas de abajo son las del corpus de 41 tramos.
+>
+> | Confirmados (135) | |
+> |---|---|
+> | Otro tono, mismo modo | 44 % |
+> | Otro tono y otro modo | 25 % |
+> | Mismo tono, cambia el modo | 21 % |
+> | A la relativa | 10 % |
+
 ## Cómo se midió
 
 - **Tonalidad pulso a pulso:** perfiles de Krumhansl en ventanas de 8 compases, con un camino de Viterbi que castiga cambiar de tono. Es el mismo detector del análisis.
