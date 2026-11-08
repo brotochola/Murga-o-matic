@@ -25,3 +25,6 @@ murga_trabajo/plan/estado.json
 murga_trabajo/plan/registro.txt
 # El audio del video de La Tríada del que salen los loops de batería (herramientas/recortar_loops.mjs).
 murga_trabajo/loops_originales/
+# El banco del solista (herramientas/solista.mjs) y el modelo de Whisper que hace de jurado (solista_jurado.py).
+murga_trabajo/solista/
+murga_trabajo/jurado/

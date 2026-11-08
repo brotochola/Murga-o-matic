@@ -136,7 +136,7 @@ async function renderPercusion(P,secs){
   return ctx.startRendering();
 }
 
-function picoDe(bufs){let p=1e-9;const n=bufs[0].length;for(let ch=0;ch<2;ch++){const datos=bufs.map(b=>b.getChannelData(ch));for(let i=0;i<n;i+=2){let s=0;for(const d of datos)s+=d[i];const a=Math.abs(s);if(a>p)p=a}}return p}
+function picoDe(bufs){let p=1e-9;const n=Math.max(...bufs.map(b=>b.length));for(let ch=0;ch<2;ch++){const datos=bufs.map(b=>b.getChannelData(ch));for(let i=0;i<n;i+=2){let s=0;for(const d of datos)s+=d[i]||0;const a=Math.abs(s);if(a>p)p=a}}return p}   // las cuerdas que callan (el solista) son de una muestra
 function procesar(buf,escala,drive){const k=Math.tanh(drive);for(let ch=0;ch<buf.numberOfChannels;ch++){const d=buf.getChannelData(ch);for(let i=0;i<d.length;i++)d[i]=Math.tanh(drive*d[i]*escala)/k}}
 function salaIR(ctx){const sr=ctx.sampleRate,n=Math.floor(.7*sr),ir=ctx.createBuffer(2,n,sr);const r=new Rng(5);for(let ch=0;ch<2;ch++){const d=ir.getChannelData(ch);for(let i=0;i<n;i++)d[i]=(r.rand()*2-1)*Math.exp(-7*i/n)}return ir}
 
@@ -164,6 +164,7 @@ async function cantarLista(lista,alListo,sigue){
 }
 let IR_CANTOR=null;
 async function cantarCuerdas(pieza,P,gen){
+  if(S.voces==="solista")return cantarSolista(pieza,P,gen);
   const L=S.letra,letras=letrasPorSeccion();
   L.sil=silabear(pieza,letras);
   const lista=cantores(pieza,L.sil.porQ,{semilla:S.seed});
@@ -188,6 +189,28 @@ async function cantarCuerdas(pieza,P,gen){
   return voces;
 }
 
+// Un solista por difonos: el primero de los primos (la melodía) canta con MBROLA en un obrero; las otras cuerdas callan.
+// La voz sale a 22.050 Hz: Web Audio la pasa a la frecuencia de la página al copiarla.
+async function cantarSolista(pieza,P,gen){
+  const L=S.letra,letras=letrasPorSeccion();
+  L.sil=silabear(pieza,letras);
+  const lista=cantores(pieza,L.sil.porQ,{semilla:S.seed});
+  const c=lista.find(x=>x.cuerda==="primos")||lista[0];
+  avance(.3,"Cantando el solista (la primera vez baja la voz, 5,6 MB)…");
+  const msg={motor:"difonos",notas:c.notas,opc:{voz:"es2",semilla:c.semilla,consonantes:1.1,temblor:.04,vibrato:.2,emision:1}};
+  let r;const w=losObreros()[0];
+  if(w){try{r=await enObrero(w,msg)}catch(e){console.warn("canta la página:",e.message);r=null}}
+  if(!r){const[{crearMbrola},{cantarDifonos}]=await Promise.all([import("./cantor/mbrola.js"),import("./cantor/difonos.js")]);
+    const[wasm,voz]=await Promise.all(["vendor/mbrola/mbrola.wasm","vendor/mbrola/es2"].map(u=>fetch(new URL(u,import.meta.url)).then(x=>x.arrayBuffer())));
+    r=cantarDifonos(await crearMbrola(wasm,new Uint8Array(voz)),msg.notas,msg.opc)}
+  if(gen!==S.gen)return null;
+  const len=Math.ceil(P.total*SR),ctx=new OAC(2,len,SR);
+  if(r.x.length){const b=ctx.createBuffer(1,r.x.length,r.sr);b.copyToChannel(r.x,0);
+    const s=ctx.createBufferSource();s.buffer=b;s.connect(ctx.destination);s.start(Math.max(0,r.inicio),Math.max(0,-r.inicio))}
+  const voz=await ctx.startRendering();if(gen!==S.gen)return null;
+  return ORDEN.map(k=>k===c.cuerda?voz:ctx.createBuffer(2,1,SR));
+}
+
 // ============================================================ estado
 const ORDEN=["bajos","segundos","primos","sobreprimos","tercia"];
 const LLAMADAS=Object.fromEntries(DATOS.ritmos.map(r=>{const a=DATOS.acompana[r.id];if(!a||!a[0])return[r.id,0];const c4=r.compas*4/r.tpc;return[r.id,Math.ceil((DATOS.frases[a[0]].ultimo+.05)/c4)]}));
@@ -195,7 +218,7 @@ const S={version:2,recita:0,forma:"retirada",estilo:"todas",tonica:9,modo:"menor
   voces:"muestras",acordes:{},editando:null,pieza:null,stems:null,P:null,ac:null,nodos:null,inicio:0,offset:0,tocando:false,gen:0,mp3:null,
   letra:{partes:[],textos:[],diags:null,temas:null,editados:new Set(),sel:{i:0,k:0},sil:null,marcas:[],semLetra:1,pendiente:false,cantada:null}};
 const $=id=>document.getElementById(id);
-const sint=()=>S.voces==="sintetizadas";
+const sint=()=>S.voces!=="muestras";      // con letra: los trece cantores sintéticos o el solista por difonos
 // La versión 1 del compositor, con su modelo del 7 de noviembre: se carga sólo si se elige
 let V1=null;const version1=async()=>V1||(V1={componer:(await import("./compositor_v1.js")).componer,MODELO:(await import("./modelo_v1.js")).MODELO});
 
@@ -443,10 +466,11 @@ $("tema").addEventListener("keydown",e=>{if(e.key==="Enter")otraLetra()});
  if(d){S.forma=d.forma;S.estilo=d.estilo;S.tonica=d.tonica;S.modo=d.modo;S.seed=d.semilla}}
 // Las voces: lo que diga la dirección (la vieja /cantada manda acá), si no la última elección
 {let v=new URLSearchParams(location.search).get("voces");if(!v)try{v=localStorage.getItem("murga.voces")}catch(e){}
- if(v==="sintetizadas"||v==="muestras")S.voces=v}
+ if(v==="sintetizadas"||v==="muestras"||v==="solista")S.voces=v}
 
 // ============================================================ controles
-const HINT_VOCES={muestras:"Muestras «aah» de coro: suena a coro, sin palabras.",sintetizadas:"Trece cantores sintéticos cantan una letra escrita para esta melodía. Tarda unos segundos más."};
+const HINT_VOCES={muestras:"Muestras «aah» de coro: suena a coro, sin palabras.",sintetizadas:"Trece cantores sintéticos cantan una letra escrita para esta melodía. Tarda unos segundos más.",
+  solista:"Un solo cantor canta la melodía con la letra, armado con pedacitos de voz grabada (difonos de MBROLA): se entiende lo que dice. Es la prueba antes de pasar a las trece voces."};
 function mostrarVoces(){$("voces").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===S.voces));$("vocesHint").textContent=HINT_VOCES[S.voces];$("campoBrillo").hidden=sint()}
 $("voces").querySelectorAll("button").forEach(b=>b.onclick=()=>{if(S.voces===b.dataset.v)return;S.voces=b.dataset.v;try{localStorage.setItem("murga.voces",S.voces)}catch(e){}mostrarVoces();generar()});
 mostrarVoces();

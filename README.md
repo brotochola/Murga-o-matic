@@ -9,6 +9,7 @@ Elegís presentación o retirada, murga, tono y largo, y compone una pieza nueva
 - **Voces:** se eligen arriba de todo.
   - *Muestras de coro:* cinco cuerdas (bajos, segundos, primos, sobreprimos y tercia) con muestras "aah" de FluidR3 y MusyngKite, tomadas de [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts). Cada cuerda tiene de dos a cuatro cantores (la tercia es una voz sola), y el timbre se ecualiza hacia el de un coro de murga medido.
   - *Cantores sintéticos:* un letrista algorítmico escribe una letra rioplatense que entra en la melodía, sílaba por nota y con rima, y trece voces de fuente glótica y formantes la cantan. No usa muestras ni modelos de lenguaje, y anda sin conexión. La letra se puede editar o pedir otra, y un panel muestra paso a paso cómo se hizo cada verso. La voz se calibró contra La Trasnochada 2020. Detalles y mediciones en [docs/cantores_y_letras.md](docs/cantores_y_letras.md).
+  - *Un solista:* la misma letra la canta un cantor solo, armado con difonos (pedacitos de voz grabada) de [MBROLA](https://github.com/numediart/MBROLA), compilado a WebAssembly. Se entiende lo que dice: Whisper erra el 7 % de las letras, contra el 53 % de los cantores de formantes. Es el primer paso hacia un coro que se entienda ([docs/solista.md](docs/solista.md)).
 
 Desde la página podés mezclar en vivo y seguir la partitura, con la letra sílaba por sílaba cuando cantan los cantores sintéticos. Se puede bajar:
 - la mezcla en **MP3**, tal como suena con los volúmenes de la mezcla;
@@ -47,6 +48,7 @@ Si se abre `index.html` como archivo, sin servidor, el navegador no deja cargar 
 | 10 | Mide al transcriptor: un coro sintético con las notas conocidas, mezclado como una murga, por la misma cadena | `herramientas/coro_de_prueba.mjs`, `transcripcion/banco_pruebas.py`, `herramientas/comparar_transcripcion.js`, `herramientas/sesgo_transcriptor.js` → [docs/transcriptor.md](docs/transcriptor.md) |
 | 11 | Compara varias grabaciones del mismo espectáculo | `transcripcion/tomas.csv`, `herramientas/tomas.js` → [docs/tomas.md](docs/tomas.md) |
 | 12 | Compara las dos versiones del compositor contra el corpus | `herramientas/ab_compositor.mjs`, `repeticion.mjs`, `bloques_forma.mjs` → [docs/compositor_2.md](docs/compositor_2.md) |
+| 13 | ¿Se entiende lo que canta? Un cantor solo canta frases conocidas y Whisper las transcribe | `herramientas/solista.mjs`, `herramientas/solista_jurado.py` → [docs/solista.md](docs/solista.md) |
 
 El análisis completo, con todos los números, está en [docs/analisis_de_los_midis.md](docs/analisis_de_los_midis.md). Cuánto se puede confiar en las transcripciones, en [docs/transcriptor.md](docs/transcriptor.md). Qué cambió en el compositor 2 y por qué, en [docs/compositor_2.md](docs/compositor_2.md); la página deja elegir también la versión 1, la del 7 de noviembre. Las fuentes sobre el coro, en [INVESTIGACION.md](INVESTIGACION.md).
 
