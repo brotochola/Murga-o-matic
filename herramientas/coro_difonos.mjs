@@ -8,7 +8,7 @@ import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { crearMbrola } from '../motor/cantor/mbrola.js';
-import { cantarDifonos, cantorDifonos, remuestrear, vozDelCantor } from '../motor/cantor/difonos.js';
+import { cantarDifonos, cantorDifonos, remuestrear, vozDelCantor, DIFERENCIA } from '../motor/cantor/difonos.js';
 import { cantar } from '../motor/cantor/cantor.js';
 import { CORO, volumenDe } from '../motor/cantor/coro.js';
 import { VARIACION } from '../motor/cantor/variacion.js';
@@ -18,8 +18,12 @@ const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TRABAJO = resolve(process.env.MURGA_TRABAJO || join(RAIZ, 'murga_trabajo'));
 const args = process.argv.slice(2), arg = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : d; };
 const MOTOR = arg('motor', 'difonos'), VOZ = arg('voz', 'coro'), SR = 32000;
+// --dif reparto=.5,timbre=3: otra diferencia entre cantores (DIFERENCIA de difonos.js), para probar
+const DIF = arg('dif') ? { ...DIFERENCIA, ...Object.fromEntries(arg('dif').split(',').map(e => e.split('=')).map(([k, v]) => [k, +v])) } : DIFERENCIA;
+const SEMILLA = +arg('semilla', 7);   // otra semilla: otros cantores (para no sacar conclusiones de un solo coro)
+const VOCES_PRUEBA = arg('voces') ? arg('voces').split(',') : null;   // --voces es2,es1: otra rueda de voces, para probar
 const EXTRA = Object.fromEntries((arg('opc', '') || '').split(',').filter(Boolean).map(e => e.split('=')).map(([k, v]) => [k, +v]));
-const SAL = join(TRABAJO, 'solista', 'coro_' + MOTOR + (MOTOR === 'difonos' && VOZ !== 'coro' ? '_' + VOZ : '') + (arg('opc') ? '_' + arg('opc').replace(/[=,]/g, '') : '')); mkdirSync(SAL, { recursive: true });
+const SAL = join(TRABAJO, 'solista', 'coro_' + MOTOR + (MOTOR === 'difonos' && VOZ !== 'coro' ? '_' + VOZ : '') + (VOCES_PRUEBA ? '_' + VOCES_PRUEBA.join('') : '') + (arg('dif') ? '_' + arg('dif').replace(/[=,]/g, '') : '') + (SEMILLA !== 7 ? '_s' + SEMILLA : '') + (arg('opc') ? '_' + arg('opc').replace(/[=,]/g, '') : '')); mkdirSync(SAL, { recursive: true });
 // cada cuerda: cuánto se corre la melodía (grados de la escala y semitonos)
 const LINEAS = { bajos: { grados: 0, sube: -12 }, segundos: { grados: -2, sube: 0 }, primos: { grados: 0, sube: 0 }, sobreprimos: { grados: 2, sube: 0 } };
 
@@ -32,7 +36,7 @@ const wav = (ruta, x) => {
 };
 // --voz coro (como la página: es2 y es1 alternadas en cada cuerda) o una sola voz para todos
 const mbs = {};
-if (MOTOR === 'difonos') for (const v of VOZ === 'coro' ? ['es2', 'es1'] : [VOZ]) mbs[v] = await crearMbrola(readFileSync(join(RAIZ, 'motor/vendor/mbrola/mbrola.wasm')), readFileSync(join(RAIZ, 'motor/vendor/mbrola', v)));
+if (MOTOR === 'difonos') for (const v of VOZ === 'coro' ? ['es2', 'es1', 'es4'] : [VOZ]) mbs[v] = await crearMbrola(readFileSync(join(RAIZ, 'motor/vendor/mbrola/mbrola.wasm')), readFileSync(join(RAIZ, 'motor/vendor/mbrola', v)));
 
 const lista = [];
 for (const [k, texto] of FRASES.entries()) {
@@ -41,13 +45,13 @@ for (const [k, texto] of FRASES.entries()) {
   for (const [cuerda, L] of Object.entries(LINEAS)) {
     const cfg = CORO[cuerda];
     for (let c = 0; c < cfg.cantores; c++) {
-      const sem = 7 * 101 + (n++) * 7, lider = c === 0 && cfg.cantores > 1;
+      const sem = SEMILLA * 101 + (n++) * 7, lider = c === 0 && cfg.cantores > 1;
       const g = cfg.ganancia / Math.sqrt(cfg.cantores) * (lider ? Math.pow(10, VARIACION.liderDb / 20) : 1) * volumenDe(sem);
       const ret = lider ? -VARIACION.liderAdelanto : 0;
       const notas = melodia(texto, L).map(x => ({ t0: x.t0, t1: x.t1, midi: x.midi, vel: x.vel, sil: x.sil }));
       if (MOTOR === 'difonos') {
-        const voz = VOZ === 'coro' ? vozDelCantor(c) : VOZ;
-        const o = { ...cantorDifonos(cuerda, sem), voz, ...EXTRA };
+        const voz = VOCES_PRUEBA ? VOCES_PRUEBA[c % VOCES_PRUEBA.length] : VOZ === 'coro' ? vozDelCantor(c) : VOZ;
+        const o = { ...cantorDifonos(cuerda, sem, { c, D: DIF }), voz, ...EXTRA };
         const r = cantarDifonos(mbs[voz], notas, { ...o, retraso: o.retraso + ret });
         const y = remuestrear(r.x, r.sr, SR), desde = Math.round(r.inicio * SR), z = new Float32Array(Math.max(0, desde) + y.length);
         z.set(desde >= 0 ? y : y.subarray(-desde), Math.max(0, desde)); sumar(z, g);

@@ -23,7 +23,8 @@ static int drenar(void) {
   }
 }
 
-int mb_init(char *db) { return init_MBR(db); }
+/* con un difono que la voz no tiene, sigue (como mbrola -e) en lugar de cortar todo el guion */
+int mb_init(char *db) { int r = init_MBR(db); if (r >= 0) setNoError_MBR(1); return r; }
 int mb_freq(void) { return getFreq_MBR(); }
 void *mb_alloc(int n) { return malloc(n); }
 void mb_free(void *p) { free(p); }

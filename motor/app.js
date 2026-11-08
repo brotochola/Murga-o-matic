@@ -204,7 +204,7 @@ async function cantarDifonosCoro(pieza,P,gen,solo){
   if(solo)lista=[lista.find(x=>x.cuerda==="primos")||lista[0]];
   const res=new Array(lista.length);let hechos=0,i=0;
   avance(0,`Cantando: 0 de ${lista.length} cantores…`);
-  const tarea=async w=>{while(i<lista.length&&gen===S.gen){const j=i++,c=lista[j],o=cantorDifonos(c.cuerda,c.semilla);
+  const tarea=async w=>{while(i<lista.length&&gen===S.gen){const j=i++,c=lista[j],o=cantorDifonos(c.cuerda,c.semilla,{c:solo?0:c.c||0});
     const msg={motor:"difonos",notas:c.notas,opc:{...o,voz:solo?"es2":vozDelCantor(c.c||0),retraso:o.retraso+(c.retraso||0)}};let r=null;
     if(w){try{r=await enObrero(w,msg)}catch(e){console.warn("canta la página:",e.message);w=null}}
     if(!r)r=await difonosEnHilo(msg.notas,msg.opc);
@@ -484,7 +484,7 @@ $("tema").addEventListener("keydown",e=>{if(e.key==="Enter")otraLetra()});
 
 // ============================================================ controles
 const HINT_VOCES={muestras:"Muestras «aah» de coro: suena a coro, sin palabras.",sintetizadas:"Trece cantores de formantes (voz armada desde cero) cantan una letra escrita para esta melodía. Tarda unos segundos más.",
-  difonos:"Trece cantores armados con pedacitos de voz grabada (difonos de MBROLA, dos voces), con acento rioplatense: se entiende mucho más la letra. La primera vez baja las voces (8 MB).",
+  difonos:"Trece cantores armados con pedacitos de voz grabada (difonos de MBROLA, tres voces), con acento rioplatense: se entiende mucho más la letra. La primera vez baja las voces (12 MB).",
   solista:"Un solo cantor de difonos canta la melodía con la letra, sobre la batería: para escuchar bien cómo canta."};
 function mostrarVoces(){const b=difonos()?"difonos":S.voces;$("voces").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===b));$("vocesHint").textContent=HINT_VOCES[S.voces];$("campoBrillo").hidden=sint();$("campoSolista").hidden=!difonos();$("soloSolista").checked=S.voces==="solista"}
 const elegirVoces=v=>{if(S.voces===v)return;S.voces=v;try{localStorage.setItem("murga.voces",S.voces)}catch(e){}mostrarVoces();generar()};

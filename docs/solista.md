@@ -100,9 +100,28 @@ Todos los cantores salían de la misma voz grabada. Para medir cuánto se parece
 | Uno de cada dos con la voz es1 | 0,55 |
 | es1, garganta y color juntos | 0,47 |
 
-Otra voz es lo que más diferencia, porque es otro hombre. Quedó así: en cada cuerda, uno de cada dos canta con es1 (el que lleva la cuerda y el solista, con es2), con garganta ±5 % y un color propio de ±3 dB, unas ondas suaves en el espectro entre 400 Hz y 5 kHz. es1 tiene su propia curva de timbre (`CURVA_DIFONOS_ES1`): cruda es mucho más brillante que es2 (6,7 dB de error medio contra 11,5).
+Otra voz es lo que más diferencia, porque es otro hombre.
 
-Con el coro de 12 voces, Whisper erra el 12,8 % de las letras, contra el 15,0 % con todos es2. No se entiende peor.
+**Los primos todavía sonaban demasiado iguales** (lo oíste vos). Ahora, en cada cuerda:
+
+- **Voces:** el que la lleva canta con es2, el segundo con es1, el tercero con es4 (Valladolid) y el cuarto primo otra vez con es1.
+- **Gargantas repartidas:** el que lleva la cuerda en el medio, y los demás 7 % más grande, 6 % más chica, 11 % más grande y 10 % más chica, ±2 % al azar.
+- **Color y brillo:** cada uno con su color propio de ±5 dB, y con más o menos brillo, ±2 dB por octava arriba de 1 kHz.
+- **Curvas:** es1 y es4 tienen su propia curva de timbre (`CURVA_DIFONOS_ES1`, `CURVA_DIFONOS_ES4`).
+
+| Cuatro primos al unísono | Correlación media entre cantores |
+|---|---|
+| es2 y es1, garganta ±5 % y color ±3 dB (lo de antes) | 0,58 |
+| es2 y es1, gargantas repartidas, color ±5 dB y brillo | 0,53 |
+| es2, es1 y es4, gargantas repartidas, color y brillo (como quedó) | 0,29 |
+
+Con el coro de 12 voces se entiende un poco menos. Como el azar de cada cantor mueve el resultado ±2 puntos, se midió con tres coros distintos (semillas 7, 11 y 23):
+
+| Coro | Letras mal (media de tres coros) |
+|---|---|
+| es2 y es1, lo de antes | 14,8 % |
+| es2, es1 y es4, como quedó | 16,5 % |
+| es2, es1 y es4, con la mitad de reparto de gargantas | 16,2 % |
 
 ## Acentos
 

@@ -8,3 +8,7 @@ export const CURVA_DIFONOS = [[100, 12.1], [126, 12.1], [159, -0.3], [200, -7.1]
 // Curva del coro de difonos, voz es1: herramientas/curva_difonos.py --voz es1, las mismas notas que CURVA cantadas
 // por el coro de formantes (con su curva, que tiene el timbre del coro real) y por el de difonos.
 export const CURVA_DIFONOS_ES1 = [[100, 12.2], [126, 7.2], [159, -0.9], [200, -4.5], [252, -3.0], [317, -1.3], [400, -1.1], [504, -0.0], [635, 2.1], [800, 0.4], [1008, -8.8], [1270, 1.6], [1600, -9.5], [2016, -4.7], [2540, 5.6], [3200, 3.2], [4032, 3.8], [5080, 15.9], [6400, 24.2], [8063, 24.2]];
+
+// Curva del coro de difonos, voz es4: herramientas/curva_difonos.py --voz es4, las mismas notas que CURVA cantadas
+// por el coro de formantes (con su curva, que tiene el timbre del coro real) y por el de difonos.
+export const CURVA_DIFONOS_ES4 = [[100, 12.2], [126, 12.2], [159, 13.1], [200, 3.7], [252, 2.2], [317, 1.3], [400, -0.2], [504, -4.3], [635, 0.9], [800, 2.3], [1008, -4.3], [1270, 3.9], [1600, -12.2], [2016, -4.5], [2540, -3.8], [3200, -16.1], [4032, -14.5], [5080, -3.2], [6400, -2.0], [8063, 21.3]];

@@ -34,7 +34,8 @@ export function guion(notas, opc = {}) {
   // ll e y: la "sh" rioplatense ("shegó", "cashe"). Estas voces no la tienen: se canta la ll castellana (jj, que ya
   // va hacia el paladar como la sh) y terminar() le suma el soplo de la sh y le deja poca voz
   const SH = p => o.sheismo > 0 && (p === 'Z' || p === 'S');
-  const sym = p => { const s = SAMPA[p] || 'a'; return s === 'u' && p === 'w' && o.w ? 'w' : s; };
+  const conW = o.w && o.voz !== 'es4';      // es4 no tiene la w: va como u
+  const sym = p => { const s = SAMPA[p] || 'a'; return s === 'u' && p === 'w' && conW ? 'w' : s; };
   // las eses de las voces castellanas son largas y silban (pico en 5 kHz): cantadas, la mitad
   const dur = s => (s === 's' ? DURACION.s - .035 * o.eses : DURACION[s] || .05) * o.consonantes;
   const consonante = p => p && !VOCAL(p) && p !== 'j' && p !== 'w';
@@ -46,6 +47,7 @@ export function guion(notas, opc = {}) {
     const libre = prev && n.t0 - prev.t1 < .02 ? (prev.t1 - prev.t0) * .45 : .25;
     return Math.min(d, libre);
   });
+  const sueltaPrev = i => notas[i].t0 - notas[i - 1].t1 >= .02;
   // 2. los segmentos, en tiempo absoluto
   const segs = [];
   const poner = (p, t0, t1, nota, tipo) => { if (t1 - t0 > .004) segs.push({ p, t0, t1, nota, tipo }); };
@@ -55,7 +57,8 @@ export function guion(notas, opc = {}) {
     const ligada = sig && sig.t0 - n.t1 < .02;
     const b = ligada ? sig.t0 - tA[i + 1] : n.t1;
     // ataque
-    const ata = n.sil.ataque.map(sym), dAta = ata.map((p, k) => SH(n.sil.ataque[k]) ? DURACION.jj * o.consonantes : dur(p)), sA = dAta.reduce((x, y) => x + y, 0) || 1;
+    // después de un silencio la r es siempre fuerte (y es4 no tiene el difono de silencio a r suave)
+    const ata = n.sil.ataque.map((p, k) => k === 0 && p === 'r' && (i === 0 || sueltaPrev(i)) ? 'rr' : sym(p)), dAta = ata.map((p, k) => SH(n.sil.ataque[k]) ? DURACION.jj * o.consonantes : dur(p)), sA = dAta.reduce((x, y) => x + y, 0) || 1;
     let t = a;
     ata.forEach((p, k) => { const d = dAta[k] * tA[i] / sA; poner(p, t, t + d, i, SH(n.sil.ataque[k]) ? 'sh' : 'ataque'); t += d; });
     t = n.t0;
@@ -155,11 +158,16 @@ export function terminar(x, sr, g, opc = {}) {
   const curvaDeLaVoz = TIMBRES['CURVA_DIFONOS' + (opc.voz && opc.voz !== 'es2' ? '_' + opc.voz.toUpperCase() : '')] || TIMBRES.CURVA_DIFONOS || null;
   const o = { aire: 0, emision: 0, semilla: 1, curva: curvaDeLaVoz, brillo: 1, eses: 1, ...opc };
   if (o.curva && o.brillo !== 1) o.curva = o.curva.map(([f, db]) => [f, db * o.brillo]);
-  if (o.color > 0) {
-    // el color propio de este cantor: unas ondas suaves en dB sobre la escala de frecuencias (de 400 Hz a 5 kHz)
+  if (o.color > 0 || o.inclinacion) {
+    // el color propio de este cantor: unas ondas suaves en dB sobre la escala de frecuencias (de 400 Hz a 5 kHz), y su
+    // brillo (inclinación, dB por octava arriba de 1 kHz)
     const rc = new Rnd((o.semilla || 1) * 61 + 9), ondas = [0, 1, 2].map(() => [rc.u(1.5, 4), rc.u(0, 6.28)]);
     const base = o.curva || [[100, 0], [10000, 0]], fs = base.map(p => p[0]);
-    o.curva = fs.map((f, i) => { const x = Math.log2(f / 400); let d = 0; for (const [k, ph] of ondas) d += Math.sin(k * x + ph); const w = f < 300 ? 0 : f > 6000 ? .5 : 1; return [f, base[i][1] + o.color * w * d / 1.7]; });
+    o.curva = fs.map((f, i) => {
+      const x = Math.log2(f / 400); let d = 0; for (const [k, ph] of ondas) d += Math.sin(k * x + ph);
+      const w = f < 300 ? 0 : f > 6000 ? .5 : 1;
+      return [f, base[i][1] + (o.color || 0) * w * d / 1.7 + (o.inclinacion || 0) * Math.max(0, Math.log2(f / 1000))];
+    });
   }
   const pre = new Float32Array(x.length);
   for (let k = 0; k < x.length; k++) pre[k] = x[k] * g.ganancia(g.inicio + k / sr);
@@ -260,17 +268,20 @@ export function remuestrear(x, srIn, srOut) {
 // las consonantes. Devuelve las opciones para cantarDifonos.
 // (La tercia canta muy agudo: con el tracto del primo suena menos finita.)
 export const CUERDAS_DIFONOS = { bajos: { tracto: .9 }, segundos: { tracto: .95 }, primos: { tracto: 1 }, sobreprimos: { tracto: 1.03 }, tercia: { tracto: 1 } };
-// Todos salen de la misma voz grabada: para que el unísono suene a coro y no a una voz con eco, cada uno tiene más
-// diferencia de garganta que en el coro de formantes (garganta) y su propio color (timbre: dB de más o de menos en
-// unas pocas zonas del espectro, siempre los mismos para la misma semilla).
-export const DIFERENCIA = { garganta: .05, timbre: 3 };
-// Y no todos con la misma voz: uno de cada dos de cada cuerda canta con es1 (otro hombre, grabado a 16 kHz), que es lo
-// que más los diferencia. El que lleva la cuerda y el solista, con es2.
-export const vozDelCantor = c => c % 2 ? 'es1' : 'es2';
-export function cantorDifonos(cuerda, semilla, V = VARIACION, D = DIFERENCIA) {
+// Todos salen de dos voces grabadas: para que no suenen iguales, cada cantor de una cuerda tiene otra garganta (el que
+// la lleva en el medio, los demás más grandes o más chicos: TRACTO), su propio color (timbre: dB de más o de menos en
+// unas pocas zonas del espectro) y más o menos brillo (inclinación: dB por octava arriba de 1 kHz). Siempre lo mismo
+// para la misma semilla.
+export const DIFERENCIA = { garganta: .02, timbre: 5, inclinacion: 2, reparto: 1 };
+export const TRACTO = [0, .07, -.06, .11, -.1];
+// Y no todos con la misma voz: en cada cuerda, el que la lleva canta con es2 (y el solista), el segundo con es1 y el
+// tercero con es4 (otros dos hombres, grabados a 16 kHz); el cuarto primo, otra vez con es1.
+export const VOCES = ['es2', 'es1', 'es4', 'es1', 'es2'];
+export const vozDelCantor = c => VOCES[c % VOCES.length];
+export function cantorDifonos(cuerda, semilla, { c = 0, V = VARIACION, D = DIFERENCIA } = {}) {
   const r = new Rnd(semilla * 17 + 3), T = CUERDAS_DIFONOS[cuerda] || CUERDAS_DIFONOS.primos;
   return {
-    semilla, tracto: T.tracto * r.u(1 - D.garganta, 1 + D.garganta), color: D.timbre,
+    semilla, tracto: T.tracto * (1 + (D.reparto ?? 1) * TRACTO[c % TRACTO.length]) * r.u(1 - D.garganta, 1 + D.garganta), color: D.timbre, inclinacion: r.u(-D.inclinacion, D.inclinacion),
     transporte: r.u(-V.desafinacion, V.desafinacion),
     vibrato: r.u(V.vibrato[0], V.vibrato[1]), vibVel: r.u(V.vibratoVel[0], V.vibratoVel[1]), vibEntra: r.u(V.vibratoEntra[0], V.vibratoEntra[1]),
     pique: .45 * r.u(1 - V.pique, 1 + V.pique), consonantes: 1.1 * r.u(1 - V.diccion * .5, 1 + V.diccion * .5),
