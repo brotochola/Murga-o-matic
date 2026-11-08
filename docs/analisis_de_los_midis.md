@@ -464,24 +464,24 @@ Mide 40 rasgos y puntúa de 0 a 10 según cuánto cae cada uno dentro de lo norm
 |  | Total | Ritmo | Melodía | Armonía | Voces |
 |---|---|---|---|---|---|
 | tramos reales | 9,0 | 9,1 | 8,8 | 8,8 | 9,1 |
-| presentación · todas juntas | 9,4 | 9,8 | 9,3 | 8,6 | 9,8 |
-| presentación · La Trasnochada | 9,2 | 9,9 | 8,8 | 8,8 | 9,4 |
-| presentación · Agarrate Catalina | 8,8 | 8,6 | 8,5 | 8,6 | 9,4 |
-| presentación · La Gran Muñeca | 9,3 | 9,2 | 9,4 | 8,9 | 9,6 |
-| presentación · Metele que son Pasteles | 8,6 | 8,7 | 7,7 | 8,9 | 9,1 |
-| presentación · Doña Bastarda | 9,1 | 9,7 | 9,2 | 9,2 | 8,2 |
-| presentación · Asaltantes con Patente | 8,8 | 9,7 | 9,1 | 7,9 | 8,4 |
-| presentación · La Nueva Milonga | 8,8 | 9,4 | 7,9 | 8,6 | 9,2 |
-| presentación · Cayó la Cabra | 9,2 | 9,3 | 9,4 | 9,2 | 9,0 |
-| retirada · todas juntas | 9,4 | 9,8 | 9,0 | 8,9 | 9,8 |
-| retirada · La Trasnochada | 9,3 | 9,9 | 8,7 | 9,5 | 9,3 |
-| retirada · Agarrate Catalina | 8,6 | 8,6 | 7,4 | 8,6 | 9,6 |
-| retirada · La Gran Muñeca | 9,3 | 9,5 | 9,2 | 8,6 | 9,7 |
-| retirada · Metele que son Pasteles | 9,0 | 8,9 | 7,8 | 9,7 | 9,6 |
-| retirada · Doña Bastarda | 9,3 | 9,9 | 9,6 | 9,0 | 8,7 |
-| retirada · Asaltantes con Patente | 9,2 | 9,6 | 9,2 | 9,0 | 9,1 |
-| retirada · La Nueva Milonga | 9,0 | 9,7 | 7,6 | 9,2 | 9,3 |
-| retirada · Cayó la Cabra | 9,2 | 9,2 | 9,4 | 9,4 | 8,8 |
+| presentación · todas juntas | 9,4 | 9,7 | 9,5 | 8,5 | 9,8 |
+| presentación · La Trasnochada | 9,3 | 9,9 | 9,2 | 8,5 | 9,6 |
+| presentación · Agarrate Catalina | 8,7 | 8,5 | 8,1 | 8,4 | 9,7 |
+| presentación · La Gran Muñeca | 9,2 | 9,3 | 9,3 | 8,5 | 9,5 |
+| presentación · Metele que son Pasteles | 8,7 | 8,8 | 8,2 | 8,8 | 9,1 |
+| presentación · Doña Bastarda | 9,0 | 9,8 | 9,4 | 8,7 | 8,2 |
+| presentación · Asaltantes con Patente | 8,8 | 9,6 | 8,8 | 7,9 | 8,7 |
+| presentación · La Nueva Milonga | 9,0 | 9,3 | 8,6 | 8,9 | 9,3 |
+| presentación · Cayó la Cabra | 9,0 | 8,8 | 9,6 | 8,6 | 8,9 |
+| retirada · todas juntas | 9,3 | 9,8 | 9,0 | 8,6 | 9,7 |
+| retirada · La Trasnochada | 9,4 | 9,8 | 9,5 | 9,1 | 9,2 |
+| retirada · Agarrate Catalina | 8,6 | 8,7 | 7,2 | 8,7 | 9,7 |
+| retirada · La Gran Muñeca | 9,4 | 9,7 | 9,2 | 8,9 | 9,8 |
+| retirada · Metele que son Pasteles | 9,1 | 8,8 | 8,5 | 9,6 | 9,5 |
+| retirada · Doña Bastarda | 9,5 | 9,9 | 9,7 | 9,4 | 9,1 |
+| retirada · Asaltantes con Patente | 9,1 | 9,8 | 9,3 | 8,2 | 9,2 |
+| retirada · La Nueva Milonga | 9,0 | 9,7 | 8,2 | 8,9 | 9,3 |
+| retirada · Cayó la Cabra | 9,2 | 8,9 | 9,8 | 9,5 | 8,8 |
 | tonto · azar | 4,7 | 5,4 | 1,7 | 5,1 | 6,6 |
 | tonto · monótono | 1,9 | 1,1 | 0,7 | 2,2 | 3,8 |
 
@@ -490,15 +490,15 @@ Las notas más bajas de Catalina no son un defecto: el jurado usa una vara hecha
 
 |  | Contra La Trasnochada | Contra Agarrate Catalina |
 |---|---|---|
-| Motor, estilo Trasnochada | 9,1 | 8,1 |
+| Motor, estilo Trasnochada | 9,1 | 8,4 |
 | Trasnochada real | 8,8 | 7,8 |
-| Motor, estilo Catalina | 7,5 | 9,3 |
+| Motor, estilo Catalina | 7,4 | 9,5 |
 | Catalina real | 7,3 | 8,8 |
 
 
 ### 9.2 Sin haber visto
 
-Se saca un espectáculo entero, se genera con el resto y se mide la distancia a ese espectáculo, en desvíos estándar por rasgo. Mediana del motor: **1,17**. Mediana entre dos espectáculos reales: **1,28**. En 69 % de los casos el motor queda más cerca del espectáculo que la mediana de los otros espectáculos reales. En estos rasgos, una pieza generada no se distingue de otro espectáculo real. El rasgo que más lo separa son los saltos de las líneas interiores, que en lo real casi no existen. Apretar la selección en las costuras entre gestos no los corrigió, así que su origen sigue abierto.
+Se saca un espectáculo entero, se genera con el resto y se mide la distancia a ese espectáculo, en desvíos estándar por rasgo. Mediana del motor: **1,15**. Mediana entre dos espectáculos reales: **1,28**. En 72 % de los casos el motor queda más cerca del espectáculo que la mediana de los otros espectáculos reales. En estos rasgos, una pieza generada no se distingue de otro espectáculo real. El rasgo que más lo separa son los saltos de las líneas interiores, que en lo real casi no existen. Apretar la selección en las costuras entre gestos no los corrigió, así que su origen sigue abierto.
 
 ### 9.3 ¿Copia?
 

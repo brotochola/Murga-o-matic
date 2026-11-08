@@ -242,6 +242,9 @@ function melodia(rng, E, sec, golpes, lo, hi, guia, sigma = 2.2) {
     if (i === n - 1 || g.final) e *= enAc ? 1 + 8 * Math.max(.01, E.nota?.final?.[mod(p - tonica - g.ac.raiz, 12)] || .01) : .03;
     if (g.fin && !g.fin.includes(mod(p - tonica, 12))) e *= .05;
     if (g.evitar === p) e = 0;
+    // y casi nunca copia a una vecina: la variación sólo cae donde las vecinas son otras notas, así que repetirlas
+    // sumaba notas repetidas que el gesto real no tiene (la melodía repetía en el 51 % de los pasos, real 44 %)
+    if (g.evitar !== undefined && guia && ((i > 0 && p === guia(i - 1)) || (i < n - 1 && p === guia(i + 1)))) e *= .1;
     if (i === 0) e *= enAc ? 1.5 : .3;
     const c = guia ? guia(i) : null;
     // la nota que se varía no puede ser la misma, pero queda cerca: como entre dos versos, cambia por una vecina
@@ -432,6 +435,10 @@ function tema(rng, E, T, sec, ev, opc = {}) {
       // un recitado no se toca: repetir la nota es lo que está diciendo
       const recita = G[i - 1].guia === g.guia || G[i + 1].guia === g.guia;
       if (g.d >= 6 || mod(g.q, 8) === 0 || g.final || G[i + 1].q - g.q > 4 || recita) { falta = 1; continue; }
+      // una nota de paso (por grado entre dos vecinas, en la misma dirección) no tiene otra que la reemplace sin saltar
+      // o repetir: se varía la siguiente. Variándolas, la melodía se movía por grado en el 28 % de los pasos (real 37 %)
+      const a = g.guia - G[i - 1].guia, b = G[i + 1].guia - g.guia;
+      if (Math.abs(a) <= 2 && Math.abs(b) <= 2 && Math.sign(a) === Math.sign(b)) { falta = 1; continue; }
       g.evitar = g.guia;
       sin = 0;
       falta = rng.ent(VARIA_CADA - 3, VARIA_CADA);

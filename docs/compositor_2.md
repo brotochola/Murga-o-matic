@@ -1,6 +1,6 @@
 # Compositor 2: qué cambió y por qué
 
-La versión 1 del compositor es la que se aprobó de oído el 7 de noviembre de 2026. La versión 2 corrige ocho cosas en las que lo generado se apartaba de las murgas reales. Cada cambio se midió contra el corpus antes de quedarse. Los que no movían nada fuera del ruido se descartaron.
+La versión 1 del compositor es la que se aprobó de oído el 7 de noviembre de 2026. La versión 2 corrige nueve cosas en las que lo generado se apartaba de las murgas reales. Cada cambio se midió contra el corpus antes de quedarse. Los que no movían nada fuera del ruido se descartaron.
 
 La página deja elegir la versión en **Compositor**. La versión 1 viene con su modelo y sus modos de ese día (`motor/compositor_v1.js`, `motor/modelo_v1.js`, `motor/modos_v1.js`), así suena exactamente igual que antes.
 
@@ -115,12 +115,29 @@ Mismo compositor, modelo de antes contra modelo nuevo, en suma de distancias con
 
 Lo que más se mueve es la síncopa: 12 % → 16 % de golpes en semicorchea impar (real 19 %). Es el cambio 6, que recién ahora llega al modelo. En el jurado sin espiar, lo generado queda a 1,17 de un espectáculo que el modelo no vio. Dos espectáculos reales quedan entre sí a 1,28. El motor queda más cerca que la mediana real en el 69 % de los casos. La copia: en 540 piezas de los 9 estilos, el pasaje más largo igual a uno real tiene 10 notas en la mediana y 16 como máximo.
 
+## 9. La variación no rompe los pasos de la melodía
+
+Con el modelo nuevo, lo más lejos de lo real era la melodía: se movía por grado en el 28 % de los pasos (real 37 %) y repetía nota en el 51 % (real 44 %). No venía de los gestos: las celdas del modelo se mueven por grado en el 34 % y repiten en el 45 %. Si la melodía sigue la celda tal cual, queda igual que las celdas. Lo que la cambiaba era la variación (cambio 4). La nota que se varía no puede quedar igual. Las candidatas cercanas son las vecinas, y con la tabla de pasos aprendida, que favorece repetir, la nota variada copiaba a una vecina. Además, la variación sólo cae donde las vecinas son otras notas (si no, es un recitado y no se toca). Así, cada variación sumaba una nota repetida que el gesto real no tenía.
+
+Ahora la variación saltea las notas de paso (por grado entre dos vecinas, en la misma dirección): no hay otra nota que las reemplace sin saltar o repetir, así que se varía la siguiente. Y la nota variada casi nunca copia a una vecina (peso 0,1). Se probó también prohibirlo del todo: así suben los saltos de tercera y de cuarta, y la suma de distancias empeora.
+
+| Melodía | Real | Celdas | Antes | Ahora |
+|---|---|---|---|---|
+| Se mueve por grado | 37 % | 34 % | 28 % | 32 % |
+| Repite nota | 44 % | 45 % | 51 % | 48 % |
+| Salta una tercera | 11 % | 11 % | 11 % | 12 % |
+| Salta una cuarta o más | 9 % | 9 % | 9 % | 9 % |
+
+Suma de distancias con dos juegos de semillas, mejora en los cuatro estilos medidos: todas 19,1 → 17,1 y 18,1 → 15,9; Catalina 19,8 → 18,1 y 19,2 → 18,1; Trasnochada 19,6 → 19,1 y 19,3 → 18,5; Doña Bastarda 26,5 → 25,0 y 23,8 → 22,7. En el jurado sin espiar, lo generado queda a 1,15 de un espectáculo que el modelo no vio (real contra real 1,28) y más cerca que la mediana real en el 72 % de los casos. La copia no cambia: 10 notas en la mediana y 16 como máximo.
+
 ## Lo que se probó y no quedó
 
 - **Suavizar los saltos de las voces de abajo en las costuras**, por octava o por la nota del acorde más cercana. Baja los saltos de cuarta, pero sube los de tercera y saca terceras entre voces. En el jurado, sin espiar, no cambió nada (1,32 contra 1,33).
 - **Cambiar el peso de la costura, el de la continuidad de la melodía y el del registro.** Con dos juegos de semillas, la mejor combinación ganó un 3 %, del mismo tamaño que el ruido.
+- **Atar más la melodía a la celda** (una campana más angosta alrededor de la nota de la celda, o más premio por quedarse en ella), **levantar el piso de la tabla de pasos** o **aplanarla**. Las dos primeras no movieron nada; aplanar la tabla baja las repeticiones pero dispara los saltos.
 
 ## Lo que sigue abierto
 
-- El ámbito de las líneas por compás sigue alto (2,05 semitonos contra 1,68), y la síncopa un poco baja (0,14 contra 0,19).
+- La melodía todavía se mueve por grado menos que en las murgas (32 % contra 37 %), y el banco dice que el transcriptor ya baja ese número en las reales: la diferencia de verdad es un poco más grande.
+- El ámbito de las líneas por compás sigue alto (1,81 semitonos contra 1,59), y la síncopa un poco baja (0,16 contra 0,19).
 - Las partes de la retirada siguen siendo más cortas que las reales: el cuerpo de la retirada, sin la canción final, dura 5,2 minutos contra 7,8.
