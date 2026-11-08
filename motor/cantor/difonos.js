@@ -28,9 +28,12 @@ class Rnd { constructor(s) { this.a = (s * 2654435761 + 7) >>> 0; } r() { let t 
 export function guion(notas, opc = {}) {
   const o = {
     vibrato: .14, vibVel: 5.5, vibEntra: .22, deriva: .05, temblor: 0, pique: .45, caida: .8, consonantes: 1, semilla: 1,
-    w: true, transporte: 0, eses: 1, acento: 1, ...opc,
+    w: true, transporte: 0, eses: 1, acento: 1, sheismo: 1, ...opc,
   };
   const rng = new Rnd(o.semilla);
+  // ll e y: la "sh" rioplatense ("shegó", "cashe"). Estas voces no la tienen: se canta la ll castellana (jj, que ya
+  // va hacia el paladar como la sh) y terminar() le suma el soplo de la sh y le deja poca voz
+  const SH = p => o.sheismo > 0 && (p === 'Z' || p === 'S');
   const sym = p => { const s = SAMPA[p] || 'a'; return s === 'u' && p === 'w' && o.w ? 'w' : s; };
   // las eses de las voces castellanas son largas y silban (pico en 5 kHz): cantadas, la mitad
   const dur = s => (s === 's' ? DURACION.s - .035 * o.eses : DURACION[s] || .05) * o.consonantes;
@@ -38,7 +41,7 @@ export function guion(notas, opc = {}) {
   const N = notas.length;
   // 1. cuánto se adelanta el ataque de cada nota (se lo roba a la nota anterior, como mucho la mitad)
   const tA = notas.map((n, i) => {
-    const d = n.sil.ataque.reduce((a, p) => a + dur(sym(p)), 0);
+    const d = n.sil.ataque.reduce((a, p) => a + (SH(p) ? DURACION.jj * o.consonantes : dur(sym(p))), 0);
     const prev = notas[i - 1];
     const libre = prev && n.t0 - prev.t1 < .02 ? (prev.t1 - prev.t0) * .45 : .25;
     return Math.min(d, libre);
@@ -52,9 +55,9 @@ export function guion(notas, opc = {}) {
     const ligada = sig && sig.t0 - n.t1 < .02;
     const b = ligada ? sig.t0 - tA[i + 1] : n.t1;
     // ataque
-    const ata = n.sil.ataque.map(sym), dAta = ata.map(dur), sA = dAta.reduce((x, y) => x + y, 0) || 1;
+    const ata = n.sil.ataque.map(sym), dAta = ata.map((p, k) => SH(n.sil.ataque[k]) ? DURACION.jj * o.consonantes : dur(p)), sA = dAta.reduce((x, y) => x + y, 0) || 1;
     let t = a;
-    ata.forEach((p, k) => { const d = dAta[k] * tA[i] / sA; poner(p, t, t + d, i, 'ataque'); t += d; });
+    ata.forEach((p, k) => { const d = dAta[k] * tA[i] / sA; poner(p, t, t + d, i, SH(n.sil.ataque[k]) ? 'sh' : 'ataque'); t += d; });
     t = n.t0;
     // coda al final, núcleo en el medio
     // Acento rioplatense, exagerado como en la murga. La s del final de la palabra:
@@ -144,13 +147,10 @@ export function guion(notas, opc = {}) {
 // emisión murguera (más presencia en 2-4 kHz, menos barro en los graves, un poco de saturación). x: Float32Array a sr;
 // g: el guion.
 export function terminar(x, sr, g, opc = {}) {
-  const o = { aire: 0, emision: 0, semilla: 1, curva: TIMBRES.CURVA_DIFONOS || null, brillo: 1, ...opc };
+  const o = { aire: 0, emision: 0, semilla: 1, curva: TIMBRES.CURVA_DIFONOS || null, brillo: 1, eses: 1, ...opc };
   if (o.curva && o.brillo !== 1) o.curva = o.curva.map(([f, db]) => [f, db * o.brillo]);
   const pre = new Float32Array(x.length);
   for (let k = 0; k < x.length; k++) pre[k] = x[k] * g.ganancia(g.inicio + k / sr);
-  // el timbre del coro real (curva medida en herramientas/curva_difonos.py): las vocales mucho más brillantes. Las eses
-  // no pasan por la curva: se toman de antes y se filtran aparte, abajo.
-  const y = o.curva ? ecualizar(pre, sr, o.curva) : Float32Array.from(pre);
   const bq = (tipo, f, q, db) => {
     const A = Math.pow(10, db / 40), w = 2 * Math.PI * f / sr, c = Math.cos(w), al = Math.sin(w) / (2 * q);
     let b0, b1, b2, a0, a1, a2;
@@ -161,27 +161,44 @@ export function terminar(x, sr, g, opc = {}) {
     return { b0: b0 / a0, b1: b1 / a0, b2: b2 / a0, a1: a1 / a0, a2: a2 / a0 };
   };
   const filtrar = (z, f) => { let x1 = 0, x2 = 0, y1 = 0, y2 = 0; for (let k = 0; k < z.length; k++) { const v = f.b0 * z[k] + f.b1 * x1 + f.b2 * x2 - f.a1 * y1 - f.a2 * y2; x2 = x1; x1 = z[k]; y2 = y1; y1 = v; z[k] = v; } };
-  const eses = opc.eses ?? 1;
-  if (eses > 0) {
-    // Las eses: más bajas y filtradas, sin el silbido de arriba de 4 kHz. Las aspiradas, más todavía: un soplo.
-    // Se hace sólo sobre cada s, con rampas de 6 ms.
-    const r = Math.round(.006 * sr), previo = Math.round(.02 * sr);
-    for (const s of g.segs) {
-      if (s.p !== 's') continue;
-      const asp = s.tipo === 'aspirada';
-      const a = Math.round((s.t0 - g.inicio) * sr), b = Math.round((s.t1 - g.inicio) * sr);
-      const desde = Math.max(0, a - r - previo), hasta = Math.min(y.length, b + r);
-      if (hasta - desde < 8) continue;
-      const z = pre.slice(desde, hasta);
+  // Las eses (y la sh) se sacan de la voz antes de la curva y se ponen después, filtradas aparte: la curva sube 20 dB
+  // los agudos, y además repartiría su ruido 40 ms antes y después de cada s.
+  const eses = o.eses, r = Math.round(.006 * sr), previo = Math.round(.02 * sr), n = pre.length;
+  const lasEses = eses > 0 ? g.segs.filter(s => s.p === 's' || s.tipo === 'sh').map(s => ({ s, a: Math.round((s.t0 - g.inicio) * sr), b: Math.round((s.t1 - g.inicio) * sr) })) : [];
+  const rampa = (k, a, b) => Math.min(1, (k - (a - r)) / r, (b + r - k) / r);
+  let voz = pre;
+  if (o.curva && lasEses.length) {
+    voz = Float32Array.from(pre);
+    for (const { a, b } of lasEses) for (let k = Math.max(0, a - r); k < Math.min(n, b + r); k++) { const m = rampa(k, a, b); if (m > 0) voz[k] *= 1 - m; }
+  }
+  // el timbre del coro real (curva medida en herramientas/curva_difonos.py): las vocales mucho más brillantes
+  const y = o.curva ? ecualizar(voz, sr, o.curva) : Float32Array.from(pre);
+  // Las eses: más bajas y filtradas, sin el silbido de arriba de 4 kHz. Las aspiradas, más todavía: un soplo. La sh: un
+  // ruido un poco más fuerte que la s, en una banda de 2 a 4 kHz con el pico en 2,5 kHz (sin lo agudo de la s).
+  for (const { s, a, b } of lasEses) {
+    const asp = s.tipo === 'aspirada', sh = s.tipo === 'sh';
+    const desde = Math.max(0, a - r - previo), hasta = Math.min(n, b + r);
+    if (hasta - desde < 8) continue;
+    const z = pre.slice(desde, hasta);
+    let gan;
+    if (sh) {
+      const rng = new Rnd((o.semilla || 1) * 29 + a), w = new Float32Array(z.length);
+      for (let k = 0; k < z.length; k++) w[k] = rng.r() * 2 - 1;
+      filtrar(w, bq('banda', 2500, 1, 0)); filtrar(w, bq('banda', 3000, .8, 0)); filtrar(w, bq('agudos', 4500, .7, -14));
+      let pw = 0, pz = 0; for (let k = 0; k < z.length; k++) { pw += w[k] * w[k]; pz += z[k] * z[k]; }
+      const esc = .35 * Math.sqrt(pz / (pw || 1));
+      const voz = z.slice(); filtrar(voz, bq('agudos', 900, .7, -24));
+      for (let k = 0; k < z.length; k++) z[k] = w[k] * esc + voz[k] * .35;
+      gan = 1;
+    } else {
       filtrar(z, bq('pico', 5000, 1.2, -6 * eses));
       filtrar(z, bq('agudos', asp ? 2500 : 4000, .7, -12 * eses));
       filtrar(z, bq('agudos', asp ? 2500 : 6000, .7, -8 * eses));
-      const gan = Math.pow(10, -(asp ? 6 : 3) * eses / 20);
-      for (let k = Math.max(desde, a - r); k < hasta; k++) {
-        const m = Math.min(1, (k - (a - r)) / r, (b + r - k) / r);
-        if (m <= 0) continue;
-        y[k] = y[k] * (1 - m) + z[k - desde] * gan * m;
-      }
+      gan = Math.pow(10, -(asp ? 6 : 3) * eses / 20);
+    }
+    for (let k = Math.max(desde, a - r); k < hasta; k++) {
+      const m = rampa(k, a, b); if (m <= 0) continue;
+      y[k] = (o.curva ? y[k] : y[k] * (1 - m)) + z[k - desde] * gan * m;
     }
   }
   if (o.aire > 0) {

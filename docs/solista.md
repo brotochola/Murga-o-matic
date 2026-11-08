@@ -49,6 +49,8 @@ Lo que se canta lo decide `motor/cantor/difonos.js`:
   - la de adentro de la palabra se aspira: «fiehta», «dehcalzo». Dura 25 ms, sin agudos, unos 27 dB debajo de la vocal;
   - las demás duran 35 ms, filtradas, sin lo de arriba de 4 kHz, y quedan unos 24 dB debajo de la vocal.
 
+  - la ll y la y suenan "sh", como en el Río de la Plata: «shegué a la cashe cuando la shuvia sha se iba». Estas voces no tienen ese sonido, así que se canta la ll castellana (jj), que ya va hacia el paladar. Después se le deja poca voz, abajo de 900 Hz, y se le suma un soplo entre 2 y 4 kHz, con el pico en 2,5 kHz, unos 10 dB debajo de la vocal. Se probó también armarla desde la s, pero Whisper oía "platizo" y "suvia": las transiciones de la s la delatan. Con la ll castellana entiende «llegó», «platillo», «calle» y «parrilla».
+
   Whisper erra el 10,1 % de las letras, contra el 8,5 % de antes. La diferencia son casi todas eses finales que no escribe («Juntamos la moneda para el colectivo»): es el acento, no que no se entienda.
 
 ## Cada cuerda
@@ -95,7 +97,6 @@ MBROLA es AGPL-3.0. La voz es2 se puede usar sólo con MBROLA y copiar librement
 ## Lo que falta
 
 - **Que no suene a locutor.** Las voces son de habla: las vocales largas se estiran repitiendo el mismo pedazo y pueden sonar quietas.
-- **El acento.** Las voces son españolas, así que no tienen la "sh" rioplatense de «calle» o «llegó» (sale "y").
 - **El coro.** Todos los cantores salen de la misma voz grabada. Con la garganta, la afinación y el vibrato de cada uno se diferencian, pero falta escuchar si el unísono suena a coro o a una voz con eco.
 - **La tercia.** Sonaba demasiado aguda. El compositor la ponía con mediana en Do 5 y hasta Fa 5, que es el registro excepcional. Ahora va de Re 4 a Re 5, con mediana en La 4, como el registro normal de Sin Disfraz (fa4–do5). Sólo cambia la tercia: en 48 piezas de prueba, las demás cuerdas quedan idénticas.
 - **El timbre.** Hay que medirlo contra el coro real, con el banco, para la curva de ecualización.
