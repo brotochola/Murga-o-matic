@@ -1,5 +1,5 @@
 // Recorre la página como un usuario, en Chrome sin ventana, y cuenta los errores: carga, demos, otra semilla,
-// largo, tercia, timbre, estilo, tocar, pausa y exportar. Sale con código 1 si algo falla.
+// largo, tercia, timbre, estilo, las dos versiones del compositor, tocar, pausa y exportar. Sale con código 1 si algo falla.
 //   node herramientas/probar_pagina.mjs [carpeta]      sirve esa carpeta (por defecto, la del repositorio)
 //   node herramientas/probar_pagina.mjs --url URL      prueba una página ya publicada
 // Chrome: la variable CHROME, o el chrome-headless-shell que instala Playwright. El perfil va a la carpeta
@@ -88,6 +88,8 @@ await paso('largo corta', poner('largo', 'corta'));
 await paso('tercia', poner('tercia', '0.5'));
 await paso('timbre', poner('brillo', '0'));
 await paso('estilo', poner('estilo', 'catalina'));
+await paso('versión 1', poner('version', '1'));
+await paso('versión 2', poner('version', '2'));
 await paso('presentación', `document.querySelector('#forma button[data-v=presentacion]').click()`);
 const notas = await leer(`Object.values(window.murga.S.pieza.ev).reduce((a,l)=>a+l.length,0)`);
 console.log('notas en el coro:', notas);
