@@ -174,7 +174,17 @@ Para separar lo que se pierde por cómo pronuncia de lo que se pierde por cantar
 
 ## En la página
 
-En **Voces**, la opción **Difonos** hace cantar a los trece cantores, en obreros; la primera vez baja las dos voces (8 MB). Una presentación de 4 minutos tarda unos 20 s en una compu de dos núcleos. Con **Sólo un solista**, el primero de los primos canta la melodía con la letra, solo, sobre la batería.
+En **Voces**, la opción **Difonos** hace cantar a los trece cantores, en obreros; la primera vez baja las tres voces (12 MB).
+
+Abajo, en **Los cantantes**, cada uno de los trece se puede cambiar a mano:
+
+- **La voz:** es2, es1 o es4.
+- **La forma de cantar:** garganta, afinación, vibrato y su velocidad, brillo, color propio, dicción (cuánto duran las consonantes) y retraso.
+- **En la mezcla:** volumen y paneo.
+- **Solo:** lo hace cantar a él solo, en un par de segundos.
+- **Callar:** lo saca del coro.
+
+Los cambios se guardan en el navegador por lugar en el coro (el segundo primo es siempre el segundo primo) y valen para cualquier pieza. «Volver a como salieron» los borra. Una presentación de 4 minutos tarda unos 20 s en una compu de dos núcleos. Con **Sólo un solista**, el primero de los primos canta la melodía con la letra, solo, sobre la batería.
 
 MBROLA está compilado a WebAssembly (85 KB) con `herramientas/compilar_mbrola.sh` y anda en un obrero. La voz es2 pesa 5,6 MB y se baja la primera vez. Una presentación de 4 minutos se canta en menos de un segundo.
 
