@@ -37,7 +37,7 @@ export function guion(notas, opc = {}) {
   const conW = o.w && o.voz !== 'es4';      // es4 no tiene la w: va como u
   const sym = p => { const s = SAMPA[p] || 'a'; return s === 'u' && p === 'w' && conW ? 'w' : s; };
   // las eses de las voces castellanas son largas y silban (pico en 5 kHz): cantadas, la mitad
-  const dur = s => (s === 's' ? DURACION.s - .035 * o.eses : DURACION[s] || .05) * o.consonantes;
+  const dur = s => (s === 's' ? DURACION.s - .035 * (o.esesCortas ?? o.eses) : DURACION[s] || .05) * o.consonantes;
   const consonante = p => p && !VOCAL(p) && p !== 'j' && p !== 'w';
   const N = notas.length;
   // 1. cuánto se adelanta el ataque de cada nota (se lo roba a la nota anterior, como mucho la mitad)
@@ -204,9 +204,11 @@ export function terminar(x, sr, g, opc = {}) {
   // los agudos, y además repartiría su ruido 40 ms antes y después de cada s.
   const eses = o.eses, r = Math.round(.006 * sr), previo = Math.round(.02 * sr), n = pre.length;
   // Lo mismo con las consonantes sordas de golpe y de soplo (p t k ch f j): la curva de las vocales les subía la ráfaga
-  // y el soplo, y sonaban como ruiditos antes de cada sílaba. Van con un brillo moderado (ruidos: 0 a 1).
+  // y el soplo, y sonaban como chasquidos antes de cada sílaba. Van aparte, más suaves arriba (ruidos: 0 a 1).
   const SORDAS = new Set(['p', 't', 'k', 'tS', 'f', 'x']);
-  const lasEses = g.segs.filter(s => (eses > 0 && (s.p === 's' || s.tipo === 'sh')) || (o.ruidos > 0 && SORDAS.has(s.p))).map(s => ({ s, a: Math.round((s.t0 - g.inicio) * sr), b: Math.round((s.t1 - g.inicio) * sr) }));
+  // (la ráfaga de p t k ch cae justo en el borde con la vocal: se toman también los 12 ms siguientes)
+  const RAFAGA = new Set(['p', 't', 'k', 'tS']);
+  const lasEses = g.segs.filter(s => (eses > 0 && (s.p === 's' || s.tipo === 'sh')) || (o.ruidos > 0 && SORDAS.has(s.p))).map(s => ({ s, a: Math.round((s.t0 - g.inicio) * sr), b: Math.round((s.t1 - g.inicio + (RAFAGA.has(s.p) ? .012 : 0)) * sr) }));
   const rampa = (k, a, b) => Math.min(1, (k - (a - r)) / r, (b + r - k) / r);
   let voz = pre;
   if (o.curva && lasEses.length) {
@@ -224,9 +226,10 @@ export function terminar(x, sr, g, opc = {}) {
     const z = pre.slice(desde, hasta);
     let gan;
     if (SORDAS.has(s.p)) {
-      // las sordas, tal cual salen de la voz, con un poco más de agudos (la curva entera sube 15-20 dB)
-      filtrar(z, bq('agudos', 2500, .7, 4 * o.ruidos));
-      gan = 1;
+      // las sordas, como salen de la voz pero sin el chasquido: la ráfaga de t, k, p y ch y el soplo de f y j tienen
+      // de 8 a 21 dB más agudos que las vocales (en tramos de 3 ms, de 4 a 10 kHz). Más suaves arriba de 3,5 kHz.
+      filtrar(z, bq('agudos', 3500, .7, -10 * o.ruidos));
+      gan = Math.pow(10, -(s.p === 'tS' ? 5 : s.p === 't' ? 4 : 2) * o.ruidos / 20);
     } else if (sh) {
       const rng = new Rnd((o.semilla || 1) * 29 + a), w = new Float32Array(z.length);
       for (let k = 0; k < z.length; k++) w[k] = rng.r() * 2 - 1;
@@ -237,10 +240,11 @@ export function terminar(x, sr, g, opc = {}) {
       for (let k = 0; k < z.length; k++) z[k] = w[k] * esc + voz[k] * .35;
       gan = 1;
     } else {
-      filtrar(z, bq('pico', 5000, 1.2, -6 * eses));
-      filtrar(z, bq('agudos', asp ? 2500 : 4000, .7, -12 * eses));
-      filtrar(z, bq('agudos', asp ? 2500 : 6000, .7, -8 * eses));
-      gan = Math.pow(10, -(asp ? 6 : 3) * eses / 20);
+      const fi = asp ? eses : (o.esesFiltro ?? eses);   // cuánto se filtra (aparte de cuánto se acorta: esesCortas)
+      filtrar(z, bq('pico', 5000, 1.2, -6 * fi));
+      filtrar(z, bq('agudos', asp ? 2500 : 4000, .7, -14 * fi));
+      filtrar(z, bq('agudos', asp ? 2500 : 6000, .7, -10 * fi));
+      gan = Math.pow(10, (-(asp ? 6 : 4) * fi - (asp ? 0 : o.esesDb || 0)) / 20);   // esesDb: más bajas, sin filtrarlas
     }
     for (let k = Math.max(desde, a - r); k < hasta; k++) {
       const m = rampa(k, a, b); if (m <= 0) continue;

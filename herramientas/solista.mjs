@@ -6,6 +6,7 @@
 //   node herramientas/solista.mjs [--motor formantes|difonos:es2[:opción=valor...]|mbrola:es2] [--tempo 100] [--midi 0]
 //     difonos:es2:consonantes=1.1:vibrato=.2   el cantor de la página (motor/cantor/difonos.js) con esas opciones
 //     mbrola:es2                               el primer guion, más simple, con el programa mbrola instalado
+//     --habla                                  dicha en lugar de cantada (prosodia de habla, sin vibrato)
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -15,8 +16,8 @@ import { silabasCantadas, partes } from '../motor/cantor/letra.js';
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TRABAJO = resolve(process.env.MURGA_TRABAJO || join(RAIZ, 'murga_trabajo'));
 const args = process.argv.slice(2), arg = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : d; };
-const MOTOR = arg('motor', 'formantes'), TEMPO = +arg('tempo', 100), SUBE = +arg('midi', 0);
-const SAL = resolve(arg('salida', join(TRABAJO, 'solista', MOTOR.replace(/[:/]/g, '_').replace(/=/g, ''))));
+const MOTOR = arg('motor', 'formantes'), TEMPO = +arg('tempo', 100), SUBE = +arg('midi', 0), HABLA = args.includes('--habla');
+const SAL = resolve(arg('salida', join(TRABAJO, 'solista', (HABLA ? 'habla_' : '') + MOTOR.replace(/[:/]/g, '_').replace(/=/g, ''))));
 mkdirSync(SAL, { recursive: true });
 
 export const FRASES = [
@@ -69,6 +70,29 @@ export function melodia(texto, { tempo = TEMPO, inicio = .35, sube = SUBE, grado
   });
   return notas;
 }
+
+// Habla: la misma frase dicha, no cantada. Cada sílaba dura lo que dura hablando (las acentuadas más, la última
+// todavía más), la altura baja de a poco a lo largo de la frase (declinación), sube en las acentuadas y cae al final.
+// Sirve para separar lo que se pierde por cómo pronuncia de lo que se pierde por cantar.
+export function habla(texto, { inicio = .35, ritmo = 1 } = {}) {
+  const sils = silabasCantadas(texto, { sinalefa: true });
+  const ultAcento = sils.map(s => s.acento).lastIndexOf(true);
+  const notas = [];
+  let t = inicio;
+  sils.forEach((s, i) => {
+    const p = i / Math.max(1, sils.length - 1), largo = s.fon.length;
+    let d = (.1 + .03 * largo) * (s.acento ? 1.25 : 1) * (i >= ultAcento ? 1.3 : 1) * ritmo;
+    if (i === sils.length - 1) d *= 1.4;
+    let m = 47.5 - 3 * p + (s.acento ? 1.5 : 0);
+    if (i === ultAcento) m += .8;
+    if (i > ultAcento) m -= 2.5 * (i - ultAcento);
+    notas.push({ t0: t, t1: t + d, midi: m, vel: .8, sil: { ...partes(s.fon), fin: s.fin, articulo: s.articulo, acento: s.acento }, texto: s.texto, fon: s.fon });
+    t += d;
+  });
+  return notas;
+}
+// lo que no se usa hablando
+export const HABLADO = { vibrato: 0, temblor: 0, deriva: .03, pique: 0, caida: 0, golpe: 0, arco: 0, consonantes: 1.4, brillo: 0 };
 
 const wav = (ruta, x, sr) => {
   const b = Buffer.alloc(44 + x.length * 2);
@@ -151,7 +175,7 @@ async function cantarFrase(notas) {
     const opc = Object.fromEntries(extra.map(e => e.split('=')).map(([k, v]) => [k, +v]));
     const { cantarDifonos } = await import('../motor/cantor/difonos.js');
     const mb = await vozMbrola(voz);
-    const r = cantarDifonos(mb, notas, { w: voz !== 'es4', semilla: 3, ...opc });
+    const r = cantarDifonos(mb, notas, { w: voz !== 'es4', semilla: 3, voz, ...(HABLA ? HABLADO : {}), ...opc });
     return { x: r.x, sr: r.sr };
   }
   throw new Error('motor desconocido: ' + MOTOR);
@@ -173,7 +197,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
 async function principal() {
 const lista = [];
 for (const [k, texto] of FRASES.entries()) {
-  const notas = melodia(texto);
+  const notas = HABLA ? habla(texto) : melodia(texto);
   const r = await cantarFrase(notas);
   const nombre = String(k + 1).padStart(2, '0') + '.wav';
   if (r.archivo) {

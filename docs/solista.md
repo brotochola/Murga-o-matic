@@ -147,6 +147,31 @@ Se oían ruiditos justo antes de cada consonante. Había tres causas:
 
 En la onda ya no quedan picos raros en ninguna de las tres voces, y el coro se entiende igual (16,9 % de letras mal, media de tres coros).
 
+## Primero hablar, después cantar
+
+Para separar lo que se pierde por cómo pronuncia de lo que se pierde por cantar, el mismo cantor dice las 24 frases (`solista.mjs --habla`). Cada sílaba dura lo que dura hablando y la altura baja de a poco a lo largo de la frase, sube en las acentuadas y cae al final. Después se va de hablar a cantar de a un paso, siempre con la voz es2:
+
+| Paso | Letras mal |
+|---|---|
+| espeak hablando (para comparar) | 12,6 % |
+| **Hablando, castellano neutro** | **2,6 %** |
+| Hablando, una octava más agudo | 4,7 % |
+| Ritmo de canto con la altura del habla | 1,7 % |
+| Melodía entera, articulación de habla | 4,8 % |
+| Con vibrato, golpe de voz y caída, consonantes como habladas | 4,2 % |
+| Cantado, consonantes cortas (×1,1) | 6,4 % |
+| Cantado, con la curva de timbre | 7,4 % |
+| Cantado, eses cortas y filtradas (como estaba) | 12,8 % |
+| Con el acento rioplatense (sin eses finales, aspiradas) | 12,5 % |
+| Con el acento y la curva | 13,5 % |
+| Eses de 50 ms, 8 dB más bajas y sin filtrar, con el acento | 11,5 % |
+| Lo mismo, 6 dB más bajas y sin sacar las eses finales | 9,2 % |
+
+- **La pronunciación está bien:** hablando erra el 2,6 %, mejor que espeak.
+- **Cantar cuesta poco:** la altura, unos 2 puntos; acortar las consonantes, otros 2. El ritmo y el vibrato, nada.
+- **Lo que más costaba eran las eses filtradas.** Cortas (35 ms) y sin lo de arriba de 4 kHz dejan de sonar a s: Whisper oye "t" o nada («Te íbamos cantando», «comparta», «que hiciera» por «crecer»). Probablemente también sonaban a chasquido. Más bajas pero sin filtrar se entienden más.
+- **Sacar las eses finales y aspirar las de adentro cuesta unos 2 puntos más**, aun sin contar las eses: con «descalzo sin medio», Whisper corta mal las palabras. Un oyente rioplatense probablemente no tenga ese problema.
+
 ## En la página
 
 En **Voces**, la opción **Difonos** hace cantar a los trece cantores, en obreros; la primera vez baja las dos voces (8 MB). Una presentación de 4 minutos tarda unos 20 s en una compu de dos núcleos. Con **Sólo un solista**, el primero de los primos canta la melodía con la letra, solo, sobre la batería.
