@@ -6,7 +6,7 @@
 trabajo_nocturno.py — deja la compu trabajando sola en el plan de las voces (docs/plan_compu.md).
 
   1. Elige fragmentos de coro real de tus voces separadas y los vuelve a cantar con el coro sintético.
-  2. Mide los dos con la misma vara (timbre, unísono, ataques, huecos).
+  2. Mide los dos con la misma vara (timbre, unísono, ataques, huecos). Lo mismo con el coro de difonos.
   3. Busca cuánto tienen que diferenciarse los cantores para parecerse más al real (las horas que le des).
   4. Con placa NVIDIA: instala Seed-VC, elige referencias y convierte los fragmentos y las cuatro demos. También
      mide lo convertido con la misma vara y prueba con Whisper si se entiende la letra.
@@ -184,12 +184,19 @@ def paso_medir_despues(a):
     correr([UV, "run", "-q", "herramientas/banco_medir.py", "--sintetico", BANCO / "sintetico_despues", "--salida", BANCO / "medidas_despues.json"])
 
 
+def paso_difonos(a):
+    # el coro de difonos de la página (es2 y es1, con su curva y sus acentos), con la misma vara que el de formantes
+    correr(["node", "herramientas/banco_sintetizar.mjs", "--motor", "difonos", "--salida", BANCO / "sintetico_difonos"])
+    correr([UV, "run", "-q", "herramientas/banco_medir.py", "--sintetico", BANCO / "sintetico_difonos", "--salida", BANCO / "medidas_difonos.json"])
+
+
 def pasos(a):
     con_placa = not a.sin_seedvc and (HAY_NVIDIA or a.seedvc_sin_placa)
     P = [
         ("fragmentos", "Elegir fragmentos de coro real", [], lambda: correr([UV, "run", "-q", "herramientas/banco_fragmentos.py", "--maximo", a.fragmentos]), .05, True),
         ("sintetizar", "Volver a cantarlos con el coro sintético de ahora", ["fragmentos"], lambda: correr(["node", "herramientas/banco_sintetizar.mjs"]), .05, True),
         ("medir_antes", "Medir real contra sintético", ["sintetizar"], lambda: correr([UV, "run", "-q", "herramientas/banco_medir.py", "--salida", BANCO / "medidas_antes.json"]), .05, True),
+        ("difonos", "Cantarlos con el coro de difonos y medirlo", ["fragmentos"], lambda: paso_difonos(a), .1, True),
         ("ajustar", f"Buscar la mejor variación entre cantores ({a.horas:g} h)", ["fragmentos"], lambda: correr([UV, "run", "-q", "herramientas/banco_ajustar.py", "--horas", a.horas] + (["--paralelo", os.environ["MURGA_PARALELO"]] if os.environ.get("MURGA_PARALELO") else []), timeout=(a.horas + 1) * 3600), a.horas + .2, True),
         ("medir_despues", "Medir con la variación ajustada", ["ajustar"], lambda: paso_medir_despues(a), .1, True),
         ("seedvc_instalar", "Instalar Seed-VC", [], lambda: correr([UV, "run", "-q", "transcripcion/convertir_coro.py", "instalar"], timeout=3 * 3600), .5, con_placa),
@@ -231,6 +238,12 @@ def escribir_informe(a):
         L += ["", "## El coro sintético contra el real", "", "Antes del ajuste:", "", BM.tabla(antes)]
     if despues and BM:
         L += ["", "Después del ajuste:", "", BM.tabla(despues)]
+    dif = json_o_nada(BANCO / "medidas_difonos.json")
+    if dif and BM:
+        L += ["", "## El coro de difonos contra el real", "", "El de la página: voces es2 y es1 de MBROLA, con su curva de timbre, sus acentos y el acento rioplatense.", "", BM.tabla(dif)]
+        if antes:
+            L += ["", f"Distancia media, formantes contra difonos: ajuste {antes['ajuste'].get('total', 0):.2f} → {dif['ajuste'].get('total', 0):.2f}; "
+                  f"control {antes['control'].get('total', 0):.2f} → {dif['control'].get('total', 0):.2f}."]
     if aj:
         L += ["", "### La variación entre cantores", "", "| Qué | Antes | Ajustada |", "|---|---|---|"]
         base = aj.get("base", {})
@@ -252,6 +265,7 @@ def escribir_informe(a):
           f"Todo en `{TRABAJO}`:", "",
           "- Coro real: `banco/real/`",
           "- Sintético antes y después del ajuste: `banco/sintetico/` y `banco/sintetico_despues/`",
+          "- El coro de difonos: `banco/sintetico_difonos/`",
           "- Convertido con Seed-VC: `banco/para_seedvc/<fragmento>/coro_convertido.wav` (y `coro_sintetico.wav` para comparar)",
           "- Demos: `cantada/<demo>/mezcla_convertida.wav` contra `mezcla_sintetica.wav`", "",
           "Si `motor/cantor/variacion.js` cambió, mirá el cambio con `git diff`. Este informe se puede subir al repositorio: no tiene audio."]

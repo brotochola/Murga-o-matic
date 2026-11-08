@@ -15,6 +15,7 @@ Hasta ahora, el coro sintético se calibró a mano y con un solo pasaje. Además
    | Ataque | Cuánto tarda en subir la energía en cada golpe: trece personas corridas suben más despacio que una |
    | Hueco | Cuánto baja la energía entre sílabas |
 
+   Lo mismo con el **coro de difonos** de la página (paso `difonos`): así se ve si se acerca más al real que el de formantes en timbre, unísono, ataques y huecos. Acá, sin el audio real, sólo se pudo medir contra los números del informe anterior ([solista.md](solista.md)).
 4. **Busca la mejor variación entre cantores**, durante las horas que le des. Prueba combinaciones de:
    - desafinación, retraso y desfase por nota;
    - vibrato y largo de garganta;
