@@ -20,7 +20,9 @@ const num = (x, d = 1) => x.toFixed(d).replace('.', ',');
 const suma = h => Object.values(h).reduce((a, b) => a + b, 0) || 1;
 const topH = (h, n = 10) => { const t = suma(h); return Object.entries(h).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k, v]) => [k, v / t]); };
 const tabla = (cab, filas) => `| ${cab.join(' | ')} |\n|${cab.map(() => '---').join('|')}|\n` + filas.map(f => `| ${f.join(' | ')} |`).join('\n') + '\n';
-const MURGAS = [...new Set(L.map(a => a.murga))];
+// las murgas con al menos cuatro tramos van en las tablas por murga; las demás cuentan en el total
+const MURGAS = [...new Set(L.map(a => a.murga))].filter(m => L.filter(a => a.murga === m).length >= 4);
+const TODAS_MURGAS = [...new Set(L.map(a => a.murga))];
 const NOMBRE_MOTIVO = { trabado: 'trabas del transcriptor', choque: 'choque a un semitono', extrana: 'ajena a lo que suena', fantasma: 'demasiado corta', aislada: 'aislada', registro: 'fuera de registro', eterna: 'eterna' };
 const NOMBRE_ESTILO = { trasnochada: 'La Trasnochada', catalina: 'Agarrate Catalina', muneca: 'La Gran Muñeca', pasteles: 'Metele que son Pasteles', bastarda: 'Doña Bastarda', asaltantes: 'Asaltantes con Patente', milonga: 'La Nueva Milonga', cabra: 'Cayó la Cabra', todas: 'todas juntas' };
 const esPres = a => a.parte === 'presentacion';
@@ -155,8 +157,8 @@ let d = '';
 const P = s => { d += s + '\n'; };
 
 const principales = ['La Trasnochada', 'Agarrate Catalina'].filter(m => MURGAS.includes(m));
-const extras = MURGAS.filter(m => !principales.includes(m));
-P(`# Qué canta una murga de verdad: análisis de ${L.length} tramos de ${principales.join(' y ')}${extras.length ? `, más ${extras.join(' y ')}` : ''}`);
+const extras = TODAS_MURGAS.filter(m => !principales.includes(m));
+P(`# Qué canta una murga de verdad: análisis de ${L.length} tramos de ${principales.join(' y ')}${extras.length > 2 ? `, más otras ${extras.length} murgas` : extras.length ? `, más ${extras.join(' y ')}` : ''}`);
 P('');
 P(`Este documento mide lo que canta el coro en ${shows} espectáculos: ${num(minutos, 0)} minutos de canto, ${totalNotas.toLocaleString('es-AR')} notas y ${totalGolpes.toLocaleString('es-AR')} golpes de coro. Es la base del generador: cada regla de acá es algo que el Murga-o-matic hace porque el corpus lo hace.`);
 P('');
