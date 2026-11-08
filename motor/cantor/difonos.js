@@ -156,7 +156,7 @@ export function guion(notas, opc = {}) {
 // g: el guion.
 export function terminar(x, sr, g, opc = {}) {
   const curvaDeLaVoz = TIMBRES['CURVA_DIFONOS' + (opc.voz && opc.voz !== 'es2' ? '_' + opc.voz.toUpperCase() : '')] || TIMBRES.CURVA_DIFONOS || null;
-  const o = { aire: 0, emision: 0, semilla: 1, curva: curvaDeLaVoz, brillo: 1, eses: 1, ...opc };
+  const o = { aire: 0, emision: 0, semilla: 1, curva: curvaDeLaVoz, brillo: 1, eses: 1, ruidos: 1, ...opc };
   if (o.curva && o.brillo !== 1) o.curva = o.curva.map(([f, db]) => [f, db * o.brillo]);
   if (o.color > 0 || o.inclinacion) {
     // el color propio de este cantor: unas ondas suaves en dB sobre la escala de frecuencias (de 400 Hz a 5 kHz), y su
@@ -169,8 +169,27 @@ export function terminar(x, sr, g, opc = {}) {
       return [f, base[i][1] + (o.color || 0) * w * d / 1.7 + (o.inclinacion || 0) * Math.max(0, Math.log2(f / 1000))];
     });
   }
+  // el volumen: la curva de cada nota cambia de golpe en el borde de las notas (justo antes de cada consonante), y un
+  // salto de volumen es un click. Se suaviza en dB, para los dos lados (sin correrla), con 6 ms, y se interpola.
+  const PASO = 32, nc = Math.ceil(x.length / PASO) + 2, cg = new Float32Array(nc);
+  for (let j = 0; j < nc; j++) cg[j] = 20 * Math.log10(Math.max(1e-6, g.ganancia(g.inicio + j * PASO / sr)));
+  { const al = 1 - Math.exp(-PASO / sr / .006); let v = cg[0]; for (let j = 0; j < nc; j++) { v += (cg[j] - v) * al; cg[j] = v; } v = cg[nc - 1]; for (let j = nc - 1; j >= 0; j--) { v += (cg[j] - v) * al; cg[j] = v; } }
   const pre = new Float32Array(x.length);
-  for (let k = 0; k < x.length; k++) pre[k] = x[k] * g.ganancia(g.inicio + k / sr);
+  for (let k = 0; k < x.length; k++) { const u = k / PASO, j = u | 0, f = u - j; pre[k] = x[k] * Math.pow(10, (cg[j] * (1 - f) + cg[j + 1] * f) / 20); }
+  // después de un silencio algunas voces (es4) arrancan de golpe: 8 ms de entrada, y 8 ms de salida antes del silencio
+  {
+    const R = Math.round(.008 * sr), S = g.segs, cerca = (t, d) => Math.round((t - g.inicio) * sr) + d;
+    for (let i = 0; i < S.length; i++) {
+      if (S[i].p === '_') continue;
+      if (i === 0 || S[i - 1].p === '_') { const a = cerca(S[i].t0, 0); for (let k = 0; k < R; k++) if (a + k >= 0 && a + k < pre.length) pre[a + k] *= .5 - .5 * Math.cos(Math.PI * k / R); }
+      if (i === S.length - 1 || S[i + 1].p === '_') { const b = cerca(S[i].t1, 0); for (let k = 0; k < R; k++) if (b - 1 - k >= 0 && b - 1 - k < pre.length) pre[b - 1 - k] *= .5 - .5 * Math.cos(Math.PI * k / R); }
+    }
+    // y en los silencios, silencio (algunos difonos traen ruiditos en su mitad muda)
+    const callar = (a, b) => { for (let k = Math.max(0, a); k < Math.min(pre.length, b); k++) pre[k] = 0; };
+    callar(0, cerca(S[0].t0, 0));
+    for (const q of S) if (q.p === '_') callar(cerca(q.t0, 0), cerca(q.t1, 0));
+    callar(cerca(S[S.length - 1].t1, 0), pre.length);
+  }
   const bq = (tipo, f, q, db) => {
     const A = Math.pow(10, db / 40), w = 2 * Math.PI * f / sr, c = Math.cos(w), al = Math.sin(w) / (2 * q);
     let b0, b1, b2, a0, a1, a2;
@@ -184,7 +203,10 @@ export function terminar(x, sr, g, opc = {}) {
   // Las eses (y la sh) se sacan de la voz antes de la curva y se ponen después, filtradas aparte: la curva sube 20 dB
   // los agudos, y además repartiría su ruido 40 ms antes y después de cada s.
   const eses = o.eses, r = Math.round(.006 * sr), previo = Math.round(.02 * sr), n = pre.length;
-  const lasEses = eses > 0 ? g.segs.filter(s => s.p === 's' || s.tipo === 'sh').map(s => ({ s, a: Math.round((s.t0 - g.inicio) * sr), b: Math.round((s.t1 - g.inicio) * sr) })) : [];
+  // Lo mismo con las consonantes sordas de golpe y de soplo (p t k ch f j): la curva de las vocales les subía la ráfaga
+  // y el soplo, y sonaban como ruiditos antes de cada sílaba. Van con un brillo moderado (ruidos: 0 a 1).
+  const SORDAS = new Set(['p', 't', 'k', 'tS', 'f', 'x']);
+  const lasEses = g.segs.filter(s => (eses > 0 && (s.p === 's' || s.tipo === 'sh')) || (o.ruidos > 0 && SORDAS.has(s.p))).map(s => ({ s, a: Math.round((s.t0 - g.inicio) * sr), b: Math.round((s.t1 - g.inicio) * sr) }));
   const rampa = (k, a, b) => Math.min(1, (k - (a - r)) / r, (b + r - k) / r);
   let voz = pre;
   if (o.curva && lasEses.length) {
@@ -201,7 +223,11 @@ export function terminar(x, sr, g, opc = {}) {
     if (hasta - desde < 8) continue;
     const z = pre.slice(desde, hasta);
     let gan;
-    if (sh) {
+    if (SORDAS.has(s.p)) {
+      // las sordas, tal cual salen de la voz, con un poco más de agudos (la curva entera sube 15-20 dB)
+      filtrar(z, bq('agudos', 2500, .7, 4 * o.ruidos));
+      gan = 1;
+    } else if (sh) {
       const rng = new Rnd((o.semilla || 1) * 29 + a), w = new Float32Array(z.length);
       for (let k = 0; k < z.length; k++) w[k] = rng.r() * 2 - 1;
       filtrar(w, bq('banda', 2500, 1, 0)); filtrar(w, bq('banda', 3000, .8, 0)); filtrar(w, bq('agudos', 4500, .7, -14));

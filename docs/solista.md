@@ -137,6 +137,16 @@ Para medirlo se rearmaron acá los 12 fragmentos del banco nocturno (las mismas 
 
 Los ataques del coro sintético eran lentos (unos 87 ms en la mediana, contra 64 en el real); con el golpe de voz se acercan. El coro se entiende igual (13,0 % de letras mal).
 
+## Clicks
+
+Se oían ruiditos justo antes de cada consonante. Había tres causas:
+
+- **Saltos de volumen.** La curva de volumen de cada nota (su fuerza, el golpe de voz de los acentos, el crecer de las notas largas) cambiaba de golpe en el borde de las notas, que cae justo antes de cada consonante: hasta 4,4 dB de una muestra a la otra, 12 saltos por frase. Ahora se suaviza en dB con 6 ms, para los dos lados.
+- **Ráfagas y soplos con la curva de las vocales.** La curva de timbre sube 15 a 20 dB los agudos, y a p, t, k, ch, f y j les subía la ráfaga y el soplo. Ahora esas consonantes, como las eses, se sacan antes de la curva y se ponen después, con sólo 4 dB más de agudos. La ráfaga queda 10 dB debajo del pico de la vocal; con la curva entera quedaba a 6.
+- **Arranques de golpe.** Después de un silencio, algunas voces (es4) arrancan de golpe, y algunos difonos traen ruiditos en su mitad muda. Ahora cada entrada y cada salida tiene 8 ms de rampa, y los silencios son silencio.
+
+En la onda ya no quedan picos raros en ninguna de las tres voces, y el coro se entiende igual (16,9 % de letras mal, media de tres coros).
+
 ## En la página
 
 En **Voces**, la opción **Difonos** hace cantar a los trece cantores, en obreros; la primera vez baja las dos voces (8 MB). Una presentación de 4 minutos tarda unos 20 s en una compu de dos núcleos. Con **Sólo un solista**, el primero de los primos canta la melodía con la letra, solo, sobre la batería.
