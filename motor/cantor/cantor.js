@@ -45,14 +45,14 @@ class Rnd { constructor(s) { this.a = (s * 2654435761 + 7) >>> 0; } r() { let t 
 
 // ── Plan: de notas con sílabas a segmentos de fonemas en el tiempo ──
 // nota: {t0, t1, midi, vel (0..1), sil: {ataque:[], nucleo:[], coda:[]}}
-function planificar(notas, rng) {
+function planificar(notas, rng, diccion = 1) {
   const seg = [];       // {t0, t1, p (fonema), nota (índice), f0 (midi)}
   for (let i = 0; i < notas.length; i++) {
     const n = notas[i], prev = notas[i - 1];
     const sil = n.sil || { ataque: [], nucleo: ['a'], coda: [] };
     const largo = n.t1 - n.t0;
     // el ataque se canta antes del tiempo, para que la vocal caiga en el golpe
-    const durA = sil.ataque.map(p => (FONEMAS[p]?.dur || .05) * (largo < .18 ? .75 : 1));
+    const durA = sil.ataque.map(p => (FONEMAS[p]?.dur || .05) * (largo < .18 ? .75 : 1) * diccion);
     let tA = durA.reduce((a, b) => a + b, 0);
     const libre = prev ? Math.max(0, n.t0 - (prev.t0 + Math.min(.08, (prev.t1 - prev.t0) * .5))) : .2;
     const esc = tA > 0 ? Math.min(1, libre / tA, .14 / tA) : 1;
@@ -94,9 +94,12 @@ export function cantar(notas, opc = {}) {
   // cada cantor dice cada vocal un poco a su manera (con otro azar, para no correr el del resto)
   const rv = new Rnd((opc.semilla || 1) * 31 + 5), propias = {};
   for (const v of 'aeiou') propias[v] = [1 + rv.u(-V.vocales, V.vocales), 1 + rv.u(-V.vocales, V.vocales)];
+  // sus mañas: cuánto anticipa las consonantes, cuándo le entra el vibrato, cuánto pica desde abajo al entrar
+  const diccion = 1 + rv.u(-V.diccion, V.diccion), vibEntra = rv.u(V.vibratoEntra[0], V.vibratoEntra[1]), pique = 1 + rv.u(-V.pique, V.pique);
+  const rn = new Rnd((opc.semilla || 1) * 53 + 11);                                   // y cada nota, un poco más alta o más baja
   const nasalBase = opc.nasal ?? .18;                                                 // emisión murguera
-  const ns = notas.map(n => { const j = rng.u(-V.desfase, V.desfase); return { ...n, t0: n.t0 + retraso + j, t1: n.t1 + retraso + j }; });
-  const seg = planificar(ns, rng);
+  const ns = notas.map(n => { const j = rng.u(-V.desfase, V.desfase); return { ...n, t0: n.t0 + retraso + j, t1: n.t1 + retraso + j, dn: rn.u(-V.desafinaNota, V.desafinaNota) }; });
+  const seg = planificar(ns, rng, diccion);
   if (!seg.length) return opc.separar ? { voz: new Float32Array(0), ruido: new Float32Array(0) } : new Float32Array(0);
   const T = Math.max(...ns.map(n => n.t1)) + .4;
   const len = Math.ceil(T * sr), out = new Float32Array(len), outR = opc.separar ? new Float32Array(len) : out;
@@ -138,7 +141,7 @@ export function cantar(notas, opc = {}) {
     cAV[c] = av; cAF[c] = af; cAH[c] = ah; cN[c] = nas; cNZ[c] = nz; cFC[c] = fc; cFB[c] = fb; cRaf[c] = raf; cCierre[c] = cierre;
     for (let j = 0; j < 3; j++) cF[j][c] = fObj[j];
     // f0: la nota que corresponde (las consonantes del ataque ya van en la altura nueva)
-    cF0[c] = (n.midi + desaf);
+    cF0[c] = (n.midi + desaf + n.dn);
   }
   // suavizado (coarticulación): formantes 18 ms, amplitudes 5 ms, f0 28 ms (portamento)
   const suavizar = (a, tau) => { const g = 1 - Math.exp(-CR / sr / tau); let y = a[0]; for (let i = 0; i < a.length; i++) { y += (a[i] - y) * g; a[i] = y; } };
@@ -150,10 +153,10 @@ export function cantar(notas, opc = {}) {
     let tNota = -1, notaAnt = -1, fase = rng.u(0, 6.28), deriva = 0, vprof = 1;
     for (let c = 0; c < nC; c++) {
       const t = c * CR / sr;
-      if (cF0[c] !== cF0[c - 1]) { tNota = t; if (cAV[c] < .05) y = cF0[c] - rng.u(.3, .6); }
+      if (cF0[c] !== cF0[c - 1]) { tNota = t; if (cAV[c] < .05) y = cF0[c] - rng.u(.3, .6) * pique; }
       y += (cF0[c] - y) * g;
       // vibrato: entra a los 0,25 s de la nota, de a poco
-      const enNota = t - tNota, vamp = Math.max(0, Math.min(1, (enNota - .22) / .3));
+      const enNota = t - tNota, vamp = Math.max(0, Math.min(1, (enNota - vibEntra) / .3));
       fase += 2 * Math.PI * vibF * (1 + .06 * Math.sin(t * 1.3 + vibF)) * CR / sr;
       deriva += (rng.r() - .5) * .004 - deriva * .002; vprof += (rng.r() - .5) * .02 - (vprof - 1) * .01;
       f0s[c] = y + vibA * vprof * vamp * Math.sin(fase) + deriva;
