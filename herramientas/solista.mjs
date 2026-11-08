@@ -48,7 +48,9 @@ export const FRASES = [
 
 // Melodía: Sol mayor, registro de tenor (Sol 3 a Mi 4). Arco: sube y baja, cambia de nota cada una o dos sílabas.
 const ESCALA = [55, 57, 59, 60, 62, 64, 66, 67];
-export function melodia(texto, { tempo = TEMPO, inicio = .35, sube = SUBE } = {}) {
+const grado = i => [55, 57, 59, 60, 62, 64, 66][((i % 7) + 7) % 7] + 12 * Math.floor(i / 7);
+// grados: la misma melodía corrida por la escala (−2: una tercera abajo, como los segundos)
+export function melodia(texto, { tempo = TEMPO, inicio = .35, sube = SUBE, grados = 0 } = {}) {
   const sils = silabasCantadas(texto);
   const corchea = 30 / tempo;
   const ultAcento = sils.map(s => s.acento).lastIndexOf(true);
@@ -56,13 +58,13 @@ export function melodia(texto, { tempo = TEMPO, inicio = .35, sube = SUBE } = {}
   let t = inicio;
   sils.forEach((s, i) => {
     const p = i / Math.max(1, sils.length - 1);
-    let grado = Math.round(1 + 4 * Math.sin(Math.PI * Math.min(1, p * 1.15)) + (i % 3 === 2 ? 1 : 0));
-    if (i >= ultAcento) grado = i === ultAcento ? 1 : 0;
+    let g = Math.round(1 + 4 * Math.sin(Math.PI * Math.min(1, p * 1.15)) + (i % 3 === 2 ? 1 : 0));
+    if (i >= ultAcento) g = i === ultAcento ? 1 : 0;
     let d = corchea;
     if (i === ultAcento) d = sils.length - 1 > i ? corchea * 3 : corchea * 5;
     else if (i > ultAcento) d = corchea * 3;
     else if (s.acento && i % 2 === 1) d = corchea * 1.5;
-    notas.push({ t0: t, t1: t + d, midi: ESCALA[Math.max(0, Math.min(7, grado))] + sube, vel: s.acento ? .85 : .75, sil: { ...partes(s.fon), fin: s.fin, articulo: s.articulo }, texto: s.texto, fon: s.fon });
+    notas.push({ t0: t, t1: t + d, midi: grado(Math.max(0, Math.min(7, g)) + grados) + sube, vel: s.acento ? .85 : .75, sil: { ...partes(s.fon), fin: s.fin, articulo: s.articulo }, texto: s.texto, fon: s.fon });
     t += d;
   });
   return notas;

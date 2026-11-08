@@ -232,8 +232,25 @@ export function cantorDifonos(cuerda, semilla, V = VARIACION) {
     transporte: r.u(-V.desafinacion, V.desafinacion),
     vibrato: r.u(V.vibrato[0], V.vibrato[1]), vibVel: r.u(V.vibratoVel[0], V.vibratoVel[1]), vibEntra: r.u(V.vibratoEntra[0], V.vibratoEntra[1]),
     pique: .45 * r.u(1 - V.pique, 1 + V.pique), consonantes: 1.1 * r.u(1 - V.diccion * .5, 1 + V.diccion * .5),
+    // los tiempos, la mitad que en el coro de formantes: con todo, el coro de difonos se entiende mucho menos (19 % de
+    // letras mal contra 13 %, herramientas/coro_difonos.mjs)
+    retraso: r.u(0, V.retraso * .5), desfase: V.desfase * .5,
     temblor: .04, emision: 1,
   };
+}
+
+// Los tiempos de cada cantor: entra siempre un poco tarde (retraso) y cada nota se corre un poco (desfase), sin
+// romper el ligado: si dos notas iban pegadas, siguen pegadas.
+function correr(notas, opc) {
+  const ret = opc.retraso || 0, des = opc.desfase || 0;
+  if (!ret && !des) return notas;
+  const rn = new Rnd((opc.semilla || 1) * 53 + 11);
+  const t0 = notas.map(n => n.t0 + ret + (des ? rn.u(-des, des) : 0));
+  return notas.map((n, i) => {
+    const sig = notas[i + 1], pegada = sig && sig.t0 - n.t1 < .02;
+    const a = Math.max(t0[i], i ? t0[i - 1] + .03 : -1e9);
+    return { ...n, t0: a, t1: pegada ? Math.max(a + .03, t0[i + 1]) : Math.max(a + .03, n.t1 + (a - n.t0)) };
+  });
 }
 
 // Un cantor entero: guion → MBROLA → volumen, eses, aire y emisión. mb: lo que devuelve crearMbrola.
@@ -244,10 +261,20 @@ export function cantorDifonos(cuerda, semilla, V = VARIACION) {
 export function cantarDifonos(mb, notas, opc = {}) {
   const F = mb.frecuencia, a = Math.round(F * (opc.tracto || 1)) / F;
   if (!notas.length) return { x: new Float32Array(0), sr: F * a, inicio: 0 };
+  notas = correr(notas, opc);
   const ns = a === 1 ? notas : notas.map(n => ({ ...n, t0: n.t0 * a, t1: n.t1 * a, midi: n.midi - 12 * Math.log2(a) }));
   const o = a === 1 ? opc : { ...opc, consonantes: (opc.consonantes ?? 1) * a, vibVel: (opc.vibVel ?? 5.5) / a, vibEntra: (opc.vibEntra ?? .22) * a };
-  const g = guion(ns, o);
-  const crudo = mb.cantar(g.pho), x = new Float32Array(crudo.length);
-  for (let k = 0; k < x.length; k++) x[k] = crudo[k] / 32768;
-  return { x: terminar(x, F, g, o), sr: F * a, inicio: g.inicio / a };
+  // De a frases: MBROLA no aguanta silencios de minutos (se pasa de rango) y así tampoco canta el silencio
+  const frases = [[]];
+  ns.forEach((n, i) => { if (i && n.t0 - ns[i - 1].t1 > 1.5 * a) frases.push([]); frases[frases.length - 1].push(n); });
+  const partes = frases.map((f, k) => {
+    const g = guion(f, { ...o, semilla: (o.semilla || 1) * 7 + k });
+    const crudo = mb.cantar(g.pho), x = new Float32Array(crudo.length);
+    for (let j = 0; j < x.length; j++) x[j] = crudo[j] / 32768;
+    return { x: terminar(x, F, g, o), inicio: g.inicio };
+  });
+  const t0 = partes[0].inicio, fin = Math.max(...partes.map(p => p.inicio + p.x.length / F));
+  const x = new Float32Array(Math.ceil((fin - t0) * F) + 1);
+  for (const p of partes) x.set(p.x, Math.round((p.inicio - t0) * F));
+  return { x, sr: F * a, inicio: t0 / a };
 }

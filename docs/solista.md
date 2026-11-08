@@ -60,9 +60,24 @@ Lo que se canta lo decide `motor/cantor/difonos.js`:
 
 `herramientas/voces_difonos.mjs "frase"` canta la misma frase con cantores de cada cuerda, cada uno en su registro.
 
+## El coro entero
+
+`herramientas/coro_difonos.mjs` canta las mismas 24 frases con un coro de 12 cantores: primos con la melodía, segundos una tercera abajo, sobreprimos una tercera arriba y bajos una octava abajo. Las cantidades, los volúmenes y el cantor que lleva la cuerda son los de `coro.js`.
+
+| Coro | Letras mal | Palabras mal |
+|---|---|---|
+| Formantes | 44,5 % | 83,0 % |
+| Difonos, con los corrimientos del coro de formantes (cada cantor entra hasta 8 ms tarde y cada nota se corre ±16 ms) | 19,0 % | 46,4 % |
+| Difonos, con la mitad de corrimiento (como quedó) | 12,9 % | 37,5 % |
+| Difonos, todos juntos al milisegundo | 11,9 % | 29,5 % |
+
+Que los cantores no entren todos juntos es lo que más tapa la letra: cada consonante suena corrida trece veces. Con la mitad de corrimiento se entiende casi como con todos juntos, y el coro no queda clavado.
+
+Para que MBROLA no tenga que cantar minutos de silencio, que lo hacen fallar, cada cantor se canta de a frases: se corta donde hay más de 1,5 s sin notas.
+
 ## En la página
 
-En **Voces**, la opción **Un solista** hace que el primero de los primos cante la melodía con la letra, solo, sobre la batería.
+En **Voces**, la opción **Difonos** hace cantar a los trece cantores, en obreros. Una presentación de 4 minutos tarda unos 20 s en una compu de dos núcleos. Con **Sólo un solista**, el primero de los primos canta la melodía con la letra, solo, sobre la batería.
 
 MBROLA está compilado a WebAssembly (85 KB) con `herramientas/compilar_mbrola.sh` y anda en un obrero. La voz es2 pesa 5,6 MB y se baja la primera vez. Una presentación de 4 minutos se canta en menos de un segundo.
 
@@ -72,6 +87,6 @@ MBROLA es AGPL-3.0. La voz es2 se puede usar sólo con MBROLA y copiar librement
 
 - **Que no suene a locutor.** Las voces son de habla: las vocales largas se estiran repitiendo el mismo pedazo y pueden sonar quietas.
 - **El acento.** Las voces son españolas, así que no tienen la "sh" rioplatense de «calle» o «llegó» (sale "y").
-- **El coro.** Falta sumar los trece cantores, con sus tiempos corridos, y probarlo en la página.
+- **El coro.** Todos los cantores salen de la misma voz grabada. Con la garganta, la afinación y el vibrato de cada uno se diferencian, pero falta escuchar si el unísono suena a coro o a una voz con eco.
 - **La tercia.** Sonaba demasiado aguda. El compositor la ponía con mediana en Do 5 y hasta Fa 5, que es el registro excepcional. Ahora va de Re 4 a Re 5, con mediana en La 4, como el registro normal de Sin Disfraz (fa4–do5). Sólo cambia la tercia: en 48 piezas de prueba, las demás cuerdas quedan idénticas.
 - **El timbre.** Hay que medirlo contra el coro real, con el banco, para la curva de ecualización.
