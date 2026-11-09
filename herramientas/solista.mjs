@@ -6,7 +6,7 @@
 //   node herramientas/solista.mjs [--motor formantes|difonos:es2[:opción=valor...]|mbrola:es2] [--tempo 100] [--midi 0]
 //     difonos:es2:consonantes=1.1:vibrato=.2   el cantor de la página (motor/cantor/difonos.js) con esas opciones
 //     mbrola:es2                               el primer guion, más simple, con el programa mbrola instalado
-//     banco --banco <carpeta>                  un banco de voz cantada de UTAU (motor/cantor/banco.js, docs/utau.md)
+//     banco --banco <carpeta> [--evitar _F]    un banco de voz cantada de UTAU (motor/cantor/banco.js, docs/utau.md)
 //     --habla                                  dicha en lugar de cantada (prosodia de habla, sin vibrato)
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
@@ -184,7 +184,7 @@ async function cantarFrase(notas) {
     const { cantarBanco } = await import('../motor/cantor/banco.js');
     const { banco, world } = await bancoUtau();
     const opc = Object.fromEntries(MOTOR.split(':').slice(1).map(e => e.split('=')).map(([k, v]) => [k, +v]));
-    const r = cantarBanco(banco, world, notas, { semilla: 3, cache: cacheBanco, ...(HABLA ? HABLADO : {}), ...opc });
+    const r = cantarBanco(banco, world, notas, { semilla: 3, cache: cacheBanco, evitar: arg('evitar') ? arg('evitar').split(',') : null, ...(HABLA ? HABLADO : {}), ...opc });
     return { x: r.x, sr: r.sr };
   }
   throw new Error('motor desconocido: ' + MOTOR);

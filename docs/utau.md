@@ -103,8 +103,10 @@ cantado, en VCCV de nJokis, con cinco alturas (La♭ 2, Re 3, Sol 3, Do 4 y Mi 4
 141 MB. Su autor avisa que no es hablante nativo. Las condiciones no hablan del uso personal; el comercial pide
 licencia, y redistribuirlo pide permiso. Otros candidatos:
 
-- **MIKE**: castellano nativo, VCCV, Sol 3, Re 4 y falsete. Está en Icedrive, que hay que bajar a mano desde un
-  navegador.
+- **MIKE** (AkuP, 2016, <http://utau.wikidot.com/utau:mike>): castellano nativo, con una reclist propia del
+  autor. Grabado en Fa#3 / Sol 3, Re 4 y falsete en La#4 (457 Hz), más dos colores aparte: grave (La#2) y suave
+  (Do 3). Pesa 245 MB. Su `prefix.map` usa el falsete de Do 5 para arriba. El uso comercial pide permiso. Está en
+  Icedrive, que hay que bajar a mano desde un navegador (`Mike_Normal.uar` es un .zip).
 - **Koru Fivet RETAKE**: barítono nativo con 13 alturas y expresiones. No tiene descarga pública.
 - **Kreic Umine**: VCV. No se encontró la descarga.
 
@@ -113,36 +115,61 @@ licencia, y redistribuirlo pide permiso. Otros candidatos:
 - `herramientas/compilar_world.sh` compila WORLD a `motor/vendor/world/world.wasm` (149 KB), con zig, como MBROLA.
   `motor/cantor/world.js` lo carga.
 - `motor/cantor/banco.js` lee el banco: los `oto.ini`, el `prefix.map` y los `.wav`. Pasa nuestras sílabas a las
-  entradas de nJokis, por ejemplo «-pr _ro o m me e t te». Las ubica en el tiempo como UTAU (el preutterance en el
-  comienzo de la vocal, la parte fija a su velocidad, el resto estirado). Las funde cuadro por cuadro, con la envolvente
-  en logaritmo, y sintetiza la frase entera con WORLD.
+  entradas del banco, con una tabla por reclist:
+  - la VCCV de nJokis (LongWei): «-pr _ro o m me e t te»;
+  - la de AkuP (MIKE): «- ba», «a m» + «ma», la coda junto con la consonante que sigue («an t»), «as R» para
+    cortar, «a ra» para la r simple. La reconoce sola.
+
+  Ubica los pedazos en el tiempo como UTAU (el preutterance en el comienzo de la vocal, la parte fija a su velocidad,
+  el resto estirado). Los funde cuadro por cuadro, con la envolvente en logaritmo, y sintetiza la frase entera con
+  WORLD. Lleva cada archivo al mismo nivel (el de su 30 % más fuerte), como UTAU: en MIKE, la carpeta de Sol 3
+  estaba de 6 a 15 dB abajo de la de Re 4. Con `evitar` no usa una altura grabada, por ejemplo el falsete
+  (`_F`).
 - La altura y el volumen son los de `guion()` (portamento, vibrato, caída), los mismos que usa MBROLA: `guion()`
   ahora devuelve también `altura`. Los guiones de MBROLA no cambian: 456 guiones iguales a los de antes.
 - Del pedazo grabado se conserva el temblor natural de la altura: lo que se aparta de su altura suavizada a 100 ms.
 - `herramientas/utau_prueba.mjs <carpeta del banco>` canta una escala de «la» y tres frases en tres alturas, con el
   banco y con MBROLA, y deja una página para escucharlas lado a lado en `murga_trabajo/utau/<banco>/`.
+  `herramientas/utau_pagina.mjs` junta varios bancos en una sola página (`murga_trabajo/utau/comparar.html`).
 - `herramientas/utau_medir.mjs` mide la escala.
 - `solista.mjs --motor banco --banco <carpeta>` canta las 24 frases del solista con el banco.
 
 **Lo medido:**
 
-- **Altura.** Cada nota sostenida de la escala, de Sol 3 a Do 5, queda a entre 0 y 3 cents de la pedida.
-- **Cobertura.** En las 24 frases hay 704 unidades, y al banco le faltan tres: «rry» (barrio, que se canta «barro»),
-  «s y» e «IU».
+- **Altura.** Cada nota sostenida de la escala, de Sol 3 a Do 5, queda a entre −4 y +3 cents de la pedida, con los
+  dos bancos.
+- **Cobertura.** En las 24 frases, a LongWei le faltan tres de 704 unidades: «rry» (barrio, que se canta «barro»),
+  «s y» e «IU». A MIKE no le falta ninguna de 597.
 - **Tiempo.** Analizar cada pedazo tarda de 0,3 a 1 s (44,1 kHz, DIO). Con los pedazos ya analizados, una frase de
   4 a 5 s tarda de 0,5 a 1,9 s. MBROLA tarda 0,1 a 0,3 s.
-- **Brillo.** Lo de arriba de 1,8 kHz frente al total, en la «a» sostenida: el banco crudo da −16 dB de Sol 4 a
-  Do 5, y MBROLA, con su curva de timbre, de −8 a −10 dB. El banco todavía no tiene curva de timbre.
-- **Se entiende igual en el registro de siempre, y menos en el agudo.** Whisper sobre las 24 frases (letras mal /
-  palabras mal):
+- **Brillo.** Lo de arriba de 1,8 kHz frente al total, en la «a» sostenida de Sol 4 a Do 5, da:
+  - LongWei crudo, de −16 a −18 dB;
+  - MIKE crudo, −13 dB (−16 en el Do 5 con falsete);
+  - MBROLA, con su curva de timbre, de −8 a −10 dB.
+
+  Los bancos todavía no tienen curva de timbre.
+- **Cortes.** Mientras se canta la escala, la voz queda 15 dB abajo un 6 % del tiempo con los bancos y un 14,5 % con
+  MBROLA.
+- **Se entiende.** MIKE se entiende mejor que MBROLA en el registro de siempre, y casi igual en el agudo; LongWei,
+  peor en el agudo. Whisper sobre las 24 frases (letras mal / palabras mal):
 
 | | Sol 3 a Fa# 4 | seis semitonos arriba (hasta Do 5) |
 |---|---|---|
-| banco LW_Symphonia_es | 15,0 % / 43,1 % | 22,9 % / 51,5 % |
+| MIKE | 8,3 % / 32,3 % | 13,5 % / 42,4 % (con falsete); 12,8 % / 41,9 % (sin falsete) |
+| LW_Symphonia_es | 14,0 % / 39,2 % | 22,7 % / 48,5 % |
 | difonos es2 (como en la página) | 16,4 % / 35,7 % | 15,6 % / 36,2 % |
 
 Con 24 frases, una diferencia de 1 o 2 puntos es ruido. Whisper además alucina: con MBROLA, en las dos alturas, oyó
-«(Cantando)» en la frase 23 (85 %); con el banco en el agudo, «ven, ven, ven…» en la 14 (que cuenta 100 %).
+«(Cantando)» en la frase 23 (85 %).
+
+**Lo que falta en los bancos en castellano: voz de pecho en el agudo.** LongWei llega a Mi 4 y MIKE a Re 4 (más un
+falsete). Un sobreprimo canta Do 5 con el pecho. Por eso el paso que sigue es buscar bancos de hombre de otros idiomas
+con voz de pecho o «power» grabada entre La 4 y Do 5, y pasarles nuestras sílabas con otra tabla. Lo que encaja de
+cada idioma:
+- **Italiano:** tiene la rr, la l, la ñ, la sh y codas en l, r, n y s.
+- **Japonés:** es donde hay más bancos. Tiene las cinco vocales, la r simple y la sh, que es la ll/y rioplatense. Le
+  faltan la rr, la l y las codas.
+- **Portugués de Brasil:** tiene sh, zh y codas, pero las vocales nasales hay que esquivarlas.
 
 Falta lo principal: el veredicto de oído sobre el agudo.
 

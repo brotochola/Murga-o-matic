@@ -4,7 +4,8 @@
 // Do 5). Y una escala de «la» sostenidos de Sol 3 a Do 5. Deja los wav y una página para escucharlos lado a lado en
 // murga_trabajo/utau/<banco>/.
 //
-//   node herramientas/utau_prueba.mjs <carpeta del banco> [--nombre lw] [--voz es2] [--solo escala|frases]
+//   node herramientas/utau_prueba.mjs <carpeta del banco> [--nombre lw] [--voz es2] [--solo escala|frases] [--evitar _F]
+//     --evitar _F: no usar esas alturas grabadas (el falsete de MIKE: un sobreprimo canta con el pecho)
 //
 // El banco no va al repositorio (cada banco tiene sus condiciones de uso): se baja aparte y se le pasa la carpeta.
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, existsSync } from 'node:fs';
@@ -21,7 +22,7 @@ const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2), arg = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : d; };
 const CARPETA = args.find((a, i) => !a.startsWith('--') && !args[i - 1]?.startsWith('--'));
 if (!CARPETA || !existsSync(CARPETA)) { console.error('uso: node herramientas/utau_prueba.mjs <carpeta del banco> [--nombre x] [--voz es2]'); process.exit(1); }
-const NOMBRE = arg('nombre', 'banco'), VOZ = arg('voz', 'es2'), SOLO = arg('solo', '');
+const NOMBRE = arg('nombre', 'banco'), VOZ = arg('voz', 'es2'), SOLO = arg('solo', ''), EVITAR = arg('evitar', '') ? arg('evitar').split(',') : null;
 const SAL = join(RAIZ, 'murga_trabajo', 'utau', NOMBRE);
 mkdirSync(SAL, { recursive: true });
 
@@ -34,7 +35,10 @@ const mb = await crearMbrola(readFileSync(join(RAIZ, 'motor', 'vendor', 'mbrola'
 console.log(`banco «${banco.nombre}»: ${banco.entradas.length} entradas, alturas ${banco.alturas.map(a => (a.sufijo || '(sin sufijo)') + '=' + nombreNota(a.midi)).join(' ')}`);
 
 // el mismo volumen para todo (RMS de lo que suena), así se compara el color y no el volumen
-function wav(nombre, x, sr) {
+// inicio: en qué segundo de la pieza empieza x. Se pone silencio adelante, así el segundo 0 del wav es el de la
+// pieza en los dos motores (y utau_medir.mjs sabe dónde está cada nota).
+function wav(nombre, x0, sr, inicio = 0) {
+  const pad = Math.max(0, Math.round(inicio * sr)), x = new Float32Array(pad + x0.length); x.set(x0.subarray(Math.max(0, -Math.round(inicio * sr))), pad);
   let s = 0, c = 0; for (const v of x) if (Math.abs(v) > 1e-4) { s += v * v; c++; }
   const rms = Math.sqrt(s / Math.max(1, c)); let pico = 0; for (const v of x) pico = Math.max(pico, Math.abs(v));
   const g = Math.min(.1 / Math.max(1e-9, rms), .95 / Math.max(1e-9, pico));
@@ -51,13 +55,13 @@ const filas = [], cache = new Map(), registro = {};
 const opcDifonos = { w: VOZ !== 'es4', semilla: 3, voz: VOZ };
 function cantar(nombre, notas, rotulo) {
   let t = performance.now();
-  const b = cantarBanco(banco, world, notas, { semilla: 3, cache });
+  const b = cantarBanco(banco, world, notas, { semilla: 3, cache, evitar: EVITAR });
   const tb = (performance.now() - t) / 1000;
   t = performance.now();
   const d = cantarDifonos(mb, notas, opcDifonos);
   const td = (performance.now() - t) / 1000;
-  wav(nombre + '_banco.wav', b.x, b.sr);
-  wav(nombre + '_mbrola.wav', d.x, d.sr);
+  wav(nombre + '_banco.wav', b.x, b.sr, b.inicio);
+  wav(nombre + '_mbrola.wav', d.x, d.sr, d.inicio);
   registro[nombre] = b.frases;
   const dur = notas[notas.length - 1].t1 - notas[0].t0;
   filas.push({ nombre, rotulo, tb, td, dur });
@@ -79,6 +83,7 @@ if (SOLO !== 'escala') {
   }));
 }
 writeFileSync(join(SAL, 'unidades.json'), JSON.stringify(registro, null, 1));
+writeFileSync(join(SAL, 'filas.json'), JSON.stringify({ banco: banco.nombre, evitar: EVITAR, voz: VOZ, filas }, null, 1));
 // la muestra que trae el banco (character.txt: sample=...), para oír cómo suena en manos de su autor
 const rChar = rutas.find(r => r.toLowerCase() === 'character.txt');
 const rMuestra = rChar && (/^sample=(.*)$/m.exec(readFileSync(join(CARPETA, rChar), 'latin1'))?.[1] || '').trim();

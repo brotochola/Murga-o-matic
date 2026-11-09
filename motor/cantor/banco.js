@@ -84,18 +84,23 @@ export function crearBanco(rutas, leer) {
   // las alturas grabadas: cada sufijo del prefix.map, con la nota que dice su nombre o, si no, el medio de sus notas
   const porSufijo = new Map();
   for (const [m, { sufijo }] of prefijos) { if (!porSufijo.has(sufijo)) porSufijo.set(sufijo, []); porSufijo.get(sufijo).push(m); }
+  // (sin nombre de nota: si el sufijo cubre hasta lo más agudo, como un falsete, su nota más grave; si cubre hasta lo
+  // más grave, la más aguda; si no, la del medio)
   const alturas = [...porSufijo].map(([sufijo, ms]) => {
     const dicho = notaDeNombre(sufijo.replace(/^[_\s-]+/, '').replace(/[_\s-].*$/, ''));
-    return { sufijo, midi: dicho ?? ms.sort((a, b) => a - b)[ms.length >> 1] };
+    ms.sort((a, b) => a - b);
+    return { sufijo, midi: dicho ?? (ms[ms.length - 1] >= 100 ? ms[0] : ms[0] <= 25 ? ms[ms.length - 1] : ms[ms.length >> 1]) };
   });
   if (!alturas.length) alturas.push({ sufijo: '', midi: 60 });
   const sufijoDe = midi => prefijos.get(Math.round(midi))?.sufijo
     ?? alturas.reduce((a, b) => (Math.abs(b.midi - midi) < Math.abs(a.midi - midi) ? b : a)).sufijo;
   const midiDe = suf => alturas.find(a => a.sufijo === suf)?.midi ?? 60;
-  // el pedazo para un alias en una nota: la altura grabada que dice el prefix.map, o la más cercana que lo tenga
-  function buscar(alias, midi) {
-    const s = sufijoDe(midi);
-    const orden = [s, ...alturas.map(a => a.sufijo).filter(x => x !== s).sort((a, b) => Math.abs(midiDe(a) - midi) - Math.abs(midiDe(b) - midi))];
+  // el pedazo para un alias en una nota: la altura grabada que dice el prefix.map, o la más cercana que lo tenga.
+  // evitar: sufijos que no se usan (por ejemplo el falsete, «_F»: un sobreprimo canta con el pecho)
+  function buscar(alias, midi, evitar = null) {
+    let s = sufijoDe(midi);
+    const otras = alturas.map(a => a.sufijo).filter(x => x !== s && !evitar?.includes(x)).sort((a, b) => Math.abs(midiDe(a) - midi) - Math.abs(midiDe(b) - midi));
+    const orden = evitar?.includes(s) ? otras : [s, ...otras];
     for (const suf of orden) { const e = indice.get(alias + suf); if (e) return e; }
     return indice.get(alias) || null;
   }
@@ -106,10 +111,24 @@ export function crearBanco(rutas, leer) {
   }
   const wavs = new Map();
   function wav(archivo) {
-    if (!wavs.has(archivo)) { const b = leer(archivo); wavs.set(archivo, b ? leerWav(b) : null); }
+    if (!wavs.has(archivo)) {
+      const b = leer(archivo), w = b ? leerWav(b) : null;
+      // el nivel del archivo: el de su 30 % más fuerte (de a 10 ms), que son las vocales. Cada altura (y a veces cada
+      // archivo) se grabó a otro volumen; UTAU lo empareja normalizando
+      if (w) {
+        const W = Math.max(1, Math.round(.01 * w.sr)), e = [];
+        for (let i = 0; i + W <= w.x.length; i += W) { let s = 0; for (let j = 0; j < W; j++) s += w.x[i + j] ** 2; e.push(s / W); }
+        e.sort((p, q) => q - p);
+        const k = Math.max(1, Math.round(e.length * .3)); let s = 0; for (let j = 0; j < k; j++) s += e[j];
+        w.nivel = Math.sqrt(s / k) || 1e-3;
+      }
+      wavs.set(archivo, w);
+    }
     return wavs.get(archivo);
   }
-  return { nombre, entradas, indice, prefijos, alturas, buscar, existe: a => existe.has(a), wav, sufijoDe };
+  // la reclist: la de AkuP corta con «a R»; la VCCV de nJokis, con «a-»
+  const reclist = existe.has('a R') && existe.has('- a') ? 'akup' : 'njokis';
+  return { nombre, entradas, indice, prefijos, alturas, buscar, existe: a => existe.has(a), wav, sufijoDe, reclist };
 }
 
 // ── de nuestras sílabas a los alias (reclist VCCV de nJokis) ──────────────
@@ -122,6 +141,90 @@ const OCLUSIVA = { B: 'b', D: 'd', G: 'g' }, FRICATIVA = { b: 'B', d: 'D', g: 'G
 //   antes: un paso (vocal → consonante, consonante → consonante) que se pone justo antes de la unidad que sigue;
 //   fin: el final de la frase.
 export function aliasFrase(notas, existe, o = {}) {
+  // (una copia: la reclist de AkuP le pasa la coda a la sílaba que sigue, y las notas son de quien llama)
+  return (o.reclist === 'akup' ? aliasAkup : aliasNjokis)(notas.map(n => ({ ...n, sil: { ...n.sil } })), existe, o);
+}
+
+// el núcleo de una sílaba: deslizadas de antes (y, w), vocales, deslizadas de después (I, U)
+function nucleoDe(s) {
+  const nuc = s.nucleo.length ? s.nucleo : ['a'];
+  let k0 = nuc.findIndex(p => VOCAL.has(p)); if (k0 < 0) k0 = nuc.length - 1;
+  const desliz = nuc.slice(0, k0).map(p => (p === 'j' || p === 'i' ? 'y' : 'w'));
+  const vocs = [], aVocal = p => (p === 'j' ? 'i' : p === 'w' ? 'u' : p);
+  let k1 = k0; while (k1 < nuc.length && (k1 === k0 || VOCAL.has(nuc[k1]))) vocs.push(aVocal(nuc[k1++]));
+  const cola = nuc.slice(k1).map(p => (p === 'j' || p === 'i' ? 'I' : 'U'));
+  return { desliz, vocs, cola };
+}
+
+// ── la reclist de AkuP (MIKE): «- ba» al empezar, «a m» + «ma», la coda junto con la consonante que sigue («an t»,
+// «as k», «ar t»), el final con «a R» o «as R», la r simple de a dos vocales («a ra»), la ñ como «nh», la jota como
+// «j». Sin b, d y g suaves: van las de siempre. La sh rioplatense (ll, y) va como «y». El diptongo se junta con la
+// consonante que sigue («aI m»), como dice su readme: «hay mas» = [- a][aI m][ma][as R].
+const AK = { a: 'a', e: 'e', i: 'i', o: 'o', u: 'u', l: 'l', r: 'r', R: 'rr', m: 'm', n: 'n', N: 'nh', B: 'b', D: 'd', G: 'g', b: 'b', d: 'd', g: 'g', p: 'p', t: 't', k: 'k', C: 'ch', f: 'f', s: 's', h: 's', x: 'j', S: 'y', Z: 'y', j: 'y', w: 'w' };
+function aliasAkup(notas, existe, o = {}) {
+  const U = [], faltan = [];
+  const pon = (alias, nota, tipo, extra) => { if (alias) U.push({ alias, nota, tipo, ...extra }); };
+  const elegir = (...c) => { const a = c.find(x => x && existe(x)); if (!a && c[0]) faltan.push(c[0]); return a || null; };
+  let antes = { tipo: 'silencio' };
+  for (let i = 0; i < notas.length; i++) {
+    const n = notas[i], sig = notas[i + 1], s = n.sil;
+    const { desliz, vocs, cola } = nucleoDe(s);
+    const K = [...s.ataque.map(p => AK[p] || p), ...desliz], v1 = vocs[0], k = K.join('');
+    // 1. la entrada
+    if (antes.tipo === 'listo') {
+      // la coda de antes ya trajo la consonante («an t»): sólo la sílaba
+      pon(elegir(k + v1, K[0] + v1), i, 'cv');
+    } else if (antes.tipo === 'silencio') {
+      if (!K.length) pon(elegir('- ' + v1, v1), i, 'cv');
+      else if (existe('- ' + k + v1)) pon('- ' + k + v1, i, 'cv');
+      else if (K[0] === 'r' && existe('- rr' + K.slice(1).join('') + v1)) pon('- rr' + K.slice(1).join('') + v1, i, 'cv');
+      else { pon(['- ' + K[0]].find(existe) || null, i, 'antes'); pon(elegir(k + v1, K[0] + v1), i, 'cv'); }
+    } else if (antes.tipo === 'vocal') {
+      const v = antes.v;
+      if (!K.length) pon(elegir(v + ' ' + v1, v1), i, 'cv');
+      else if (K.length === 1 && (K[0] === 'r' || K[0] === 'y') || K[0] === 'r' && (K[1] === 'y' || K[1] === 'w')) {
+        // la r simple y la y van de a dos vocales: «a ra», «a ya»
+        pon(elegir(v + ' ' + k + v1, k + v1), i, 'cv');
+      } else { pon(elegir(v + ' ' + K[0]), i - 1, 'antes'); pon(elegir(k + v1, K[0] + v1), i, 'cv'); }
+    } else pon(elegir(k + v1, K[0] + v1, v1), i, 'cv');
+    // 2. dentro de la nota: dos vocales (sinalefa)
+    let v = v1;
+    for (const w of vocs.slice(1)) { pon(elegir(v + ' ' + w), i, 'medio', { frac: .4 }); v = w; }
+    let diptongo = cola.length ? v + cola[cola.length - 1] : null;   // «aI»: se junta con lo que sigue
+    // 3. la coda y el final
+    let coda = s.coda.map(p => AK[p] || p);
+    const sigK = sig ? [...sig.sil.ataque.map(p => AK[p] || p), ...nucleoDe(sig.sil).desliz] : null, sigK0 = sigK?.[0] || null;
+    if (o.acento !== 0 && s.fin && sig && sigK0 && coda[coda.length - 1] === 's') coda = coda.slice(0, -1);
+    if (coda.length > 1) coda = [coda[0]];
+    if (coda[0] === 'n' && ['p', 'b', 'm'].includes(sigK0)) coda[0] = 'm';
+    let c = coda[0];
+    if (c && diptongo) { pon(elegir(v + ' ' + cola[0].toLowerCase()), i, 'medio', { frac: .62 }); diptongo = null; v = cola[0].toLowerCase(); }
+    if (c === 'r' && sig && !sigK0) { c = null; sig.sil = { ...sig.sil, ataque: ['r', ...sig.sil.ataque] }; }   // «ve-ra»
+    if (!c) {
+      const vf = diptongo || v;
+      if (!sig) pon(elegir(vf + ' R', v + ' R'), i, 'fin');
+      else if (diptongo && sigK0) { pon(elegir(diptongo + ' ' + sigK0) || elegir(v + ' ' + cola[0].toLowerCase()), i, 'antes'); antes = existe(diptongo + ' ' + sigK0) ? { tipo: 'listo' } : { tipo: 'vocal', v: cola[0].toLowerCase() }; continue; }
+      else if (diptongo) { pon(elegir(v + ' ' + cola[0].toLowerCase()), i, 'medio', { frac: .62 }); v = cola[0].toLowerCase(); }
+      antes = { tipo: 'vocal', v };
+    } else if (!sig) {
+      pon(elegir(v + c + ' R', v + ' ' + c), i, 'fin');
+      antes = { tipo: 'silencio' };
+    } else if (sigK0) {
+      // la coda con la consonante que sigue («an t»); si no está, la vocal a la coda («a n») y después la sílaba
+      if (existe(v + c + ' ' + sigK0)) { pon(v + c + ' ' + sigK0, i, 'antes'); antes = { tipo: 'listo' }; }
+      else { pon(elegir(v + ' ' + c), i, 'antes'); antes = { tipo: 'consonante', c }; }
+    } else {
+      // la coda antes de vocal pasa a la sílaba que sigue («e-la-mor»)
+      pon(elegir(v + ' ' + c), i, 'antes');
+      sig.sil = { ...sig.sil, ataque: [c === 'nh' ? 'N' : c === 'rr' ? 'R' : c === 'j' ? 'x' : c === 'y' ? 'Z' : c] };
+      antes = { tipo: 'consonante', c };
+    }
+  }
+  U.faltan = faltan;
+  return U;
+}
+
+function aliasNjokis(notas, existe, o = {}) {
   const U = [], faltan = [];
   const pon = (alias, nota, tipo, extra) => { if (alias) U.push({ alias, nota, tipo, ...extra }); };
   // el primero que tenga el banco; si ninguno, se anota el que se quería
@@ -223,13 +326,15 @@ export function ubicar(U, notas) {
       u.T = E + u.pre / 1000 - u.len / 1000;
     }
   }
-  // que un paso no se coma la vocal anterior: empieza, como muy temprano, a mitad de camino desde la última sílaba
+  // que un paso (o el final) no se coma la vocal anterior: empieza, como muy temprano, a mitad de camino desde la
+  // última sílaba
   let fijo = -Infinity;
   for (let k = 0; k < U.length; k++) {
     const u = U[k];
-    if (u.tipo !== 'antes') { fijo = Math.max(fijo, u.T); continue; }
-    const sig = U.slice(k + 1).find(x => x.tipo !== 'antes'), hasta = sig ? sig.T - sig.pre / 1000 : u.T + .05;
-    const minS = fijo + .45 * Math.max(0, hasta - fijo);
+    if (u.tipo !== 'antes' && u.tipo !== 'fin') { fijo = Math.max(fijo, u.T); continue; }
+    if (fijo === -Infinity) continue;
+    const sig = U.slice(k + 1).find(x => x.tipo !== 'antes'), hasta = u.tipo === 'fin' ? u.T : sig ? sig.T - sig.pre / 1000 : u.T + .05;
+    const minS = fijo + (u.tipo === 'fin' ? .5 : .45) * Math.max(0, hasta - fijo);
     if (u.T - u.pre / 1000 < minS) u.T = minS + u.pre / 1000;
     fijo = Math.max(fijo, u.T - u.pre / 1000 + .01);
   }
@@ -282,13 +387,15 @@ export function cantarBanco(banco, world, notas, opc = {}) {
   const piezas = [], faltan = [];
   let sr = 44100;
   for (const F of frases) {
-    const U = aliasFrase(F, banco.existe, o);
+    const U = aliasFrase(F, banco.existe, { reclist: banco.reclist, ...o });
     faltan.push(...U.faltan);
     for (const u of U) {
-      u.e = banco.buscar(u.alias, F[u.nota].midi);
+      u.e = banco.buscar(u.alias, F[u.nota].midi, o.evitar);
       if (!u.e) { faltan.push(u.alias); continue; }
       const w = banco.wav(u.e.archivo); if (w) sr = w.sr;
       u.len = largoDe(u.e, w); u.pre = u.e.pre; u.ovl = Math.max(0, u.e.overlap); u.cons = Math.min(u.e.consonante, u.len);
+      // normalizar (0 a 1): cuánto se lleva cada archivo al mismo nivel
+      u.lg = w ? 2 * (o.normalizar ?? 1) * Math.log(.1 / w.nivel) : 0;
     }
     const V = U.filter(u => u.e);
     if (!V.length) continue;
@@ -329,7 +436,7 @@ function sintetizarFrase(U, banco, world, o, alturaEn, ganancia) {
       w = .5 - .5 * Math.cos(Math.PI * w);
       const b0 = j * ancho, b1 = (j + 1) * ancho, bq = q * ancho;
       for (let m = 0; m < ancho; m++) {
-        lsp[bq + m] += w * (a.lsp[b0 + m] * (1 - f) + a.lsp[b1 + m] * f);
+        lsp[bq + m] += w * (a.lsp[b0 + m] * (1 - f) + a.lsp[b1 + m] * f + u.lg);
         ap[bq + m] += w * (a.ap[b0 + m] * (1 - f) + a.ap[b1 + m] * f);
       }
       peso[q] += w;
@@ -347,6 +454,7 @@ function sintetizarFrase(U, banco, world, o, alturaEn, ganancia) {
     amp[q] = Math.min(1, p);
     const t = inicio + q * P;
     if (voz[q] / p >= .5) f0[q] = 440 * Math.pow(2, (alturaEn(t) - 69) / 12) * (pesoVoz[q] > 0 ? Math.exp(o.modulacion * tiembla[q] / pesoVoz[q]) : 1);
+    if (o.depurar) o.depurar.push({ t: +t.toFixed(3), peso: +p.toFixed(2), voz: +(voz[q] / p).toFixed(2), f0: +f0[q].toFixed(1), db: +(10 * Math.log10(lsp.subarray(bq, bq + ancho).reduce((s, v) => s + v, 0))).toFixed(1) });
   }
   const y = world.sintetizar({ f0, sp: lsp, ap, fft, periodo: PERIODO, fs: sr });
   const x = new Float32Array(y.length);
