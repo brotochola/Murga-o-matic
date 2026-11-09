@@ -399,9 +399,13 @@ dialog .cabeza h2{font-family:var(--display);font-weight:400;font-size:18px;marg
         </div>
         <p class="hint">En las murgas de La Unión, mirando desde el público, los segundos van a la izquierda, los sobreprimos en el medio y los primos a la derecha; en las de La Teja, al revés (<i>Sin Disfraz</i>).</p>
       </div>
-      <div class="field"><label class="lbl" for="sala">Sala: la reverberación de las voces</label>
+      <div class="field"><label class="lbl" for="lugar">Dónde cantan</label>
+        <select id="lugar"></select>
+        <p class="hint" id="lugarHint"></p>
+      </div>
+      <div class="field"><label class="lbl" for="sala">Cuánta sala</label>
         <input id="sala" type="range" min="0" max="1" step="0.05" value="0.5">
-        <div class="hint" style="display:flex;justify-content:space-between"><span>seco</span><span>un poco</span><span>mucha</span></div>
+        <div class="hint" style="display:flex;justify-content:space-between"><span>seco</span><span>la del lugar</span><span>el doble</span></div>
       </div>
       <div class="mixer" id="mixer"></div>
     </aside>

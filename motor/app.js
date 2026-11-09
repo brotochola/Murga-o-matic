@@ -152,14 +152,27 @@ function procesar(buf,escala,drive){const k=Math.tanh(drive);for(let ch=0;ch<buf
 // lado y una cola que se apaga en 1,6 s en los graves y en 0,7 s arriba de 2,5 kHz, sin lo de abajo de 120 Hz.
 // Antes era ruido blanco de 0,7 s, y casi no se oía. Cuánta sala: S.sala, en la mezcla.
 const IRS={};
-function salaIR(ctx){const sr=ctx.sampleRate;
-  if(!IRS[sr]){const n=Math.floor(1.9*sr),pre=Math.round(.02*sr),r=new Rng(5),kl=1-Math.exp(-2*Math.PI*2500/sr),kh=1-Math.exp(-2*Math.PI*120/sr);
-    IRS[sr]=[0,1].map(ch=>{const d=new Float32Array(n+pre);let lo=0,hp=0;
-      for(let i=0;i<n;i++){const t=i/sr,w=r.rand()*2-1;lo+=(w-lo)*kl;const v=(lo*Math.exp(-6.9*t/1.6)+(w-lo)*.8*Math.exp(-6.9*t/.7))*Math.min(1,t/.03);hp+=(v-hp)*kh;d[pre+i]=v-hp}
-      [11,17,23,31,41,53,67].forEach((ms,k)=>{const i=pre+Math.round((ms+ch*2.7+k*.9*ch)*sr/1000);if(i<d.length)d[i]+=(k%2?-1:1)*.5*Math.pow(.8,k)});
+// Dónde cantan: cada lugar con su sala (cuánto tarda en llegar el primer rebote, cuánto dura la cola en los graves
+// y arriba de 2,5 kHz, los primeros rebotes y un eco de las paredes de enfrente), cuánto se manda a la sala, a qué
+// distancia están los cantores (sin micrófonos llegan con menos agudos) y cuánto de la batería suena en la sala. Con
+// micrófonos (Teatro de Verano, tablado) las voces van cerca y casi secas; sin micrófonos (club, cancha) la sala se oye
+// mucho, las voces llegan de lejos y la batería también rebota. «Sala» (S.sala, 0,5 = lo de cada lugar) escala el envío.
+const LUGARES={
+  teatro:{nombre:"Teatro de Verano, con micrófonos",pre:.03,grave:1.1,agudo:.5,primeros:[19,29,41,59],eco:0,envio:.24,lejos:0,bateria:.06,hint:"Al aire libre y con micrófonos: las voces cerca, presentes, con un poco de rebote del anfiteatro."},
+  tablado:{nombre:"Tablado de barrio, con micrófonos",pre:.02,grave:.8,agudo:.4,primeros:[13,23,37],eco:.11,envio:.3,lejos:-1.5,bateria:.1,hint:"El escenario del barrio: micrófonos simples y un eco de las casas de enfrente."},
+  club:{nombre:"Club de barrio, sin micrófonos",pre:.015,grave:1.5,agudo:.8,primeros:[9,14,21,29,38,47,61],eco:0,envio:.55,lejos:-4,bateria:.35,hint:"Sin micrófonos, en el salón del club: la sala se oye mucho y los cantores llegan desde unos metros."},
+  cancha:{nombre:"Cancha techada, sin micrófonos",pre:.025,grave:2.6,agudo:1.2,primeros:[17,29,43,61,83],eco:.18,envio:.7,lejos:-6,bateria:.5,hint:"Una cancha de fútbol 5 o un gimnasio: todo retumba, las voces llegan de lejos."},
+  calle:{nombre:"En la calle",pre:.01,grave:.45,agudo:.22,primeros:[7,19],eco:.07,envio:.12,lejos:-2,bateria:.04,hint:"En la calle o en la plaza: casi sin rebotes, sólo un poco de las fachadas."}};
+const lugar=()=>LUGARES[S.lugar]||LUGARES.teatro;
+function salaIR(ctx){const sr=ctx.sampleRate,L=lugar(),clave=sr+"|"+S.lugar;
+  if(!IRS[clave]){const largo=Math.max(L.grave,L.agudo)*1.2+L.eco+.1,n=Math.floor(largo*sr),pre=Math.round(L.pre*sr),r=new Rng(5),kl=1-Math.exp(-2*Math.PI*2500/sr),kh=1-Math.exp(-2*Math.PI*120/sr);
+    IRS[clave]=[0,1].map(ch=>{const d=new Float32Array(n+pre);let lo=0,hp=0;
+      for(let i=0;i<n;i++){const t=i/sr,w=r.rand()*2-1;lo+=(w-lo)*kl;const v=(lo*Math.exp(-6.9*t/L.grave)+(w-lo)*.8*Math.exp(-6.9*t/L.agudo))*Math.min(1,t/.03);hp+=(v-hp)*kh;d[pre+i]=v-hp}
+      L.primeros.forEach((ms,k)=>{const i=pre+Math.round((ms+ch*2.7+k*.9*ch)*sr/1000);if(i<d.length)d[i]+=(k%2?-1:1)*.5*Math.pow(.8,k)});
+      if(L.eco){const i=pre+Math.round((L.eco+ch*.004)*sr);for(let k=0;k<Math.round(.006*sr)&&i+k<d.length;k++)d[i+k]+=.35*Math.sin(Math.PI*k/(.006*sr))*(r.rand()*2-1)}
       return d})}
-  const ir=ctx.createBuffer(2,IRS[sr][0].length,sr);ir.copyToChannel(IRS[sr][0],0);ir.copyToChannel(IRS[sr][1],1);return ir}
-const envio=()=>.6*S.sala;
+  const ir=ctx.createBuffer(2,IRS[clave][0].length,sr);ir.copyToChannel(IRS[clave][0],0);ir.copyToChannel(IRS[clave][1],1);return ir}
+const envio=()=>lugar().envio*S.sala/.5;
 
 // ============================================================ cantores sintéticos
 // Trece voces de fuente glótica y formantes (cantor/cantor.js). Cantan en obreros, varios a la vez; cada cuerda
@@ -365,14 +378,14 @@ async function importarCantante(archivo){if(!archivo||!cantanteAbierto)return;
 const ORDEN=["bajos","segundos","primos","sobreprimos","tercia"];
 const LLAMADAS=Object.fromEntries(DATOS.ritmos.map(r=>{const a=DATOS.acompana[r.id];if(!a||!a[0])return[r.id,0];const c4=r.compas*4/r.tpc;return[r.id,Math.ceil((DATOS.frases[a[0]].ultimo+.05)/c4)]}));
 const S={version:2,formacion:"union",adornos:"algunos",grito:"si",sala:.5,recita:0,forma:"retirada",estilo:"todas",tonica:9,modo:"menor",ritmo:0,tempo:0,largo:"normal",seed:1,brillo:1,clarinada:true,cancionFinal:true,modula:true,tercia:0,mix:{bajos:1,segundos:1,primos:1,sobreprimos:1,tercia:1,bateria:.42},mute:{},
-  voces:"muestras",semCoro:1,acordes:{},editando:null,ajustes:{},soloCantor:null,pieza:null,stems:null,P:null,ac:null,nodos:null,inicio:0,offset:0,tocando:false,gen:0,mp3:null,
+  voces:"muestras",semCoro:1,lugar:"teatro",acordes:{},editando:null,ajustes:{},soloCantor:null,pieza:null,stems:null,P:null,ac:null,nodos:null,inicio:0,offset:0,tocando:false,gen:0,mp3:null,
   letra:{partes:[],textos:[],diags:null,temas:null,editados:new Set(),sel:{i:0,k:0},sil:null,marcas:[],semLetra:1,pendiente:false,cantada:null}};
 const $=id=>document.getElementById(id);
 try{S.ajustes=JSON.parse(localStorage.getItem("murga.cantantes")||"{}")||{}}catch(e){}
 // la formación del coro y los adornos se guardan en este navegador
-try{const c=JSON.parse(localStorage.getItem("murga.coro")||"{}")||{};if(c.formacion==="union"||c.formacion==="teja")S.formacion=c.formacion;if(c.adornos in ADORNOS_COR)S.adornos=c.adornos;if(c.grito in GRITO_COR)S.grito=c.grito;if(c.sala>=0&&c.sala<=1)S.sala=+c.sala;if(Number.isInteger(c.semCoro)&&c.semCoro>0)S.semCoro=c.semCoro}catch(e){}
-function guardarCoro(){try{localStorage.setItem("murga.coro",JSON.stringify({formacion:S.formacion,adornos:S.adornos,grito:S.grito,sala:S.sala,semCoro:S.semCoro}))}catch(e){}guardarLuego()}
-function mostrarCoro(){$("formacion").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===S.formacion));$("adornos").value=S.adornos;$("grito").value=S.grito;$("sala").value=S.sala;$("campoAdornos").hidden=!sint();$("campoGrito").hidden=!difonos()}
+try{const c=JSON.parse(localStorage.getItem("murga.coro")||"{}")||{};if(c.formacion==="union"||c.formacion==="teja")S.formacion=c.formacion;if(c.adornos in ADORNOS_COR)S.adornos=c.adornos;if(c.grito in GRITO_COR)S.grito=c.grito;if(c.sala>=0&&c.sala<=1)S.sala=+c.sala;if(Number.isInteger(c.semCoro)&&c.semCoro>0)S.semCoro=c.semCoro;if(c.lugar in LUGARES)S.lugar=c.lugar}catch(e){}
+function guardarCoro(){try{localStorage.setItem("murga.coro",JSON.stringify({formacion:S.formacion,adornos:S.adornos,grito:S.grito,sala:S.sala,semCoro:S.semCoro,lugar:S.lugar}))}catch(e){}guardarLuego()}
+function mostrarCoro(){$("formacion").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===S.formacion));$("adornos").value=S.adornos;$("grito").value=S.grito;$("sala").value=S.sala;$("lugar").value=S.lugar;$("lugarHint").textContent=lugar().hint;$("campoAdornos").hidden=!sint();$("campoGrito").hidden=!difonos()}
 const sint=()=>S.voces!=="muestras";      // con letra: los cantores de formantes, los de difonos o el solista
 const difonos=()=>S.voces==="difonos"||S.voces==="solista";
 // La versión 1 del compositor, con su modelo del 7 de noviembre: se carga sólo si se elige
@@ -452,11 +465,13 @@ async function cantarDeNuevo(){
 function grafo(ctx,dest,offset,when){
   const master=ctx.createGain();master.gain.value=.9;const comp=ctx.createDynamicsCompressor();comp.threshold.value=-10;comp.ratio.value=3;comp.attack.value=.01;comp.release.value=.2;
   master.connect(comp).connect(dest);
-  const vozBus=ctx.createGain();vozBus.connect(master);const rev=ctx.createConvolver();rev.buffer=salaIR(ctx);const send=ctx.createGain();send.gain.value=envio();vozBus.connect(send).connect(rev).connect(master);
+  const L=lugar(),vozBus=ctx.createGain(),lejos=ctx.createBiquadFilter();lejos.type="highshelf";lejos.frequency.value=3500;lejos.gain.value=L.lejos;vozBus.connect(lejos);lejos.connect(master);
+  const rev=ctx.createConvolver();rev.buffer=salaIR(ctx);const send=ctx.createGain();send.gain.value=envio();lejos.connect(send).connect(rev).connect(master);
+  const sendBat=ctx.createGain();sendBat.gain.value=L.bateria*S.sala/.5;sendBat.connect(rev);
   const gains={},srcs=[];
-  for(const k of[...ORDEN,"bateria"]){const g=ctx.createGain();g.gain.value=S.mute[k]?0:S.mix[k]*(k==="bateria"?1:.9);g.connect(k==="bateria"?master:vozBus);gains[k]=g;
+  for(const k of[...ORDEN,"bateria"]){const g=ctx.createGain();g.gain.value=S.mute[k]?0:S.mix[k]*(k==="bateria"?1:.9);g.connect(k==="bateria"?master:vozBus);if(k==="bateria")g.connect(sendBat);gains[k]=g;
     const s=ctx.createBufferSource();s.buffer=S.stems[k];s.connect(g);s.start(when,offset);srcs.push(s)}
-  return{gains,srcs,send};
+  return{gains,srcs,send,sendBat};
 }
 function desbloquear(){
   try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}       // iOS: que suene aunque el teléfono esté en silencio
@@ -683,7 +698,9 @@ $("tercia").onchange=e=>{S.tercia=+e.target.value;regen()};
 $("formacion").querySelectorAll("button").forEach(b=>b.onclick=()=>{if(S.formacion===b.dataset.v)return;S.formacion=b.dataset.v;guardarCoro();mostrarCoro();if(!S.pieza)return;if(sint())cantarDeNuevo();else regen(true)});
 $("adornos").onchange=e=>{S.adornos=e.target.value;guardarCoro();if(S.pieza&&sint())cantarDeNuevo()};
 $("grito").onchange=e=>{S.grito=e.target.value;guardarCoro();if(S.pieza&&difonos())cantarDeNuevo()};
-$("sala").oninput=e=>{S.sala=+e.target.value;guardarCoro();if(S.nodos&&S.ac)S.nodos.send.gain.setTargetAtTime(envio(),S.ac.currentTime,.03)};
+$("sala").oninput=e=>{S.sala=+e.target.value;guardarCoro();if(S.nodos&&S.ac){S.nodos.send.gain.setTargetAtTime(envio(),S.ac.currentTime,.03);S.nodos.sendBat.gain.setTargetAtTime(lugar().bateria*S.sala/.5,S.ac.currentTime,.03)}};
+$("lugar").innerHTML=Object.entries(LUGARES).map(([k,L])=>`<option value="${k}">${L.nombre}</option>`).join("");
+$("lugar").onchange=e=>{S.lugar=e.target.value;guardarCoro();mostrarCoro();S.mp3=null;if(S.tocando){const t=posicion();detener();S.offset=t;tocar()}};
 mostrarCoro();
 $("version").onchange=e=>{S.version=+e.target.value;regen()};
 for(const k of["clarinada","cancionFinal","modula"])$(k).onchange=e=>{S[k]=e.target.checked;regen()};
@@ -841,7 +858,7 @@ function fotoLetra(){const L=S.letra;return L.textos.length?{textos:L.textos.map
 function foto(){return{id:S.murga.id,nombre:S.murga.nombre||"",creada:S.murga.creada,cambiada:Date.now(),version:1,
   resumen:S.pieza?`${titulo()} · ${ESTILOS[S.estilo]||S.estilo} · ${fmt(S.P?.total||0)}`:"",
   pieza:S.pieza,ajustesPieza:Object.fromEntries(CLAVES_PIEZA.map(k=>[k,S[k]])),acordes:S.acordes,voces:S.voces,semCoro:S.semCoro,ajustes:S.ajustes,
-  coro:{formacion:S.formacion,adornos:S.adornos,grito:S.grito,sala:S.sala},mix:S.mix,mute:S.mute,letra:fotoLetra()}}
+  coro:{formacion:S.formacion,adornos:S.adornos,grito:S.grito,sala:S.sala,lugar:S.lugar},mix:S.mix,mute:S.mute,letra:fotoLetra()}}
 let temporizadorGuardar=null;
 function avisoGuardado(t){$("guardado").textContent=t}
 function guardarLuego(){if(!S.pieza)return;clearTimeout(temporizadorGuardar);avisoGuardado("Guardando…");temporizadorGuardar=setTimeout(guardarYa,700)}
