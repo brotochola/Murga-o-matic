@@ -687,5 +687,8 @@ export function componer(M, op) {
     }
     for (const h of s.golpes || []) { const x = (h.q - s.inicio) / s.largo; h.din = Math.round(h.din * (s.fadeFinal ? .62 - .5 * x : 1 - .38 * x)); }
   }
+  // ninguna cuerda pasa de La 4 (como en la versión 2: compositor.js, TECHO): lo que pase baja una octava
+  for (const k of CUERDAS) for (const e of ev[k]) while (e[2] > 69) e[2] -= 12;
+  for (const s of secs) for (const h of s.golpes || []) while (h.top > 69) h.top -= 12;
   return { opciones: o, secs, ev, total: ini, golpes: secs.flatMap(s => s.golpes || []) };
 }

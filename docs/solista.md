@@ -266,6 +266,8 @@ El centro de gravedad de la «e» del segundo sobreprimo en Do 5 baja de 2,9 a 1
 
 Se entiende igual. Con el banco de las 24 frases (media de tres coros): la versión de antes, 19,7 % de letras y 43,8 % de palabras mal; corrigiendo todos los sonidos con voz, 21,0 y 50,0 %; sólo en el medio de las vocales, como quedó, 18,9 y 44,9 % (sin la corrección y con lo del volumen, 18,4 y 42,2 %). Con cambios que sólo tocan el volumen, las palabras de cada coro ya se mueven unos 5 puntos: la diferencia que queda está dentro de eso. Cuesta tiempo: un cantor de 68 s tarda 0,4 o 0,5 s más (0,8 contra 1,2 o 1,3 s), y la demo entera, en una computadora de dos núcleos, canta en unos 46 s en vez de 32.
 
+**Hasta La 4, por ahora.** Con el color y el volumen arreglados, un Do 5 sigue sin sonar a un adulto cantando agudo (al oído, «un nene robot»): ninguna variante lo arregló (sin la corrección, sin el pozo de la fundamental, con aire: la mejor siguió siendo la corrección como quedó). Es el límite de una voz de habla grabada a unos 110 Hz. Así que ninguna cuerda pasa de La 4 (`compositor_2.md`, sección 12), y el plan para un agudo creíble, con un banco de voz cantada, está en `docs/utau.md`.
+
 **La sala.** Las voces van todas juntas a una reverberación (la batería no). Era ruido blanco de 0,7 s y casi no se oía. Ahora tiene 20 ms antes de empezar, unos primeros rebotes distintos a cada lado y una cola de 1,6 s en los graves y 0,7 s arriba de 2,5 kHz, sin lo de abajo de 120 Hz. En **Mezcla → Sala** se elige cuánta: el valor por defecto (0,5) es casi el doble de lo que se mandaba antes.
 
 ## Lo que falta

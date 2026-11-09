@@ -28,8 +28,8 @@ const CUERDAS={
   bajos:{cantores:2,pan:-.72,rango:"sol2–re4"},
   segundos:{cantores:3,pan:-.42,rango:"do3–re4"},
   primos:{cantores:5,pan:.42,rango:"fa#3–la4"},
-  sobreprimos:{cantores:2,pan:-.02,rango:"do4–re5"},
-  tercia:{cantores:1,pan:.1,rango:"re4–si4"}};
+  sobreprimos:{cantores:2,pan:-.02,rango:"do4–la4"},
+  tercia:{cantores:1,pan:.1,rango:"re4–la4"}};
 const panDe=k=>CUERDAS[k].pan*(S.formacion==="teja"?-1:1);
 // Adornos en las notas largas de las clarinadas y de los finales (cantor/adornos.js): ninguno, algunos o muchos
 const ADORNOS_COR={ninguno:0,algunos:1,muchos:1.8};

@@ -10,7 +10,11 @@ export const CUERDAS = ['bajos', 'segundos', 'primos', 'sobreprimos', 'tercia'];
 // Los bajos son la parte grave de la cuerda de segundos (Sin Disfraz: «bajos y segundos», do3–do4, excepcional sol2–re4).
 // La tercia, hasta Si 4: en Sin Disfraz (Lamolle y Lombardo) un buen sobreprimo llega fácil a La o Si 4, y la tercia es el
 // sobreprimo que se escapa del coro, no necesariamente el más agudo (llegaba a Re 5, y sonaba muy aguda).
-export const RANGOS = { bajos: [43, 62], segundos: [48, 62], primos: [54, 69], sobreprimos: [60, 74], tercia: [62, 71] };
+// Ninguna cuerda pasa de La 4 (TECHO): el libro dibuja a los sobreprimos de Mi 4 a La 4, con extensión hasta Si 4
+// («un buen sobreprimo llega fácilmente a un la o un si»), y los cantores de difonos, arriba de La 4, no suenan a
+// un adulto cantando agudo (la voz de MBROLA es de habla, grabada a unos 110 Hz). Antes iban hasta Re 5.
+export const TECHO = 69;
+export const RANGOS = { bajos: [43, 62], segundos: [48, 62], primos: [54, TECHO], sobreprimos: [60, TECHO], tercia: [62, TECHO] };
 const MELODIA = [57, 73];   // la melodía va arriba del bloque
 const mod = (a, n) => ((a % n) + n) % n;
 import { MODOS } from './modos.js';
@@ -102,9 +106,9 @@ function registro(c, tonica, nota, desde = 0) {
   let mej = 60 + tonica, md = 1e9;
   for (let k = -2; k <= 2; k++) {
     const off = 60 + tonica + 12 * k;
-    // la melodía real vive entre 56 y 69, con centro en 64
+    // la melodía real vive entre 56 y 69, con centro en 64; arriba de TECHO, casi nunca
     let costo = Math.abs((lo + hi) / 2 + off - 63.5);
-    if (hi + off > 71) costo += 3 * (hi + off - 71);
+    if (hi + off > TECHO) costo += 10 * (hi + off - TECHO);
     if (lo + off < 54) costo += 3 * (54 - lo - off);
     if (nota !== null && nota !== undefined) costo += .5 * Math.abs(tops[0] + off - nota);
     if (costo < md) { md = costo; mej = off; }
@@ -750,5 +754,8 @@ export function componer(M, op) {
     }
     for (const h of s.golpes || []) { const x = (h.q - s.inicio) / s.largo; h.din = Math.round(h.din * (s.fadeFinal ? .62 - .5 * x : 1 - .38 * x)); }
   }
+  // lo que todavía pase de TECHO (una celda que no entra entera debajo, o la nota de arriba de un acorde) baja una octava
+  for (const k of CUERDAS) for (const e of ev[k]) while (e[2] > TECHO) e[2] -= 12;
+  for (const s of secs) for (const h of s.golpes || []) while (h.top > TECHO) h.top -= 12;
   return { opciones: o, secs, ev, total: ini, golpes: secs.flatMap(s => s.golpes || []) };
 }

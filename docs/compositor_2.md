@@ -169,6 +169,16 @@ Con el libro entero, el registro de los sobreprimos que dibuja *Sin Disfraz* va 
 
 En 56 piezas de prueba, la tercia queda con mediana Sol 4 y techo Si 4 (antes, mediana La 4 y el 23 % de sus notas entre Do 5 y Re 5). Las demás cuerdas no cambian. Los sobreprimos siguen pasando de Si 4 cuando la melodía sube (el 4,5 % de sus notas, casi todas Do 5): son la nota de arriba de los golpes, y el libro dice que cantan «hasta donde lleguen». `probar_compositor.mjs`: 9.720 combinaciones, ninguna excepción.
 
+## 12. Nadie pasa de La 4
+
+Los cantores de difonos, arriba de La 4, no suenan a un adulto cantando agudo: la voz de MBROLA es de habla, grabada a unos 110 Hz, y un Do 5 la estira casi cinco veces (`solista.md`, «El color en el agudo»). El libro dibuja a los sobreprimos de Mi 4 a La 4, con extensión hasta Si 4. Así que, por ahora, `TECHO` (La 4) es el techo de todas las cuerdas: el de los sobreprimos (antes Re 5), el de la tercia (antes Si 4) y el de los primos (ya era La 4).
+
+- Al elegir la octava de cada celda (`registro`), pasarse de La 4 cuesta 10 por semitono (antes, 3 por semitono arriba de Si 4).
+- Lo que todavía pase (una celda que no entra entera debajo) baja una octava al final: el 0,4 % de las notas.
+- La versión 1 del compositor también baja una octava lo que pase de La 4.
+
+En las cuatro demos y 200 semillas: antes, el 15 % de las notas de los sobreprimos pasaba de La 4 (16.357 de 107.133), con la melodía en mediana Mi 4 y percentil 90 Sib 4; ahora ninguna, con la melodía en mediana Re 4 y percentil 90 Sol 4. Con `probar_compositor.mjs`, 9.720 combinaciones sin errores y ninguna nota a más de 2 semitonos del rango de su cuerda.
+
 ## Lo que se probó y no quedó
 
 - **Suavizar los saltos de las voces de abajo en las costuras**, por octava o por la nota del acorde más cercana. Baja los saltos de cuarta, pero sube los de tercera y saca terceras entre voces. En el jurado, sin espiar, no cambió nada (1,32 contra 1,33).
