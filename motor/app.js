@@ -508,6 +508,7 @@ function dibujarInspCantante(){
   sel.innerHTML=opcionesDeVoz(vv);
   sel.title=AYUDA_VOZ;
   sel.onchange=()=>elegirVozDe([x.clave],sel.value);fila("Voz",sel,plantel.esDeBanco(vv)&&!plantel.vozDisponible(vv)?"no está: canta MBROLA":"");
+  {const v=document.createElement("button");v.className="btn ghost";v.style.cssText="justify-self:start;padding:3px 8px;font-size:13px";v.textContent="Ver los modelos disponibles";v.onclick=()=>verModelos(true);ps.append(v)}
   if(PARAMS_DE[vv]){const h=document.createElement("p");h.className="hint";h.textContent=vv===VOZ_MUESTRAS?"Canta su línea con una muestra de coro («aah»), sin letra: la muestra ya es un grupito de voces. Se le cambian la afinación, el volumen y el paneo.":"Canta la letra con la voz de formantes, armada desde cero (la de «Formantes» para toda la murga). Se le cambian la garganta, la afinación, los adornos, el volumen y el paneo.";ps.append(h)}
   for(const[p,nombre,mn,mx,paso,fmt,ayuda]of PARAMS){if(PARAMS_DE[vv]&&!PARAMS_DE[vv].has(p))continue;const r=document.createElement("input");r.type="range";r.min=mn;r.max=mx;r.step=paso;r.value=val(p);
     const o=fila(nombre,r,fmt(+val(p)));if(ayuda){r.title=ayuda;o.parentElement.title=ayuda}r.oninput=()=>{o.textContent=fmt(+r.value)};r.onchange=()=>cambiarCantante(x.clave,p,+r.value)}
@@ -1232,6 +1233,13 @@ addEventListener("resize",()=>{if(angosto())return;for(const id of abiertos){con
   p.style.left=x+"px";p.style.top=y+"px";p.style.maxHeight=(innerHeight-y-8)+"px"}});
 // «La pieza» manda a «Cantantes», donde se eligen las voces
 $("irCantantes").onclick=()=>abrirPanel("cantantes");
+// «Ver modelos disponibles»: las voces que hay (cómo canta la murga, la misma voz para todos, el plantel); se acuerda si
+// quedó abierto. «La pieza» y el inspector también los abren.
+function verModelos(abrir){const m=$("modelos"),b=$("verModelos"),ver=abrir??m.hidden;m.hidden=!ver;b.setAttribute("aria-expanded",ver);b.textContent=ver?"Ocultar los modelos":"Ver modelos disponibles";
+  try{localStorage.setItem("murga.modelos",ver?"1":"")}catch(e){}if(ver&&abrir)requestAnimationFrame(()=>m.scrollIntoView({behavior:"smooth",block:"start"}))}
+$("verModelos").onclick=()=>verModelos();
+try{if(localStorage.getItem("murga.modelos"))verModelos(true)}catch(e){}
+$("irCantantes").onclick=()=>{abrirPanel("cantantes");verModelos(true)};
 {const mo=new MutationObserver(revisarPaneles);for(const b of BOTONES_PANEL)mo.observe($(b.dataset.panel),{attributes:true,attributeFilter:["hidden"]});revisarPaneles();pintarPaneles()}
 // La manija entre el multipista y la sección de abajo: arrastrándola cambia el alto de la sección (se guarda); doble
 // clic la achica o la vuelve a abrir; con el teclado, flechas arriba y abajo

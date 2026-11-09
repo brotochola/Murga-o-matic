@@ -264,7 +264,9 @@ a{color:var(--sobreprimos)}
 .sinred progress{width:100%;height:6px;accent-color:var(--accent)}
 .cantantes .cabeza{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;margin-bottom:6px}
 .cantantes .cabeza h2{margin:0}
-.toda-murga{margin:12px 0 0}
+.toda-murga{margin:0 0 12px}
+.modelos{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.cantantes .cabeza .hint{margin:0;flex:1 1 220px}
 .lista-cantantes{display:grid;gap:8px;margin-top:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr))}
 .tarjeta{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel);cursor:pointer}
 .tarjeta:hover{border-color:var(--muted)}
@@ -560,9 +562,12 @@ p.elegido{font-size:16px;font-weight:600}
       <div class="cabeza"><h2 id="t-cantantes">Los cantantes</h2><button class="btn ghost cerrar-panel" aria-label="Cerrar">×</button></div>
 <div class="cant-dos"><div>
     <div class="cabeza">
-      <span></span>
-      <div class="botones"><button class="btn" id="otrosCantantes">Otros cantantes</button><button class="btn" id="cantantesReset">Volver a como salieron</button></div>
+      <p class="hint">Los trece murguistas. Tocá uno para verlo y cambiarlo: ahí elegís su voz entre los modelos que hay.</p>
+      <div class="botones"><button class="btn" id="verModelos" aria-expanded="false" aria-controls="modelos" title="Las voces que hay (los bancos del plantel, MBROLA, las muestras de coro, los formantes), cómo canta la murga y la misma voz para todos">Ver modelos disponibles</button><button class="btn" id="otrosCantantes">Otros cantantes</button><button class="btn" id="cantantesReset">Volver a como salieron</button></div>
     </div>
+    <div class="lista-cantantes" id="listaCantantes"></div>
+    <div class="modelos" id="modelos" hidden>
+      <h3 class="dev-h">Los modelos de voz</h3>
     <div class="field voces"><span class="lbl" id="l-voces">Cómo canta la murga</span>
       <div class="seg" role="group" aria-labelledby="l-voces" id="voces">
         <button data-v="difonos" aria-pressed="false" title="Cada murguista con la voz de su tarjeta: un banco del plantel, MBROLA, las muestras de coro o los formantes">Cada uno con su voz</button>
@@ -572,10 +577,9 @@ p.elegido{font-size:16px;font-weight:600}
       <label class="chk" id="campoSolista" hidden><input type="checkbox" id="soloSolista"> Sólo un solista, con la melodía</label>
       <p class="hint" id="vocesHint"></p>
     </div>
-    <section class="plantel" id="plantelCaja" aria-label="El plantel: los bancos de voces"></section>
-<p class="hint">Los trece murguistas, cada uno con su nombre, su voz y sus mañas. Tocá uno para verlo y cambiarlo en el inspector. Las voces se cantan con «Cantar las voces» (arriba, paso 3); ya cantadas, al cambiar algo de uno vuelve a cantar él solo, en un momento. Son los mismos aunque cambies la música; con «Otros cantantes» viene otro coro. Se guardan en este navegador.</p>
     <label class="field toda-murga"><span class="lbl">Toda la murga con</span><select id="vozTodos" title="La misma voz para los trece murguistas, o la que le toca a cada uno en el plantel. Después se puede cambiar uno por uno."></select></label>
-    <div class="lista-cantantes" id="listaCantantes"></div>
+    <section class="plantel" id="plantelCaja" aria-label="El plantel: los bancos de voces"></section>
+    </div>
   </div><div class="cant-editor">      <section class="insp-cantante" id="inspCantante" hidden aria-label="El cantante elegido">
         <div class="ic-cabeza">
           <img id="icCara" alt="" width="72" height="72">
