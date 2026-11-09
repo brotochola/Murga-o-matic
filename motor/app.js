@@ -447,11 +447,11 @@ function dibujarTodo(){
     else if(s.repite){const n=document.createElement("small");n.className="prep";n.textContent=` · los acordes de «${s.repite}»`;ac.append(n)}
     tr.style.cursor="pointer";tr.onclick=()=>saltar(s.t0);tb.appendChild(tr);
     if(S.editando===s.nombre)tb.appendChild(editorAcordes(s))}
-  $("cantada").hidden=!sint();dibujarCantantes();
+  $("cantada").hidden=!sint();$("procesoBloque").hidden=!sint();$("inspectorVacio").hidden=sint();dibujarCantantes();
   $("notaRoll").textContent=sint()?"Cada color es una cuerda; abajo va la letra, cada sílaba donde se canta, en negrita las acentuadas. Tocá para escuchar desde ahí y ver cómo se hizo ese verso; arrastrá para moverte.":"Cada color es una cuerda. Tocá las notas o las secciones para escuchar desde ahí; arrastrá para moverte.";
   if(sint()){libreto();chips()}
   actualizarVistas();pintarCursor();
-  if(!$("grabada").hidden)verPartitura(true);
+  delete $("hoja").dataset.lista;if(pestanaActual==="grabada")verPartitura(false);
 }
 // ── cambiar los acordes: de a medio compás; la melodía y las voces se acomodan al acorde nuevo ──
 const OPCIONES_ACORDE={mayor:["I","ii","iii","IV","V","V7","vi","viio","I7","II7","III7","VI7","iv","bVI","bVII","i"],menor:["i","iio","bIII","iv","v","V","V7","bVI","bVII","viio","I7","IV7","bII","I"]};
@@ -718,16 +718,32 @@ $("txt").onclick=async()=>{if(!S.pieza)return;
 
 // Partitura coral: a la vista y en PDF
 function datosPapeles(){return{pieza:S.pieza,titulo:titulo(),subtitulo:subtitulo(),silabas:sint()?silabasPorQ():null}}
-async function verPartitura(forzar){
+async function verPartitura(irAhi){
   const caja=$("grabada");
-  if(!forzar&&!caja.hidden){caja.hidden=true;$("verPartitura").setAttribute("aria-expanded","false");$("verPartitura").textContent="Ver la partitura";return}
   if(!S.pieza)return;
-  caja.hidden=false;$("verPartitura").setAttribute("aria-expanded","true");$("verPartitura").textContent="Ocultar la partitura";
+  if(irAhi){mostrarPestana("grabada");caja.closest(".pestanas").scrollIntoView({behavior:"smooth",block:"start"})}
+  if($("hoja").dataset.lista)return;$("hoja").dataset.lista="1";
   $("grabadaNota").textContent=sint()?"Cinco pentagramas, de la tercia a los bajos, con la letra debajo de cada nota y los acordes arriba.":"Cinco pentagramas, de la tercia a los bajos, con los acordes arriba. Con cantores sintéticos aparece también la letra.";
   $("hoja").textContent="Escribiendo la partitura…";
-  try{await mostrarPartitura($("hoja"),datosPapeles());if(!forzar)caja.scrollIntoView({behavior:"smooth",block:"start"})}
-  catch(e){console.error(e);$("hoja").textContent=`No se pudo dibujar la partitura: ${e?.message||e}`}}
-$("verPartitura").onclick=()=>verPartitura(false);
+  try{await mostrarPartitura($("hoja"),datosPapeles())}
+  catch(e){console.error(e);delete $("hoja").dataset.lista;$("hoja").textContent=`No se pudo dibujar la partitura: ${e?.message||e}`}}
+$("verPartitura").onclick=()=>verPartitura(true);
+
+// ============================================================ pestañas (abajo de la partitura)
+// Una pestaña está si su panel está (la letra, sólo con cantores que cantan; los cantantes, sólo con difonos). La
+// elegida se guarda en este navegador.
+const PESTANAS=[...document.querySelectorAll(".tabs [role=tab]")];
+let pestanaActual=null,pestanaSola=true;   // pestanaSola: la eligió la página, no la persona
+function mostrarPestana(id,sola=false){const b=PESTANAS.find(x=>x.dataset.panel===id);if(!b||b.hidden)return;pestanaActual=id;pestanaSola=sola;
+  for(const x of PESTANAS){const on=x===b;x.setAttribute("aria-selected",on);x.tabIndex=on?0:-1;$(x.dataset.panel).classList.toggle("activa",on)}
+  if(!sola)try{localStorage.setItem("murga.pestana",id)}catch(e){}
+  if(id==="grabada")verPartitura(false)}
+function revisarPestanas(){for(const x of PESTANAS)x.hidden=$(x.dataset.panel).hidden;
+  if(!pestanaActual||$(pestanaActual).hidden||pestanaSola){let guardada=null;try{guardada=localStorage.getItem("murga.pestana")}catch(e){}
+    const p=PESTANAS.find(x=>x.dataset.panel===guardada&&!x.hidden)||PESTANAS.find(x=>!x.hidden);if(p&&p.dataset.panel!==pestanaActual)mostrarPestana(p.dataset.panel,true)}}
+PESTANAS.forEach((b,i)=>{b.onclick=()=>mostrarPestana(b.dataset.panel);
+  b.onkeydown=e=>{if(e.key!=="ArrowRight"&&e.key!=="ArrowLeft")return;const vis=PESTANAS.filter(x=>!x.hidden),j=vis.indexOf(b),n=vis[(j+(e.key==="ArrowRight"?1:vis.length-1))%vis.length];n.focus();mostrarPestana(n.dataset.panel)}});
+{const mo=new MutationObserver(revisarPestanas);for(const b of PESTANAS)mo.observe($(b.dataset.panel),{attributes:true,attributeFilter:["hidden"]});revisarPestanas()}
 async function bajarPdf(){if(!S.pieza)return;avisoExport("Armando el PDF…");
   try{const blob=await pdfPartitura(datosPapeles());avisoExport(await guardar(blob,base()+"_partitura.pdf"))}catch(e){errorExport(e)}}
 $("pdf").onclick=bajarPdf;$("pdf2").onclick=bajarPdf;

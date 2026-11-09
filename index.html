@@ -14,8 +14,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Consola de tablado: banda de retazos arriba con transporte; debajo, controles y mezcla a la izquierda, partitura y estructura a la derecha.
-   Con cantores sintéticos aparecen la letra y cómo se hizo cada verso. En el teléfono, todo en una columna. */
+/* Una sola página en paneles: arriba la barra con el transporte; a la izquierda la pieza y la mezcla, en el medio la
+   partitura y abajo de ella las pestañas (letra, cantantes, partitura coral, exportar), a la derecha el inspector (cómo
+   se hizo el verso elegido). Con menos ancho el inspector baja; en el teléfono, todo en una columna. */
 :root{
   --bg:#eceef4; --panel:#fbfbfd; --ink:#16182b; --muted:#5d6079; --line:#d6d9e4; --well:#e3e6ef;
   --accent:#d4920a; --accent-ink:#16182b; --accent-soft:#f5e6c4;
@@ -41,31 +42,46 @@
 [hidden]{display:none!important}
 html,body{background:var(--bg);color:var(--ink)}
 body{font:15px/1.5 var(--body);margin:0}
-.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+.app{max-width:1800px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 32px}
 /* banda de retazos: rombos del traje murguero */
 .retazos{height:14px;background:
   conic-gradient(from 45deg at 50% 50%,var(--bajos) 0 25%,var(--accent) 0 50%,var(--sobreprimos) 0 75%,var(--tercia) 0) 0 0/28px 28px;
   opacity:.9}
-header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:end;justify-content:space-between;padding-block:22px 12px}
-h1{font-family:var(--display);font-weight:400;font-size:clamp(34px,6vw,58px);line-height:.95;margin:0;letter-spacing:-.01em;text-wrap:balance}
+header.barra{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;justify-content:space-between;padding:10px 0;background:var(--bg);border-bottom:1px solid var(--line);margin-bottom:10px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(24px,3vw,30px);line-height:1;margin:0;letter-spacing:-.01em;white-space:nowrap}
 h1 span{color:var(--accent)}
-.tag{color:var(--muted);margin:6px 0 0;max-width:52ch}
+.tag{color:var(--muted);margin:0;max-width:70ch}
 .transport{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 button,select,input{font:inherit;color:inherit}
 .btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:600}
 .btn:hover{border-color:var(--muted)}
 .btn:disabled{opacity:.5;cursor:default}
 .btn:focus-visible,select:focus-visible,input:focus-visible,.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.play{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);min-width:118px;font-size:16px;padding:10px 18px;border-radius:12px}
+.play{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);min-width:110px;font-size:15px;padding:8px 16px;border-radius:12px}
 .play:disabled{opacity:.55;cursor:wait}
 .time{font:500 14px var(--mono);font-variant-numeric:tabular-nums;color:var(--muted);min-width:96px}
-.bajar{font-size:15px;padding:10px 16px;border-radius:12px}
-.estado-top{display:grid;gap:6px;margin-bottom:16px;min-height:26px}
+.bajar{font-size:14px;padding:8px 14px;border-radius:12px}
+.estado-top{display:grid;gap:6px;margin-bottom:12px;min-height:22px}
 .estado-top progress{width:100%;height:6px;accent-color:var(--accent)}
 .status{font-size:14px;color:var(--muted);margin:0}
 .status.err{color:var(--mal)}
-.grid{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;align-items:start}
-@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.tablero{display:grid;gap:16px;align-items:start;grid-template-columns:minmax(0,1fr)}
+@media (max-width:859px){.centro{order:1}.izq{order:2}.der{order:3}
+  header.barra{gap:8px 10px}.barra .transport{gap:8px}.barra .play{min-width:92px;padding:7px 14px}.barra .bajar{padding:7px 10px;font-size:13px}}
+@media (min-width:860px){header.barra{position:sticky;top:0;z-index:5}}
+.centro{display:grid;gap:16px;min-width:0}
+@media (min-width:860px){.tablero{grid-template-columns:300px minmax(0,1fr)}.der{grid-column:2}}
+@media (min-width:1280px){.tablero{grid-template-columns:300px minmax(0,1fr) minmax(320px,400px)}.der{grid-column:3;grid-row:1}
+  .izq,.der{position:sticky;top:62px;max-height:calc(100vh - 74px);overflow:auto;overscroll-behavior:contain}}
+.tabs{display:flex;flex-wrap:wrap;gap:2px 4px;border-bottom:1px solid var(--line);margin:-6px -4px 14px;padding:0 4px}
+.tabs button{border:0;background:none;padding:9px 12px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;border-radius:8px 8px 0 0}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.pestana-panel:not(.activa){display:none}
+.pestana-panel h2{font-family:var(--display);font-weight:400;font-size:18px;margin:0 0 12px}
+.fila-roll.abajo{margin:8px 0 0}
+.der h2{margin-bottom:8px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
 .panel h2{font-family:var(--display);font-weight:400;font-size:18px;margin:0 0 12px;letter-spacing:.01em}
 .field{display:grid;gap:5px;margin-bottom:14px}
@@ -97,11 +113,11 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .legend i{width:10px;height:10px;border-radius:2px;display:block}
 .zoom{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
 .zoom .btn{padding:3px 11px}
-canvas.roll{display:block;width:100%;height:340px;background:var(--well);border-radius:10px;touch-action:pan-y;cursor:grab}
+canvas.roll{display:block;width:100%;height:clamp(320px,44vh,540px);background:var(--well);border-radius:10px;touch-action:pan-y;cursor:grab}
 canvas.mapa{display:block;width:100%;height:30px;margin-top:6px;background:var(--well);border-radius:8px;cursor:pointer;touch-action:none}
 @media (max-width:560px){canvas.roll{height:280px}}
 .nota-roll{font-size:13px;color:var(--muted);margin:8px 0 0}
-.est{margin-top:16px;overflow-x:auto}
+.est{overflow-x:auto}
 .est table{min-width:620px}
 table{border-collapse:collapse;width:100%;font-size:14px}
 th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -121,7 +137,7 @@ tr.editor select.cambiado{border-color:var(--accent);box-shadow:inset 0 0 0 1px 
 tr.editor select.auto{border-style:dashed}
 .export{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-top:16px}
 .export .hint{flex-basis:100%}
-.notes{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+.notes{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
 .notes p,.notes li{color:var(--muted);font-size:14px;max-width:65ch}
 .notes h3{font-size:15px;margin:0 0 6px}
 .notes ul{margin:0;padding-left:18px}
@@ -132,16 +148,14 @@ a{color:var(--sobreprimos)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 /* partitura grabada */
-.grabada{margin-top:18px}
 .grabada .cabeza{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;margin-bottom:10px}
 .grabada .cabeza h2{margin:0}
 .hoja{background:#fff;color:#000;border-radius:10px;padding:12px;overflow-x:auto;min-height:120px}
 .hoja svg{display:block;max-width:none}
 
 /* letra y proceso */
-.dos{display:grid;gap:18px;margin-top:18px}
-.cantantes{margin-top:18px}
-.sinred{margin-top:18px}
+.sinred{margin-top:22px;padding-top:14px;border-top:1px solid var(--line)}
+.sinred h3{margin:0;font-size:15px}
 .sinred .cabeza{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;margin-bottom:6px}
 .sinred .cabeza h2{margin:0}
 .sinred .botones{display:flex;flex-wrap:wrap;gap:8px}
@@ -164,7 +178,6 @@ a{color:var(--sobreprimos)}
 .cantante .param output{font:12px var(--mono);color:var(--muted);text-align:right}
 .cantante .param select{padding:5px 8px}
 .cantante .reiniciar{justify-self:start;font-size:12px;padding:4px 10px}
-@media (min-width:1000px){.dos{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}.proceso-panel{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}}
 .tema{display:grid;gap:6px;margin-bottom:10px}
 .tema input{width:100%;background:var(--well);border:1px solid transparent;border-radius:10px;padding:8px 10px}
 .temas{display:flex;flex-wrap:wrap;gap:6px}
@@ -233,12 +246,9 @@ a{color:var(--sobreprimos)}
 <body>
 
 <div class="retazos" aria-hidden="true"></div>
-<div class="wrap">
-  <header class="top">
-    <div>
-      <h1>Murga-o-<span>matic</span></h1>
-      <p class="tag">Generador de murga uruguaya. Aprendió de presentaciones y retiradas reales transcriptas nota por nota; la batería son los loops de La Tríada. Puede cantar con muestras de coro o con cantores sintéticos que cantan una letra escrita para la melodía.</p>
-    </div>
+<div class="app">
+  <header class="barra">
+    <h1 class="marca">Murga-o-<span>matic</span></h1>
     <div class="transport">
       <button class="btn play" id="play" disabled>Cargando…</button>
       <span class="time" id="time">0:00 / 0:00</span>
@@ -251,8 +261,8 @@ a{color:var(--sobreprimos)}
     <div class="aviso" id="avisoVersion" hidden><span>Hay una versión nueva de la página.</span><button class="btn fuerte" id="recargar">Recargar</button></div>
   </div>
 
-  <div class="grid">
-    <aside class="panel">
+  <div class="tablero">
+    <aside class="panel izq" aria-label="La pieza y la mezcla">
       <h2>La pieza</h2>
       <div class="field voces"><span class="lbl" id="l-voces">Voces</span>
         <div class="seg" role="group" aria-labelledby="l-voces" id="voces">
@@ -339,8 +349,9 @@ a{color:var(--sobreprimos)}
       <div class="mixer" id="mixer"></div>
     </aside>
 
-    <main class="panel">
-      <h2>Partitura y estructura</h2>
+    <main class="centro">
+    <section class="panel partitura" aria-labelledby="t-partitura">
+      <h2 id="t-partitura">Partitura y estructura</h2>
       <div class="timeline" id="timeline" aria-label="Secciones; tocá para saltar"></div>
       <div class="fila-roll">
         <div class="legend" id="legend"></div>
@@ -348,29 +359,19 @@ a{color:var(--sobreprimos)}
       </div>
       <canvas id="roll" class="roll" aria-label="Partitura: las notas de cada cuerda y, con cantores sintéticos, la letra sílaba por sílaba"></canvas>
       <canvas id="mapa" class="mapa" aria-label="Toda la pieza: tocá para ir a esa parte"></canvas>
-      <p class="nota-roll" id="notaRoll">Tocá las notas o las secciones para escuchar desde ahí; arrastrá para moverte.</p>
-      <div class="est"><table><thead><tr><th>Tiempo</th><th>Sección</th><th>Textura</th><th>Acordes</th></tr></thead><tbody id="tabla"></tbody></table></div>
-      <div class="export">
-        <button class="btn" id="verPartitura" aria-expanded="false">Ver la partitura</button>
-        <button class="btn" id="pdf" disabled>Partitura en PDF</button>
-        <button class="btn" id="txt" disabled>Letra y acordes (TXT)</button>
-        <button class="btn" id="exportar" disabled>ZIP: WAV, MIDI y estructura</button>
-        <span class="hint" id="expStatus" role="status"></span>
+      <div class="fila-roll abajo"><p class="nota-roll" id="notaRoll">Tocá las notas o las secciones para escuchar desde ahí; arrastrá para moverte.</p><button class="btn" id="verPartitura">Ver la partitura coral</button></div>
+
+    </section>
+    <section class="panel pestanas" aria-label="Letra, cantantes, partitura coral y exportar">
+      <div class="tabs" role="tablist">
+        <button role="tab" data-panel="cantada" aria-selected="false">La letra</button>
+        <button role="tab" data-panel="cantantes" aria-selected="false">Los cantantes</button>
+        <button role="tab" data-panel="tabEstructura" aria-selected="false">Estructura</button>
+        <button role="tab" data-panel="grabada" aria-selected="false">Partitura coral</button>
+        <button role="tab" data-panel="tabExportar" aria-selected="false">Exportar</button>
+        <button role="tab" data-panel="tabAcerca" aria-selected="false">Cómo funciona</button>
       </div>
-    </main>
-  </div>
-
-  <section class="panel grabada" id="grabada" hidden aria-labelledby="t-grabada">
-    <div class="cabeza">
-      <h2 id="t-grabada">Partitura coral</h2>
-      <button class="btn" id="pdf2">Descargar PDF</button>
-    </div>
-    <p class="hint" id="grabadaNota"></p>
-    <div class="hoja" id="hoja"></div>
-  </section>
-
-  <div class="dos" id="cantada" hidden>
-    <section class="panel" aria-labelledby="t-letra">
+    <section class="pestana-panel letra" id="cantada" hidden role="tabpanel" aria-labelledby="t-letra">
       <h2 id="t-letra">La letra</h2>
       <div class="tema">
         <label class="lbl" for="tema">Tema</label>
@@ -385,14 +386,7 @@ a{color:var(--sobreprimos)}
       <p class="status" id="estadoLetra"></p>
       <div id="libreto"></div>
     </section>
-    <section class="panel proceso-panel" aria-labelledby="t-proceso">
-      <h2 id="t-proceso">Cómo se hace</h2>
-      <p class="hint">Elegí un verso, en la letra o en la partitura, y acá aparece cada paso con sus datos: qué pide la melodía, cómo eligió el letrista, cómo caen las sílabas en las notas y qué canta cada voz.</p>
-      <div id="proceso"></div>
-    </section>
-  </div>
-
-  <section class="panel cantantes" id="cantantes" hidden aria-labelledby="t-cantantes">
+  <section class="pestana-panel cantantes" id="cantantes" hidden role="tabpanel" aria-labelledby="t-cantantes">
     <div class="cabeza">
       <h2 id="t-cantantes">Los cantantes</h2>
       <button class="btn" id="cantantesReset">Volver a como salieron</button>
@@ -401,10 +395,30 @@ a{color:var(--sobreprimos)}
     <div class="aviso" id="avisoCantantes" hidden><span>Cambiaste cantantes.</span><button class="btn fuerte" id="recantarCantantes">Cantar con estos cambios</button></div>
     <div class="lista-cantantes" id="listaCantantes"></div>
   </section>
-
-  <section class="panel sinred" id="sinred" aria-labelledby="t-sinred">
+  <section class="pestana-panel grabada" id="grabada" role="tabpanel" aria-labelledby="t-grabada">
     <div class="cabeza">
-      <h2 id="t-sinred">Sin conexión</h2>
+      <h2 id="t-grabada">Partitura coral</h2>
+      <button class="btn" id="pdf2">Descargar PDF</button>
+    </div>
+    <p class="hint" id="grabadaNota"></p>
+    <div class="hoja" id="hoja"></div>
+  </section>
+    <section class="pestana-panel estructura" id="tabEstructura" role="tabpanel" aria-labelledby="t-estructura">
+      <h2 id="t-estructura">Estructura</h2>
+      <p class="hint">Cada sección con su textura, su tono, su tempo y sus acordes. Tocá una fila para escuchar desde ahí; con «Cambiar acordes» se cambian de a medio compás.</p>
+      <div class="est"><table><thead><tr><th>Tiempo</th><th>Sección</th><th>Textura</th><th>Acordes</th></tr></thead><tbody id="tabla"></tbody></table></div>
+    </section>
+    <section class="pestana-panel exportar" id="tabExportar" role="tabpanel" aria-labelledby="t-exportar">
+      <h2 id="t-exportar">Exportar</h2>
+      <div class="export">
+                <button class="btn" id="pdf" disabled>Partitura en PDF</button>
+        <button class="btn" id="txt" disabled>Letra y acordes (TXT)</button>
+        <button class="btn" id="exportar" disabled>ZIP: WAV, MIDI y estructura</button>
+        <span class="hint" id="expStatus" role="status"></span>
+      </div>
+  <section class="sinred" id="sinred" aria-labelledby="t-sinred">
+    <div class="cabeza">
+      <h3 id="t-sinred">Sin conexión</h3>
       <div class="botones">
         <button class="btn" id="instalar" hidden>Instalar como app</button>
         <button class="btn fuerte" id="guardarTodo">Guardar todo</button>
@@ -414,7 +428,10 @@ a{color:var(--sobreprimos)}
     <p class="hint" id="sinredIos" hidden>En iPhone o iPad, para tenerla como app: botón Compartir → «Agregar a inicio».</p>
     <progress id="sinredAvance" max="1" value="0" hidden></progress>
   </section>
-
+    </section>
+    <section class="pestana-panel acerca" id="tabAcerca" role="tabpanel" aria-labelledby="t-acerca">
+      <h2 id="t-acerca">Cómo funciona</h2>
+      <p class="tag">Generador de murga uruguaya. Aprendió de presentaciones y retiradas reales transcriptas nota por nota; la batería son los loops de La Tríada. Puede cantar con muestras de coro o con cantores sintéticos que cantan una letra escrita para la melodía.</p>
   <section class="notes">
     <div>
       <h3>Cómo arma cada pieza</h3>
@@ -439,6 +456,19 @@ a{color:var(--sobreprimos)}
       <p>Batería: Pablo "Lolito" Iribarne (bombo), Raúl García (redoblante) y Gerardo "Batata" Cánepa (platillos), del video <a href="https://www.youtube.com/watch?v=0DSJVulzDYw" target="_blank" rel="noopener">17 ritmos fundamentales de murga</a>. MP3 con <a href="https://github.com/zhuker/lamejs" target="_blank" rel="noopener">lamejs</a> (LAME, LGPL); partitura con abcjs, jsPDF y svg2pdf.js.</p>
     </div>
   </section>
+    </section>
+    </section>
+    </main>
+
+    <aside class="panel der" id="inspector" aria-labelledby="t-proceso">
+      <section class="proceso-panel" id="procesoBloque">
+      <h2 id="t-proceso">Cómo se hace</h2>
+      <p class="hint">Elegí un verso, en la letra o en la partitura, y acá aparece cada paso con sus datos: qué pide la melodía, cómo eligió el letrista, cómo caen las sílabas en las notas y qué canta cada voz.</p>
+      <div id="proceso"></div>
+    </section>
+      <p class="hint" id="inspectorVacio">Con cantores que cantan una letra (Formantes o Difonos), acá aparece paso a paso cómo se hizo el verso que elijas en la letra o en la partitura.</p>
+    </aside>
+  </div>
 </div>
 
 <script type="module" src="motor/app.js"></script>
