@@ -21,6 +21,7 @@ import { VARIACION } from './variacion.js';
 import * as TIMBRES from './timbre.js';
 import { ecualizar } from './eq.js';
 import { adornar, cuantoAdorna } from './adornos.js';
+import { AGUDO, hayAgudo, phoGrave, corregirAgudo } from './agudo.js';
 
 class Rnd { constructor(s) { this.a = (s * 2654435761 + 7) >>> 0; } r() { let t = this.a += 0x6d2b79f5; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; } u(a, b) { return a + (b - a) * this.r(); } }
 
@@ -290,7 +291,8 @@ export function terminar(x, sr, g, opc = {}) {
 //   - la boca se abre más y el primer formante sube (Schulman 1989; Traunmüller y Eriksson 2000): la vocal suena
 //     abierta, gritada. Cada 10 ms se busca el primer formante (predicción lineal: el polo más grave entre 150 Hz y
 //     1,2 kHz, por encima de la fundamental) y un filtro de segundo orden lo corre: ceros donde estaba, polos donde
-//     va (más arriba y un poco más angosto, la resonancia más marcada). El resto del espectro no se toca;
+//     va (más arriba y un poco más angosto, la resonancia más marcada). El resto del espectro no se toca. En el agudo
+//     (desde `agudo` Hz de la altura que canta MBROLA) el formante se queda donde está;
 //   - la glotis aprieta más: la fundamental baja frente a los demás armónicos (un pozo en la altura de la nota);
 //   - la voz sigue entera por las consonantes sonoras (m n l b d g), que en el habla caen 15 o 20 dB.
 // Cuánto, por nota: grito × (0,75 + 0,35 × fuerza) × (1 + 0,5 × cuánto pasa del centro de su cuerda, en quintas: de −1
@@ -298,7 +300,7 @@ export function terminar(x, sr, g, opc = {}) {
 // Con 1, el formante sube un 20 %, la fundamental baja 4 dB y las consonantes sonoras suben hasta 14 dB. Reemplaza a
 // una saturación (más armónicos arriba, que ya estaban: sonaba raro y casi no se notaba). Las sordas y las eses no
 // pasan por acá.
-export const ESFUERZO = { formante: .2, angosto: .3, fundamental: 4, techo: 1200, parejo: 14, hueco: 8, puerta: 35 };
+export const ESFUERZO = { formante: .2, angosto: .3, fundamental: 4, techo: 1200, agudo: 280, parejo: 14, hueco: 8, puerta: 35 };
 function esforzar(x, sr, g, o) {
   const N = g.notas, centro = o.centro ?? N.reduce((a, n) => a + n.midi, 0) / N.length, E = ESFUERZO;
   const PASO = 32, nc = Math.ceil(x.length / PASO) + 2, esf = new Float32Array(nc), f0 = new Float32Array(nc);
@@ -363,8 +365,16 @@ function esforzar(x, sr, g, o) {
     }
     const rad = Math.hypot(zr, zi), th = Math.atan2(zi, zr);
     if (!ok || rad < .7 || rad > .998 || th < piso * .95 || Math.abs(th - gw[ib]) > 2 * Math.PI * 250 / sr) continue;
-    const th2 = Math.min(th * (1 + E.formante * e), Math.max(th, 2 * Math.PI * E.techo / sr)), rad2 = Math.min(.996, Math.pow(rad, 1 - E.angosto * Math.min(1.5, e)));
-    C[j * 4] = -2 * rad * Math.cos(th); C[j * 4 + 1] = rad * rad; C[j * 4 + 2] = -2 * rad2 * Math.cos(th2); C[j * 4 + 3] = rad2 * rad2;
+    let th2 = Math.min(th * (1 + E.formante * e), Math.max(th, 2 * Math.PI * E.techo / sr)), rz = rad, ang = E.angosto;
+    // En el agudo el formante se queda donde está. Los armónicos quedan tan separados que la predicción lineal no lo
+    // ve: su polo cae justo sobre un armónico, y los ceros lo borraban (en un Do 5, 10 dB menos de segundo armónico,
+    // con el polo nuevo entre dos armónicos, donde no había nada que subir), y al oído la voz se iba de lugar. Desde
+    // `agudo` Hz (la altura que canta MBROLA) el corrimiento se apaga en 100 Hz, y el ancho de banda de los ceros no baja
+    // de medio f0; ahí el grito es la voz apretada y pareja.
+    const al = Math.max(0, Math.min(1, (hz0 - E.agudo) / 100)), su = al * al * (3 - 2 * al);
+    if (su > 0) { th2 += su * (th - th2); ang *= 1 - su; rz = Math.min(rad, Math.exp(-Math.PI * su * .5 * hz0 / sr)); }
+    const rad2 = Math.min(.996, Math.pow(rz, 1 - ang * Math.min(1.5, e)));
+    C[j * 4] = -2 * rz * Math.cos(th); C[j * 4 + 1] = rz * rz; C[j * 4 + 2] = -2 * rad2 * Math.cos(th2); C[j * 4 + 3] = rad2 * rad2;
   }
   // 2. el filtro que corre el formante (coeficientes interpolados entre cuadros: un segundo orden estable sigue estable)
   //    y el pozo en la fundamental (pico negativo, Q 1,2, recalculado cada 32 muestras)
@@ -483,7 +493,8 @@ function correr(notas, opc) {
   });
 }
 
-// Un cantor entero: guion → MBROLA → volumen, eses, aire y emisión. mb: lo que devuelve crearMbrola.
+// Un cantor entero: guion → MBROLA (y en las frases agudas, el color corregido: agudo.js) → volumen, eses, aire y
+// emisión. mb: lo que devuelve crearMbrola. opc.agudo = false: sin corregir el agudo.
 // Devuelve { x, sr, inicio }: las muestras a la frecuencia `sr`, empezando en el segundo `inicio` de la pieza.
 // El largo del tracto (opc.tracto) se hace como con una cinta: MBROLA canta más agudo y más largo, y las muestras se
 // tocan más rápido (sr más alta); la altura y los tiempos vuelven a su lugar y los formantes suben `tracto` veces.
@@ -499,8 +510,14 @@ export function cantarDifonos(mb, notas, opc = {}) {
   ns.forEach((n, i) => { if (i && n.t0 - ns[i - 1].t1 > 1.5 * a) frases.push([]); frases[frases.length - 1].push(n); });
   const partes = frases.map((f, k) => {
     const g = guion(f, { ...o, semilla: (o.semilla || 1) * 7 + k });
-    const crudo = mb.cantar(g.pho), x = new Float32Array(crudo.length);
+    const crudo = mb.cantar(g.pho); let x = new Float32Array(crudo.length);
     for (let j = 0; j < x.length; j++) x[j] = crudo[j] / 32768;
+    // en el agudo MBROLA le cambia el color a la vocal: se corrige con la misma frase cantada grave (agudo.js)
+    if (o.agudo !== false && hayAgudo(g.pho)) {
+      const gr = mb.cantar(phoGrave(g.pho, AGUDO.ref)), ref = new Float32Array(gr.length);
+      for (let j = 0; j < ref.length; j++) ref[j] = gr[j] / 32768;
+      x = corregirAgudo(x, ref, F, g);
+    }
     return { x: terminar(x, F, g, o), inicio: g.inicio };
   });
   const t0 = partes[0].inicio, fin = Math.max(...partes.map(p => p.inicio + p.x.length / F));

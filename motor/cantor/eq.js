@@ -1,6 +1,6 @@
 // eq.js — ecualizador de fase lineal (FIR por muestreo en frecuencia) aplicado con FFT por bloques.
 // curva: [[Hz, dB], ...] (interpolada en escala logarítmica)
-function fftIn(re, im, inv = false) {
+export function fftIn(re, im, inv = false) {
   const N = re.length;
   for (let i = 1, j = 0; i < N; i++) { let b = N >> 1; for (; j & b; b >>= 1) j ^= b; j ^= b; if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
   for (let l = 2; l <= N; l <<= 1) {
