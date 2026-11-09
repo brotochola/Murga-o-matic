@@ -81,6 +81,13 @@ La página se guarda en el navegador y después anda sin internet, en la compu o
 
 También hay una versión en **un solo archivo HTML** (25 MB) que se abre con doble clic, sin internet y sin servidor: `bun herramientas/un_archivo.mjs` la arma en `murga_trabajo/un_archivo/murga-o-matic.html`. Lleva adentro el código empaquetado y todos los audios, comprimidos. Es para la compu; en el teléfono anda mejor la página instalada.
 
+Y hay una **versión liviana para la compu**, con los bancos de UTAU adentro (son de uso personal: no se comparte). Los bancos se recortan una vez y la página se arma cada vez que cambia:
+
+    node herramientas/utau_recortar.mjs     # bancos/*.zip → liviana/bancos/, recortados (unos 3 minutos)
+    node herramientas/construir.mjs         # la página → liviana/ (hacen falta bun y ffmpeg)
+
+Queda en `liviana/` (730 MB: 713 de bancos y 17 del resto) y se abre con `liviana/abrir.bat`, que arranca un servidor chico (`servir.mjs`, en el puerto 8124) y abre Chrome. El código va minificado archivo por archivo; los loops, las frases y las muestras del coro, en Opus (duran lo mismo que los WAV, a la muestra); las voces de MBROLA, comprimidas. De cada banco quedan sólo los `.wav` que la página puede pedir (las sílabas de muchas murgas del letrista, del lailareo y de un texto con las sílabas del castellano, por los versos escritos a mano; cada voz del plantel en cada lugar y en todas las alturas a las que llega con el «Esfuerzo») y, de cada uno, sólo el pedazo que marcan sus `oto.ini`: 1651 → 713 MB. Los `oto.ini` quedan enteros (con los tiempos corridos) y el nivel de cada `.wav` va anotado en `murga_niveles.txt`; `utau_recortar.mjs` comprueba que el recortado pide los mismos pedazos y canta igual que el entero. Si cambia cómo se reparten las sílabas (`banco.js`, `letra.js`, el letrista), hay que volver a recortar. `node herramientas/probar_pagina.mjs liviana` y `node herramientas/probar_voces.mjs --carpeta liviana` la prueban.
+
 Lo hace `sw.js` (un service worker) con la lista `offline.json`, que tiene cada archivo de la página con un resumen de su contenido. **Cada vez que cambia un archivo de la página hay que correr `node herramientas/offline.mjs` antes del commit**: rehace la lista y la versión de `sw.js`. Así, quien la tiene guardada ve «Hay una versión nueva» y, al recargar, baja sólo los archivos que cambiaron. `herramientas/probar_pagina.mjs` avisa si la lista quedó atrasada.
 
 ## Uso local
