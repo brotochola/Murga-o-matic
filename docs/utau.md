@@ -193,6 +193,7 @@ desarma el .zip con los nombres bien).
 
 | Sheep Cordeiro V3 (EdusheeP) | portugués de Brasil, BRAPA | Do 3, Fa 3, La 3 (cubre de Fa 2 a Fa 5 estirando) | no dice |
 | Sheep Hitsuji V3 (EdusheeP) | japonés CV (sin pasos: las codas se pierden) | La 2, Do 3, Mi 3, La 3, Si 3, Fa 4 | no dice |
+| Sanfu Jurani (Rafu, <https://rafup.altervista.org>) | italiano CVVC de MakkuPizza: rr de verdad, gn, S, tS | Si 2, Sol 3, Do 4 (oscuro) | pide crédito por los dibujos |
 
 Las tres Sheep son la misma voz en tres idiomas. Para el castellano, el portugués trae lo que a los bancos en
 castellano les falta: la r gutural («h»), que es la jota; la «j» ([ʒ]), que es la ll/y rioplatense; y la «sh». No

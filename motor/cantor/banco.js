@@ -171,6 +171,7 @@ export function crearBanco(rutas, leer) {
   // «a -»; la VCCV de nJokis, con «a-»
   const reclist = existe.has('か') && (existe.has('- あ') || existe.has('a あ')) ? 'japones'
     : existe.has('-b a') && existe.has('b a') ? 'brapa'
+    : existe.has('-ka') && existe.has('a R') && existe.has('a rr') ? 'makku'
     : existe.has('a R') && existe.has('- a') ? 'akup' : existe.has('a -') && existe.has('- a') && existe.has('a b') ? 'cvvc' : 'njokis';
   return { nombre, entradas, indice, prefijos, alturas, buscar, existe: a => existe.has(a), wav, sufijoDe, reclist, sinArchivo };
 }
@@ -186,6 +187,7 @@ const OCLUSIVA = { B: 'b', D: 'd', G: 'g' }, FRICATIVA = { b: 'B', d: 'D', g: 'G
 //   fin: el final de la frase.
 export function aliasFrase(notas, existe, o = {}) {
   // (una copia: la reclist de AkuP le pasa la coda a la sílaba que sigue, y las notas son de quien llama)
+  if (o.reclist === 'makku') o = { ...o, mapa: MK };
   const f = { akup: aliasAkup, cvvc: aliasCvvc, japones: aliasJapones, brapa: aliasBrapa }[o.reclist] || aliasNjokis;
   return f(notas.map(n => ({ ...n, sil: { ...n.sil } })), existe, o);
 }
@@ -471,15 +473,22 @@ function aliasAkup(notas, existe, o = {}) {
   return U;
 }
 
+// ── la italiana CVVC de MakkuPizza (Sanfu) es casi la de nJokis: «-ka», «a k» + «ka», «pr» + «_ra». Cambia el final
+// («a R», y «al-» para una coda al final) y los sonidos: la rr de verdad («a rr» + «ra»), la ñ «gn», la sh «S», la ch
+// «tS»; sin b, d y g suaves. La ll/y rioplatense va como «S»; la jota, que el italiano no tiene, como «k».
+const MK = { a: 'a', e: 'e', i: 'i', o: 'o', u: 'u', l: 'l', r: 'r', R: 'rr', m: 'm', n: 'n', N: 'gn', B: 'b', D: 'd', G: 'g', b: 'b', d: 'd', g: 'g', p: 'p', t: 't', k: 'k', C: 'tS', f: 'f', s: 's', h: 's', x: 'k', S: 'S', Z: 'S', j: 'y', w: 'w' };
+
 function aliasNjokis(notas, existe, o = {}) {
+  const MAPA = o.mapa || NJ;
   const U = [], faltan = [];
   const pon = (alias, nota, tipo, extra) => { if (alias) U.push({ alias, nota, tipo, ...extra }); };
   // el primero que tenga el banco; si ninguno, se anota el que se quería
   const elegir = (...c) => { const a = c.find(x => x && existe(x)); if (!a && c[0]) faltan.push(c[0]); return a || null; };
   // una sílaba: la consonante con su vocal. En nJokis b, d y g oclusivas sólo están después de un silencio («-ba»):
   // después de una nasal se usan esas, y si no, las suaves
-  const cv = (k, v) => elegir(k + v, '_' + k + v, '-' + k + v, FRICATIVA[k] && FRICATIVA[k] + v, OCLUSIVA[k] && '-' + OCLUSIVA[k] + v);
-  const paso = (c, k) => elegir(c + ' ' + k, (FRICATIVA[k] || OCLUSIVA[k]) && c + ' ' + (FRICATIVA[k] || OCLUSIVA[k]));
+  const cv = (k, v) => elegir(k + v, '_' + k + v, '-' + k + v, FRICATIVA[k] && FRICATIVA[k] + v, OCLUSIVA[k] && '-' + OCLUSIVA[k] + v, k === 'rr' && 'r' + v);
+  // (después de un diptongo: «I p» en nJokis, «i p» en la italiana)
+  const paso = (c, k) => elegir(c + ' ' + k, (FRICATIVA[k] || OCLUSIVA[k]) && c + ' ' + (FRICATIVA[k] || OCLUSIVA[k]), c !== c.toLowerCase() && c.toLowerCase() + ' ' + k);
   let antes = { tipo: 'silencio' };
   for (let i = 0; i < notas.length; i++) {
     const n = notas[i], sig = notas[i + 1], s = n.sil;
@@ -489,7 +498,7 @@ function aliasNjokis(notas, existe, o = {}) {
     const vocs = [], aVocal = p => (p === 'j' ? 'i' : p === 'w' ? 'u' : p);
     let k1 = k0; while (k1 < nuc.length && (k1 === k0 || VOCAL.has(nuc[k1]))) vocs.push(aVocal(nuc[k1++]));
     const cola = nuc.slice(k1).map(p => (p === 'j' || p === 'i' ? 'I' : 'U'));
-    const K = [...s.ataque.map(p => NJ[p] || p), ...desliz], v1 = vocs[0];
+    const K = [...s.ataque.map(p => MAPA[p] || p), ...desliz], v1 = vocs[0];
     // 1. la entrada a la sílaba
     const grupo = (sinPaso) => {
       // K no vacío; después de una vocal o de una consonante (el paso ya está puesto)
@@ -528,16 +537,19 @@ function aliasNjokis(notas, existe, o = {}) {
     for (const w of vocs.slice(1)) { pon(elegir(v + ' ' + w), i, 'medio', { frac: .4 }); v = w; }
     for (const g of cola) { pon(elegir(v + g, v + ' ' + g.toLowerCase()), i, 'medio', { frac: .62 }); v = g; }
     // 3. la coda y el final
-    let coda = s.coda.map(p => NJ[p] || p);
-    const sigK0 = sig ? (sig.sil.ataque[0] ? NJ[sig.sil.ataque[0]] : null) : null;
+    let coda = s.coda.map(p => MAPA[p] || p);
+    const sigK0 = sig ? (sig.sil.ataque[0] ? MAPA[sig.sil.ataque[0]] : null) : null;
     // acento rioplatense: la s del final de la palabra antes de consonante no se canta («lo gurise corren»)
     if (o.acento !== 0 && s.fin && sig && sigK0 && coda[coda.length - 1] === 's') coda = coda.slice(0, -1);
     if (coda.length > 1) coda = [coda[0]];
     if (coda[0] === 'n' && ['p', 'b', 'B', 'm'].includes(sigK0)) coda[0] = 'm';
     const c = coda[0];
     if (!c) {
-      if (!sig) pon(elegir(v + '-', v + '--', v.toLowerCase() + '-'), i, 'fin');
+      if (!sig) pon(elegir(v + '-', v + '--', v.toLowerCase() + '-', v + ' R', v.toLowerCase() + ' R'), i, 'fin');
       antes = { tipo: 'vocal', v };
+    } else if (!sig && existe(v + c + '-')) {
+      pon(v + c + '-', i, 'fin');   // la vocal con la coda al final, de una («al-», en la italiana)
+      antes = { tipo: 'silencio' };
     } else if (c === 'r' && VOCAL.has(v)) {
       if (!sig) { pon(elegir(v + 'r-', v + ' r'), i, 'fin'); antes = { tipo: 'vocal', v }; }
       else if (sigK0 && existe(v + 'r ' + sigK0)) { pon(v + 'r ' + sigK0, i, 'antes'); antes = { tipo: 'r' }; }
