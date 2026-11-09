@@ -533,6 +533,12 @@ function correr(notas, opc) {
   });
 }
 
+// La memoria de frases (opc.memo): lo que ya se cantó, por la voz, las opciones y las notas de cada frase, en 16 bits.
+// En la página cada cantante canta siempre en el mismo obrero, así que al cambiar un cantante o un verso sólo se canta
+// lo que cambió. Hasta MEMO_MAX muestras (unos 130 MB por obrero: los trece cantantes de una pieza de cuatro minutos,
+// si hay un solo obrero); las que hace más que no se usan salen primero.
+const MEMO = new Map(); let memoN = 0; const MEMO_MAX = 64e6;
+
 // Un cantor entero: guion → MBROLA (y en las frases agudas, el color corregido: agudo.js) → volumen, eses, aire y
 // emisión. mb: lo que devuelve crearMbrola. opc.agudo = false (o 0): sin corregir el agudo.
 // Devuelve { x, sr, inicio }: las muestras a la frecuencia `sr`, empezando en el segundo `inicio` de la pieza.
@@ -545,10 +551,15 @@ export function cantarDifonos(mb, notas, opc = {}) {
   notas = correr(notas, opc);
   const ns = a === 1 ? notas : notas.map(n => ({ ...n, t0: n.t0 * a, t1: n.t1 * a, midi: n.midi - 12 * Math.log2(a) }));
   const o = a === 1 ? opc : { ...opc, consonantes: (opc.consonantes ?? 1) * a, vibVel: (opc.vibVel ?? 5.5) / a, vibEntra: (opc.vibEntra ?? .22) * a, ...(opc.centro != null ? { centro: opc.centro - 12 * Math.log2(a) } : {}) };
-  // De a frases: MBROLA no aguanta silencios de minutos (se pasa de rango) y así tampoco canta el silencio
+  // De a frases, cortadas en cada respiración de más de 0,6 s: MBROLA no aguanta silencios de minutos (se pasa de rango),
+  // así tampoco canta el silencio, y con frases cortas la memoria sirve más (cambia un verso: se canta esa frase). Cada
+  // frase lleva 0,25 s de silencio antes y 0,3 s después, y con 0,6 s no se pisan.
   const frases = [[]];
-  ns.forEach((n, i) => { if (i && n.t0 - ns[i - 1].t1 > 1.5 * a) frases.push([]); frases[frases.length - 1].push(n); });
+  ns.forEach((n, i) => { if (i && n.t0 - ns[i - 1].t1 > .6 * a) frases.push([]); frases[frases.length - 1].push(n); });
   const partes = frases.map((f, k) => {
+    // si esta frase ya se cantó igual (la página cambió otro cantante, u otro verso), sale de la memoria
+    const clave = o.memo ? (o.voz || '') + '|' + F + '|' + k + '|' + JSON.stringify(o) + '|' + JSON.stringify(f) : null;
+    if (clave && MEMO.has(clave)) { const m = MEMO.get(clave); MEMO.delete(clave); MEMO.set(clave, m); return { x: Float32Array.from(m.x, v => v / 32767), inicio: m.inicio }; }
     const g = guion(f, { ...o, semilla: (o.semilla || 1) * 7 + k });
     const crudo = mb.cantar(g.pho); let x = new Float32Array(crudo.length);
     for (let j = 0; j < x.length; j++) x[j] = crudo[j] / 32768;
@@ -558,7 +569,12 @@ export function cantarDifonos(mb, notas, opc = {}) {
       for (let j = 0; j < ref.length; j++) ref[j] = gr[j] / 32768;
       x = corregirAgudo(x, ref, F, g);
     }
-    return { x: terminar(x, F, g, o), inicio: g.inicio };
+    const y = terminar(x, F, g, o);
+    if (clave) {
+      MEMO.set(clave, { x: Int16Array.from(y, v => Math.round(Math.max(-1, Math.min(1, v)) * 32767)), inicio: g.inicio }); memoN += y.length;
+      for (const [c, m] of MEMO) { if (memoN <= MEMO_MAX) break; MEMO.delete(c); memoN -= m.x.length; }
+    }
+    return { x: y, inicio: g.inicio };
   });
   const t0 = partes[0].inicio, fin = Math.max(...partes.map(p => p.inicio + p.x.length / F));
   const x = new Float32Array(Math.ceil((fin - t0) * F) + 1);

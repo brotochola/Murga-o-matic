@@ -184,8 +184,8 @@ async function cantarLista(lista,alListo,sigue){
   await Promise.all(ws.length?ws.map(tarea):[tarea(null)]);
 }
 let IR_CANTOR=null;
-async function cantarCuerdas(pieza,P,gen){
-  if(difonos())return cantarDifonosCoro(pieza,P,gen,S.voces==="solista");
+async function cantarCuerdas(pieza,P,gen,incremental){
+  if(difonos())return cantarDifonosCoro(pieza,P,gen,S.voces==="solista",incremental);
   const L=S.letra,letras=letrasPorSeccion();
   L.sil=silabear(pieza,letras);
   const lista=cantores(pieza,L.sil.porQ,{semilla:S.seed,formacion:S.formacion});
@@ -217,33 +217,49 @@ const mbHilo={};
 async function difonosEnHilo(notas,opc){const v=opc.voz||"es2";
   if(!mbHilo[v])mbHilo[v]=(async()=>{const[{crearMbrola},wasm,voz]=await Promise.all([import("./cantor/mbrola.js"),...["vendor/mbrola/mbrola.wasm","vendor/mbrola/"+v].map(u=>fetch(new URL(u,import.meta.url)).then(x=>{if(!x.ok)throw new Error("no se pudo bajar "+u);return x.arrayBuffer()}))]);return crearMbrola(wasm,new Uint8Array(voz))})();
   const[{cantarDifonos},mb]=await Promise.all([import("./cantor/difonos.js"),mbHilo[v]]);await pausa();return cantarDifonos(mb,notas,opc)}
-async function cantarDifonosCoro(pieza,P,gen,solo){
+// Sólo se canta lo que cambió: cada cantante canta siempre en el mismo obrero (que se acuerda de las frases que ya
+// cantó: difonos.js, opc.memo), y una cuerda se vuelve a sumar sólo si cambió algo de sus cantantes (las notas, la
+// sílaba, la voz, el volumen o el paneo). incremental: las cuerdas que no cambiaron quedan como estaban en S.stems.
+function huella(t){let h=0x811c9dc5;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,0x01000193)}return(h>>>0).toString(36)+t.length.toString(36)}
+async function cantarDifonosCoro(pieza,P,gen,solo,incremental){
   const L=S.letra,letras=letrasPorSeccion();
   L.sil=silabear(pieza,letras);
-  let lista=cantores(pieza,L.sil.porQ,{semilla:S.seed,formacion:S.formacion});
-  if(solo)lista=[lista.find(x=>x.cuerda==="primos")||lista[0]];
-  const res=new Array(lista.length);let hechos=0,i=0;
-  avance(0,`Cantando: 0 de ${lista.length} cantores…`);
+  let todos=cantores(pieza,L.sil.porQ,{semilla:S.seed,formacion:S.formacion});
+  if(solo)todos=[todos.find(x=>x.cuerda==="primos")||todos[0]];
+  todos=todos.map((c,i)=>({...c,clave:c.cuerda+(c.c||0),lugar:i}));
   // lo que se cambió a mano en «Los cantantes» (y quién canta solo o está callado)
-  lista=lista.map(c=>({...c,clave:c.cuerda+(c.c||0)})).filter(c=>!(S.ajustes[c.clave]||{}).mudo&&(!S.soloCantor||solo||c.clave===S.soloCantor));
-  const tarea=async w=>{while(i<lista.length&&gen===S.gen){const j=i++,c=lista[j],aj=S.ajustes[c.clave]||{};
+  const lista=todos.filter(c=>!(S.ajustes[c.clave]||{}).mudo&&(!S.soloCantor||solo||c.clave===S.soloCantor));
+  for(const c of lista){const aj=S.ajustes[c.clave]||{};
     const o={...cantorDifonos(c.cuerda,c.semilla,{c:solo?0:c.c||0}),voz:solo?"es2":vozDelCantor(c.c||0),...elegidos(aj)};o.adornos*=ADORNOS_COR[S.adornos]??1;o.grito*=GRITO_COR[S.grito]??1;
-    const msg={motor:"difonos",notas:c.notas,opc:{...o,retraso:o.retraso+(c.retraso||0)}};let r=null;
-    if(w){try{r=await enObrero(w,msg)}catch(e){console.warn("canta la página:",e.message);w=null}}
+    c.opc={...o,retraso:o.retraso+(c.retraso||0),memo:true};c.mezcla=[(solo?1:c.ganancia)*Math.pow(10,(aj.db||0)/20),aj.pan??(solo?0:c.pan)]}
+  const len=Math.ceil(P.total*SR);
+  const firmas=Object.fromEntries(ORDEN.map(k=>[k,huella(JSON.stringify([len,lista.filter(c=>c.cuerda===k).map(c=>[c.clave,c.notas,c.opc,c.mezcla])]))]));
+  const cambiadas=new Set(ORDEN.filter(k=>!incremental||!S.stems||!S.firmas||S.firmas[k]!==firmas[k]||!S.stems[k]));
+  const aCantar=lista.filter(c=>cambiadas.has(c.cuerda));
+  const res=new Map();let hechos=0;
+  avance(0,`Cantando: 0 de ${aCantar.length} cantores…`);
+  const uno=async(c,w)=>{const msg={motor:"difonos",notas:c.notas,opc:c.opc};let r=null;
+    if(w){try{r=await enObrero(w,msg)}catch(e){console.warn("canta la página:",e.message)}}
     if(!r)r=await difonosEnHilo(msg.notas,msg.opc);
-    res[j]=r;hechos++;avance(hechos/(lista.length+1),`Cantando: ${hechos} de ${lista.length} cantores (${NOMBRES_CUERDA[c.cuerda].toLowerCase()})…`)}};
-  const ws=losObreros();await Promise.all(ws.length?ws.map(tarea):[tarea(null)]);
+    res.set(c.clave,r);hechos++;avance(hechos/(aCantar.length+1),`Cantando: ${hechos} de ${aCantar.length} cantores (${NOMBRES_CUERDA[c.cuerda].toLowerCase()})…`)};
+  const ws=losObreros();
+  if(ws.length){const colas=ws.map(()=>[]);for(const c of aCantar)colas[c.lugar%ws.length].push(c);
+    await Promise.all(colas.map(async(q,i)=>{for(const c of q){if(gen!==S.gen)return;await uno(c,ws[i])}}))}
+  else for(const c of aCantar){if(gen!==S.gen)break;await uno(c,null)}
   if(gen!==S.gen)return null;
-  avance(lista.length/(lista.length+1),"Sumando las cuerdas…");
-  const len=Math.ceil(P.total*SR),voces=[];
-  for(const k of ORDEN){const js=lista.map((c,j)=>c.cuerda===k?j:-1).filter(j=>j>=0);
+  avance(aCantar.length/(aCantar.length+1),"Sumando las cuerdas…");
+  const voces=[];
+  for(const k of ORDEN){
+    if(!cambiadas.has(k)){voces.push(S.stems[k]);continue}
+    const js=lista.filter(c=>c.cuerda===k);
     if(!js.length){voces.push(new OAC(2,1,SR).createBuffer(2,1,SR));continue}
     const ctx=new OAC(2,len,SR);
-    for(const j of js){const c=lista[j],r=res[j];if(!r.x.length)continue;
+    for(const c of js){const r=res.get(c.clave);if(!r||!r.x.length)continue;
       const b=ctx.createBuffer(1,r.x.length,r.sr);b.copyToChannel(r.x,0);
-      const aj=S.ajustes[c.clave]||{},s=ctx.createBufferSource();s.buffer=b;const g=ctx.createGain();g.gain.value=(solo?1:c.ganancia)*Math.pow(10,(aj.db||0)/20);const p=ctx.createStereoPanner();p.pan.value=aj.pan??(solo?0:c.pan);
+      const s=ctx.createBufferSource();s.buffer=b;const g=ctx.createGain();g.gain.value=c.mezcla[0];const p=ctx.createStereoPanner();p.pan.value=c.mezcla[1];
       s.connect(g).connect(p).connect(ctx.destination);s.start(Math.max(0,r.inicio),Math.max(0,-r.inicio))}
     voces.push(await ctx.startRendering());if(gen!==S.gen)return null}
+  voces.firmas=firmas;if(incremental)voces.cambiadas=cambiadas;
   return voces;
 }
 
@@ -324,7 +340,11 @@ function resumen(){const c=S.pieza.secs.find(s=>s.tipo!=="clarinada"&&s.bateria)
   let t=`${S.forma==="presentacion"?"Presentación":"Retirada"} en ${NOTAS[S.tonica]} ${S.modo} · ${ESTILOS[S.estilo]} · ${c.tempo} BPM · ${fmt(S.P.total)}`;
   if(sint()){const L=S.letra,v=L.partes.reduce((a,p)=>a+p.versos.length,0),ok=L.partes.reduce((a,p,i)=>a+p.versos.filter((x,k)=>L.textos[i][k].trim()&&medir(L.textos[i][k]).n===x.silabas).length,0);t+=` · ${v} versos, ${ok} justos en la música`}
   estadoTexto(t)}
-function normalizarVoces(voces){const pv=picoDe(voces);const drive=sint()?1.02:1+.8*S.brillo;voces.forEach(b=>procesar(b,1/pv,drive))}
+// Todas las voces al mismo pico (y un poco de saturación). Si sólo cambiaron algunas cuerdas, esas se escalan con el
+// mismo factor que la última vez: las otras ya están procesadas, y así no cambia el volumen de lo que no se tocó.
+function normalizarVoces(voces){const drive=sint()?1.02:1+.8*S.brillo;S.firmas=voces.firmas||null;
+  if(voces.cambiadas&&S.pv){ORDEN.forEach((k,i)=>{if(voces.cambiadas.has(k))procesar(voces[i],1/S.pv,drive)});return}
+  const pv=picoDe(voces);S.pv=pv;voces.forEach(b=>procesar(b,1/pv,drive))}
 
 const firmaLetra=()=>JSON.stringify(S.letra.partes.map(p=>[p.nombre,p.versos.map(v=>v.silabas)]));
 async function generar(opc={}){
@@ -363,7 +383,7 @@ async function cantarDeNuevo(){
   if(!S.pieza||!sint())return;
   const gen=++S.gen;const t=posicion();detener();S.mp3=null;ocupado("Cantando…");
   try{
-    const voces=await cantarCuerdas(S.pieza,S.P,gen);if(!voces)return;
+    const voces=await cantarCuerdas(S.pieza,S.P,gen,true);if(!voces)return;
     normalizarVoces(voces);
     S.stems={...Object.fromEntries(ORDEN.map((k,i)=>[k,voces[i]])),bateria:S.stems.bateria};S.offset=t;
     S.letra.cantada=S.letra.textos.map(x=>x.slice());S.letra.pendiente=false;$("avisoLetra").hidden=true;
