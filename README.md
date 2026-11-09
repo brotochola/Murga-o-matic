@@ -41,7 +41,9 @@ Es un multipista, como el Timba-o-matic: una fila por cosa y los compases de izq
   le cambia el alto. Los paneles de la barra (La pieza, Mezcla, Cantantes, Letra, Partitura, Exportar, ?) se abren en un
   cajón a la derecha, de a uno: el multipista queda al lado y se achica, así se ve lo que pasa mientras se cambia algo.
   El ancho se cambia arrastrando el borde del cajón (se acuerda por panel) y Escape lo cierra. En el teléfono el panel
-  sube desde abajo.
+  sube desde abajo. «La pieza» muestra lo básico y deja el resto en «Más ajustes»; las ayudas largas están en un «?».
+- Teclado: Espacio toca o pausa, Inicio vuelve al principio, «,» y «.» pasan a la sección anterior o siguiente, Escape
+  cierra el panel y Ctrl+Z deshace el último cambio de una nota.
 
 Arriba hay tres pasos, cada uno con su botón: **1 Música** (Otra música), **2 Letra** (Otra letra, Lailareo) y **3
 Voces** (Cantar «la sección elegida», Cantar todo). Al entrar se compone la pieza y la página la muestra enseguida, con

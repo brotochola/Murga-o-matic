@@ -262,6 +262,18 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .mas-ajustes>summary::before{content:"▸";color:var(--muted);transition:transform .15s}
 .mas-ajustes[open]>summary::before{transform:rotate(90deg)}
 .mas-ajustes>summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* los compases de la batería y los valores de cada cantante, en grupos que se pliegan */
+.mas-compases{margin-top:8px}
+.mas-compases>summary{cursor:pointer;font-size:13px;color:var(--muted);padding:4px 0}
+.mas-compases>summary:hover,.mas-compases[open]>summary{color:var(--ink)}
+.mas-compases>summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.grupo-param{border-top:1px solid var(--line);padding:2px 0 4px}
+.grupo-param>summary{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;font-size:13px;padding:6px 0;list-style:none}
+.grupo-param>summary::-webkit-details-marker{display:none}
+.grupo-param>summary::before{content:"▸";color:var(--muted);transition:transform .15s}
+.grupo-param[open]>summary::before{transform:rotate(90deg)}
+.grupo-param>summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.grupo-param>.param{margin-bottom:8px}
 table{border-collapse:collapse;width:100%;font-size:14px}
 th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.05em;text-transform:uppercase}
@@ -494,7 +506,7 @@ p.elegido{font-size:16px;font-weight:600}
   </header>
   <div class="etapas" role="group" aria-label="Los pasos: la música, la letra y las voces">
     <div class="etapa trabajando" id="pasoMusica"><span class="num"><span>1</span></span><div><b>Música</b><small id="pasoMusicaTxt">componiendo…</small></div><span class="btns"><button class="btn" id="otraMusica" disabled title="Otra pieza: otra melodía y otra armonía, con lo que está elegido en «La pieza». Las voces quedan sin cantar.">Otra música</button></span></div>
-    <div class="etapa" id="pasoLetra"><span class="num"><span>2</span></span><div><b>Letra</b><small id="pasoLetraTxt">…</small></div><span class="btns"><button class="btn" id="otraLetra2" disabled title="Otra letra para la misma música (el tema y los versos que escribiste a mano, en «Letra»)">Otra letra</button><button class="btn ghost" id="lailareo2" disabled title="Que canten «la la la» en vez de la letra">Lailareo</button></span></div>
+    <div class="etapa" id="pasoLetra"><span class="num"><span>2</span></span><div><b>Letra</b><small id="pasoLetraTxt">…</small></div><span class="btns"><button class="btn" id="ponerLetra" hidden title="Para que canten una letra hay que elegir otra voz: se hace en «Cantantes» (cada uno con su voz, o todos con formantes)">Poner letra</button><button class="btn" id="otraLetra2" disabled title="Otra letra para la misma música (el tema y los versos que escribiste a mano, en «Letra»)">Otra letra</button><button class="btn ghost" id="lailareo2" disabled title="Que canten «la la la» en vez de la letra">Lailareo</button></span></div>
     <div class="etapa" id="pasoVoces"><span class="num"><span>3</span></span><div><b>Voces</b><small id="pasoVocesTxt">…</small></div><span class="btns"><button class="btn" id="cantarSeccion" disabled hidden>Cantar la sección</button><button class="btn fuerte" id="cantarVoces" disabled data-que="cantar">Cantar las voces</button></span></div>
   </div>
   <main class="cuerpo" id="cuerpo">
@@ -736,6 +748,7 @@ p.elegido{font-size:16px;font-weight:600}
       <div class="cabeza"><h2 id="t-tabAcerca" tabindex="-1">Cómo funciona</h2><button class="btn ghost cerrar-panel" aria-label="Cerrar">×</button></div>
       <p class="tag"><b>Cómo se usa:</b> Tocá un compás para escuchar desde ahí · una sección para verla abajo · un acorde o el loop de un compás para cambiarlo · una nota para editarla (o arrastrala para arriba o abajo) · la letra para ver cómo se hizo ese verso.</p>
       <p class="tag"><b>La pantalla:</b> arriba la barra y los tres pasos (música, letra, voces); en el medio el multipista; abajo la sección elegida, que se abre y se cierra con su botón o con la manija. Los paneles (La pieza, Mezcla, Cantantes, Letra, Partitura, Exportar y éste) se abren a la derecha, de a uno: el ancho se cambia arrastrando su borde izquierdo y Escape lo cierra.</p>
+      <p class="tag"><b>Atajos:</b> Espacio toca o pausa · Inicio vuelve al principio · «,» y «.» pasan a la sección anterior o siguiente · Escape cierra el panel · Ctrl+Z deshace el último cambio de una nota.</p>
 
       
       <p class="tag">Generador de murga uruguaya. Aprendió de presentaciones y retiradas reales transcriptas nota por nota; la batería son los loops de La Tríada. Puede cantar con muestras de coro o con cantores sintéticos que cantan una letra escrita para la melodía.</p>

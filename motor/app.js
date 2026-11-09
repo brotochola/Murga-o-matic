@@ -524,6 +524,10 @@ function actualizarInspector(){const cant=!!cantanteAbierto,nota=!!notaAbierta;
   if(!nota)multipista.elegirNota(null)}
 function abrirCantante(clave){cantanteAbierto=clave;actualizarInspector();dibujarCantantes();abrirPanel("cantantes");
   if(angosto()||cajon.getBoundingClientRect().width<760)$("inspCantante").scrollIntoView({behavior:"smooth",block:"nearest"})}
+// los valores del cantante, en grupos que se pliegan (el de «En el coro», con el volumen y el paneo, abierto de entrada)
+const GRUPOS_PARAM=[["tono","Afinación y vibrato",["transporte","vibrato","vibVel","pique","caida"]],["timbre","Timbre",["tracto","inclinacion","color","tension","ronquera","aire","esfuerzo","modulacion"]],
+  ["dicion","Dicción, aire y grito",["consonantes","respira","adornos","grito"]],["coro","En el coro",["retraso","db","pan"]]];
+const gruposAbiertos={};
 function dibujarInspCantante(){
   const x=losCantantes().find(y=>y.clave===cantanteAbierto);
   if(!x){cantanteAbierto=null;actualizarInspector();return}
@@ -537,19 +541,23 @@ function dibujarInspCantante(){
   $("icRango").innerHTML=ms.length?`En esta pieza canta de <b>${nombreNota(Math.min(...ms))}</b> a <b>${nombreNota(Math.max(...ms))}</b>. El compositor deja a los ${NOMBRES_CUERDA[k].toLowerCase()} entre ${nombreNota(RANGOS[k][0])} y ${nombreNota(RANGOS[k][1])}; ${LIBRO[k]}.`:"En esta pieza no canta.";
   $("icSolo").setAttribute("aria-pressed",S.soloCantor===x.clave);$("icMudo").setAttribute("aria-pressed",!!aj.mudo);
   const ps=$("icParams");ps.innerHTML="";
-  const fila=(nombre,ctrl,out)=>{const r=document.createElement("label");r.className="param";r.innerHTML=`<span>${nombre}</span>`;r.append(ctrl);const o=document.createElement("output");o.textContent=out;r.append(o);ps.append(r);return o};
+  const grupos={};for(const[g,titulo]of GRUPOS_PARAM){const d=document.createElement("details");d.className="grupo-param";d.open=gruposAbiertos[g]??g==="coro";d.ontoggle=()=>{gruposAbiertos[g]=d.open};d.innerHTML=`<summary>${titulo}</summary>`;grupos[g]=d}
+  const grupoDe=p=>GRUPOS_PARAM.find(g=>g[2].includes(p))?.[0];
+  const fila=(nombre,ctrl,out,p)=>{const r=document.createElement("label");r.className="param";r.innerHTML=`<span>${nombre}</span>`;r.append(ctrl);const o=document.createElement("output");o.textContent=out;r.append(o);(grupos[grupoDe(p)]||ps).append(r);return o};
   const vv=val("voz"),sel=document.createElement("select");
   sel.innerHTML=opcionesDeVoz(vv);
   sel.title=AYUDA_VOZ;
   sel.onchange=()=>elegirVozDe([x.clave],sel.value);fila("Voz",sel,plantel.esDeBanco(vv)&&!plantel.vozDisponible(vv)?"no está: canta MBROLA":"");
   {const v=document.createElement("button");v.className="btn ghost";v.style.cssText="justify-self:start;padding:3px 8px;font-size:13px";v.textContent="Ver los modelos disponibles";v.onclick=()=>verModelos(true);ps.append(v)}
   if(PARAMS_DE[vv]){const h=document.createElement("p");h.className="hint";h.textContent=vv===VOZ_MUESTRAS?"Canta su línea con una muestra de coro («aah»), sin letra: la muestra ya es un grupito de voces. Se le cambian la afinación, el volumen y el paneo.":"Canta la letra con la voz de formantes, armada desde cero (la de «Formantes» para toda la murga). Se le cambian la garganta, la afinación, los adornos, el volumen y el paneo.";ps.append(h)}
+  for(const g in grupos)ps.append(grupos[g]);
   for(const[p,nombre,mn,mx,paso,fmt,ayuda]of PARAMS){if(PARAMS_DE[vv]&&!PARAMS_DE[vv].has(p))continue;const r=document.createElement("input");r.type="range";r.min=mn;r.max=mx;r.step=paso;r.value=val(p);
-    const o=fila(nombre,r,fmt(+val(p)));if(ayuda){r.title=ayuda;o.parentElement.title=ayuda}r.oninput=()=>{o.textContent=fmt(+r.value)};r.onchange=()=>cambiarCantante(x.clave,p,+r.value)}
+    const o=fila(nombre,r,fmt(+val(p)),p);if(ayuda){r.title=ayuda;o.parentElement.title=ayuda}r.oninput=()=>{o.textContent=fmt(+r.value)};r.onchange=()=>cambiarCantante(x.clave,p,+r.value)}
   // las voces de banco tienen además los valores de los resamplers de UTAU (docs/plan_cantantes.md)
   if(plantel.esDeBanco(vv))for(const[p,nombre,mn,mx,paso,fmt,ayuda]of plantel.PARAMS_BANCO){const r=document.createElement("input");r.type="range";r.min=mn;r.max=mx;r.step=paso;
     const v0=aj[p]??plantel.valorDeVoz(vv,p)??(p==="modulacion"?1:0);r.value=v0;r.title=ayuda;
-    const o=fila(nombre,r,fmt(+v0));o.parentElement.title=ayuda;r.oninput=()=>{o.textContent=fmt(+r.value)};r.onchange=()=>cambiarCantante(x.clave,p,+r.value)}
+    const o=fila(nombre,r,fmt(+v0),p);o.parentElement.title=ayuda;r.oninput=()=>{o.textContent=fmt(+r.value)};r.onchange=()=>cambiarCantante(x.clave,p,+r.value)}
+  for(const g in grupos)if(!grupos[g].querySelector(".param"))grupos[g].remove();
 }
 function dibujarCantantes(){
   const caja=$("listaCantantes"),sec=$("cantantes");sec.hidden=!S.pieza;
@@ -717,8 +725,8 @@ function pasos(){
   const p=S.pieza,L=S.letra;
   $("pasoMusicaTxt").textContent=p&&S.P?`${S.forma==="presentacion"?"Presentación":"Retirada"} en ${NOTAS[S.tonica]} ${S.modo} · ${fmt(S.P.total)}`:"componiendo…";
   $("pasoMusica").className="etapa "+(p?"hecho":"trabajando");
-  const conLetra=sint();$("otraLetra2").hidden=!conLetra;$("lailareo2").hidden=!conLetra;
-  if(!conLetra){$("pasoLetraTxt").textContent="sin letra: todos cantan con muestras de coro";$("pasoLetra").className="etapa nada"}
+  const conLetra=sint();$("otraLetra2").hidden=!conLetra;$("lailareo2").hidden=!conLetra;$("ponerLetra").hidden=conLetra;
+  if(!conLetra){$("pasoLetraTxt").textContent="sin letra: cantan «aah» con muestras de coro";$("pasoLetra").className="etapa nada"}
   else if(p&&L.partes.length){const v=L.partes.reduce((a,x)=>a+x.versos.length,0);$("pasoLetraTxt").textContent=`${v} versos${L.pendiente?" · cambiaste la letra":""}`;$("pasoLetra").className="etapa hecho"}
   else{$("pasoLetraTxt").textContent="…";$("pasoLetra").className="etapa trabajando"}
   const b=$("cantarVoces"),t=$("pasoVocesTxt"),quien=quienesCantan(),bs=$("cantarSeccion"),sec=seccionElegida();
@@ -731,10 +739,11 @@ function pasos(){
   else if(S.cantando){t.textContent=`cantando… ${quien}`;b.textContent="Parar";b.title="Dejar de cantar (lo que ya cantó cada uno queda guardado: la próxima vez sigue de ahí)";$("pasoVoces").className="etapa trabajando"}
   else if(!S.vozHecha){t.textContent=`sin cantar · ${quien}`;b.textContent="Cantar las voces";b.title="Que canten los murguistas, cada uno con su voz. Con los bancos tarda unos minutos; mientras, la página se usa igual.";$("pasoVoces").className="etapa pendiente"}
   else if(L.pendiente){t.textContent="cantan la letra de antes";b.textContent="Cantar esta letra";b.title="Vuelven a cantar sólo los versos que cambiaron";$("pasoVoces").className="etapa pendiente"}
-  else{t.textContent=`cantadas · ${quien} · si cambiás algo, vuelve a cantar sólo eso`;b.textContent="Cantantes";b.title="Ver y cambiar a los trece murguistas";$("pasoVoces").className="etapa hecho"}
-  b.dataset.que=S.cantando?"parar":(porSec?hay<secsV.length:!S.vozHecha)||L.pendiente?"cantar":"ver";
+  else{t.textContent=`cantadas · ${quien} · si cambiás algo, vuelve a cantar sólo eso`;b.textContent="Ver cantantes";b.title="Ver y cambiar a los trece murguistas";$("pasoVoces").className="etapa hecho"}
+  b.dataset.que=S.cantando?"parar":(porSec?hay<secsV.length:!S.vozHecha)||L.pendiente?"cantar":"ver";b.classList.toggle("fuerte",b.dataset.que==="cantar");
   $("mp3").disabled=!S.vozHecha||S.cantando;$("mp3").title=S.vozHecha?"":"Primero cantá las voces";
   $("mp3Motivo").textContent=S.vozHecha&&!S.cantando?"":"El MP3 sale con las voces cantadas: primero cantalas (paso 3).";
+  for(const id of["pasoMusicaTxt","pasoLetraTxt","pasoVocesTxt"])$(id).title=$(id).textContent;
 }
 // quiénes cantan, en pocas palabras: «9 con bancos, 4 con MBROLA»
 function quienesCantan(){if(!S.pieza)return"";if(S.voces==="muestras")return"todos con muestras de coro";if(S.voces==="sintetizadas")return"todos con formantes";
@@ -888,6 +897,10 @@ $("secTonica").onchange=cambiarTono;$("secModo").onchange=cambiarTono;
 $("secAnt").onclick=()=>{const secs=S.pieza?.secs,i=secs?.indexOf(seccionElegida());if(i>0)elegirSeccion(secs[i-1].nombre,true)};
 $("secSig").onclick=()=>{const secs=S.pieza?.secs,i=secs?.indexOf(seccionElegida());if(secs&&i<secs.length-1)elegirSeccion(secs[i+1].nombre,true)};
 $("secEscuchar").onclick=()=>{const s=seccionElegida();if(!s||!S.P)return;saltar(s.t0);if(!S.tocando)tocar()};
+// una ayuda a pedido: un «?» arriba a la derecha de la tarjeta; abierto, el texto
+const ayudaDe=texto=>{const d=document.createElement("details");d.className="ayuda";const s=document.createElement("summary");s.title="Qué es esto";s.setAttribute("aria-label","Qué es esto");s.textContent="?";
+  const p=document.createElement("p");p.className="hint";p.textContent=texto;d.append(s,p);return d};
+let batAbierta=false;   // «Cada compás por separado» (la batería) abierto o cerrado: se acuerda al volver a dibujar la sección
 function acordesDeSeccion(s){const caja=$("secAcordes");caja.innerHTML="";
   if(!s.acordes?.length){caja.innerHTML=`<p class="hint">${s.tipo==="llamada"?"Acá no canta nadie: la batería llama.":"Sin acordes."}</p>`;return}
   if(!editableAc(s)){const p=document.createElement("p");p.className="lista-ac";p.textContent=unicos(s.acordes.map(g=>nombreAcorde(g,s.tonica,s.modo))).join(" · ");caja.append(p);
@@ -896,7 +909,7 @@ function acordesDeSeccion(s){const caja=$("secAcordes");caja.innerHTML="";
     else{h.textContent="Esta parte es un acorde solo: no se cambia.";caja.append(h)}
     return}
   const propios=S.acordes[s.nombre]||{},orig=acordesOriginales(s);
-  const h=document.createElement("p");h.className="hint";h.textContent="Dos acordes por compás. Al cambiar uno se rehace sólo esta sección (y las que la repiten): la melodía se corre a la nota del acorde más cercana en los tiempos fuertes y las voces se arman de nuevo; después vuelven a cantar sólo sus frases.";
+  const h=ayudaDe("Dos acordes por compás. Al cambiar uno se rehace sólo esta sección (y las que la repiten): la melodía se corre a la nota del acorde más cercana en los tiempos fuertes y las voces se arman de nuevo; después vuelven a cantar sólo sus frases.");
   const g=document.createElement("div");g.className="cards-ac";
   for(let b=0;b<s.acordes.length;b+=2){const c=document.createElement("div");c.className="card-ac";c.innerHTML=`<span class="nb">compás ${Math.round(s.inicio/16)+b/2+1}</span><div class="dos"></div>`;
     for(const i of[b,b+1]){if(i>=s.acordes.length)break;const gr=s.acordes[i],sel=document.createElement("select");
@@ -916,14 +929,16 @@ function bateriaDeSeccion(s){const caja=$("secBateria");caja.innerHTML="";
   const opts=(corto,actual)=>OPCIONES_LOOP().map(x=>`<option value="${x}"${x===actual?" selected":""}>${corto&&x?cortoRitmo(x):nombreRitmo(x)}${x===def?(corto?" (sección)":" · el de la sección"):""}</option>`).join("");
   const top=document.createElement("label");top.className="ctl todo-bat";top.innerHTML=`Toda la sección <select>${todos==null?'<option value="" selected>varios</option>':""}${opts(false,todos)}</select>`;
   top.querySelector("select").onchange=e=>{if(e.target.value==="")return;cambiarBateria(qs,+e.target.value)};
-  const h=document.createElement("p");h.className="hint";h.textContent="El loop de cada compás (también en las partes a capela). Al cambiarlo se rearma sólo la batería.";
+  const h=ayudaDe("El loop de cada compás (también en las partes a capela). Al cambiarlo se rearma sólo la batería.");
   const l=document.createElement("div");l.className="lista-bat";
   qs.forEach((q,j)=>{const lab=document.createElement("label");lab.innerHTML=`compás ${q/16+1}<select>${opts(true,ids[j])}</select>`;const sel=lab.querySelector("select");
     if(q in(S.pieza.bateria||{}))sel.classList.add("cambiado");sel.onchange=()=>cambiarBateria(q,+sel.value);l.append(lab)});
-  caja.append(top,h,l);
+  const cam=qs.filter(q=>q in(S.pieza.bateria||{})).length,det=document.createElement("details");det.className="mas-compases";
+  det.innerHTML=`<summary>Cada compás por separado${cam?` · ${cam} cambiado${cam===1?"":"s"}`:""}</summary>`;det.open=batAbierta||cam>0;det.ontoggle=()=>{batAbierta=det.open};det.append(l);
+  caja.append(top,h,det);
   if(qs.some(q=>q in(S.pieza.bateria||{}))){const r=document.createElement("button");r.className="btn";r.style.marginTop="8px";r.textContent="Volver al loop de la sección";r.onclick=()=>cambiarBateria(qs,def);caja.append(r)}}
 function letraDeSeccion(s){const caja=$("secLetra");
-  if(!sint()){caja.innerHTML=`<p class="hint">Las muestras de coro cantan «aah». Con Formantes o Difonos (en «La pieza») el coro canta una letra, y acá se escribe la de esta parte.</p>`;delete caja.dataset.parte;return}
+  if(!sint()){caja.innerHTML=`<p class="hint">Con las muestras de coro cantan «aah», sin letra. Para que canten una letra, elegí otra voz en <button class="btn">Cantantes</button>.</p>`;caja.querySelector("button").onclick=()=>{abrirPanel("cantantes");verModelos(true)};delete caja.dataset.parte;return}
   const L=S.letra,i=L.partes.findIndex(p=>p.secciones.includes(s.nombre));
   if(i<0){caja.innerHTML=`<p class="hint">${s.tipo==="llamada"?"En la llamada no se canta.":"Esta parte no tiene letra."}</p>`;delete caja.dataset.parte;return}
   const p=L.partes[i];
@@ -1053,7 +1068,7 @@ function elegir(i,k,desdeLetra,desdePartitura,mover){
   proceso()}
 $("otraLetra").onclick=otraLetra;$("lailareo").onclick=lailareo;$("recantar").onclick=cantarDeNuevo;
 // los botones de los pasos, arriba
-$("otraMusica").onclick=()=>$("otra").click();$("otraLetra2").onclick=otraLetra;$("lailareo2").onclick=lailareo;
+$("otraMusica").onclick=()=>$("otra").click();$("otraLetra2").onclick=otraLetra;$("lailareo2").onclick=lailareo;$("ponerLetra").onclick=()=>{abrirPanel("cantantes");verModelos(true)};
 $("cantarSeccion").onclick=cantarSeccionElegida;$("secCantar").onclick=cantarSeccionElegida;
 $("cantarVoces").onclick=e=>{const q=e.currentTarget.dataset.que;if(q==="parar")pararVoces();else if(q==="ver")abrirPanel("cantantes");else cantarVoces(true)};
 $("cantantesReset").onclick=()=>{S.ajustes={};S.soloCantor=null;guardarAjustes();dibujarCantantes();programarCanto()};
@@ -1315,8 +1330,12 @@ ponerTema(temaColor);
 $("temaColor").onclick=()=>{temaColor=TEMAS_COLOR[(TEMAS_COLOR.indexOf(temaColor)+1)%TEMAS_COLOR.length];ponerTema(temaColor,true)};
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",()=>multipista.redibujar());
 // la barra espaciadora toca o pausa; Escape cierra el panel
-document.addEventListener("keydown",e=>{if(e.target.closest?.("input,textarea,select,button,[contenteditable],dialog,.popover"))return;
-  if(e.key===" "&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!$("play").disabled){e.preventDefault();$("play").click()}});
+// atajos: Espacio toca o pausa, Inicio vuelve al principio, «,» y «.» pasan a la sección anterior o siguiente
+document.addEventListener("keydown",e=>{if(e.ctrlKey||e.metaKey||e.altKey||e.defaultPrevented)return;
+  const t=e.target.closest?.bind(e.target);if(!t||t("input,textarea,select,[contenteditable],dialog,.popover,.sep-cajon,.manija"))return;
+  if(e.key===" "){if(t("button")||$("play").disabled)return;e.preventDefault();$("play").click()}
+  else if(e.key==="Home"){if(!S.P)return;e.preventDefault();$("detener").click()}
+  else if(e.key===","||e.key==="."){if(!S.pieza)return;e.preventDefault();$(e.key===","?"secAnt":"secSig").click()}});
 async function bajarPdf(){if(!S.pieza)return;avisoExport("Armando el PDF…");
   try{const blob=await pdfPartitura(datosPapeles());avisoExport(await guardar(blob,base()+"_partitura.pdf"))}catch(e){errorExport(e)}}
 $("pdf").onclick=bajarPdf;$("pdf2").onclick=bajarPdf;

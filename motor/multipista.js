@@ -116,7 +116,7 @@ export function crearMultipista(raiz, cb = {}) {
       for (const s of D.secciones) {
         const cv = document.createElement('canvas'); cv.className = 'mt-lienzo';
         cv.style.left = X(s.q0) + 'px'; cv.style.width = Math.max(1, X(s.q1) - X(s.q0)) + 'px';
-        c.append(cv); E.lienzos.push({ cv, k, s, rango, h: alto, notas: notas.filter(n => n.q < s.q1 && n.q + n.d > s.q0) });
+        c.append(cv); E.lienzos.push({ cv, k, s, rango, h: alto, fila: f, notas: notas.filter(n => n.q < s.q1 && n.q + n.d > s.q0) });
       }
       for (const ct of (abierta && D.cantantes?.[k]) || []) {
         let bl = '';
@@ -155,7 +155,7 @@ export function crearMultipista(raiz, cb = {}) {
     E.escalaV = esc;
     for (const f of pistas) {
       const alto = Math.max(32, Math.round(+f.dataset.base * esc)); f.style.setProperty('--alto', alto + 'px');
-      for (const L of E.lienzos) if (L.k === f.dataset.k) L.h = alto;
+      for (const L of E.lienzos) if (L.fila === f) L.h = alto;
     }
     if (!sinDibujar) dibujarPistas();
   }
