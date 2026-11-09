@@ -8,6 +8,7 @@ import { metrica, silabear, cantores } from './cantor/coro.js';
 import { cantar } from './cantor/cantor.js';
 import { cantorDifonos, vozDelCantor } from './cantor/difonos.js';
 import * as plantel from './plantel.js';   // el plantel: los bancos de voces de UTAU (bancos/plantel.json)
+import * as guardadas from './cantor/guardadas.js';   // las voces ya cantadas, guardadas en el navegador
 import { cuantoAdorna } from './cantor/adornos.js';
 import { disenar } from './cantor/eq.js';
 import { medir, versosDe } from './cantor/letra.js';
@@ -341,7 +342,8 @@ const quiereCantar=c=>!(S.ajustes[c.clave]||{}).mudo&&(!S.soloCantor||S.voces===
 function mezclaDe(clave,[g,pan0,nivel]){const aj=S.ajustes[clave]||{};
   const fuera=aj.mudo||(S.soloCantor&&S.soloCantor!==clave&&S.voces!=="solista");
   return[fuera?0:g*Math.pow(10,(aj.db||0)/20)*nivel,Math.max(-1,Math.min(1,aj.pan??pan0))]}
-async function cantarUnaSeccion(s,gen,paso){
+// soloGuardadas: no canta nada, sólo trae lo que ya está guardado en el navegador (cargarGuardadas)
+async function cantarUnaSeccion(s,gen,paso,{soloGuardadas=false}={}){
   const pieza=S.pieza,P=S.P,lista=listaDeCantores(pieza,S.voces==="solista"),[a,b]=extensionDe(s),n=b-a;
   const clip=S.clips.get(s.nombre)||{cantores:{},pico:0},hacer=[],presentes=new Set();
   for(const c0 of lista){const notas=notasEn(c0,s);if(!notas.length)continue;presentes.add(c0.clave);
@@ -353,14 +355,18 @@ async function cantarUnaSeccion(s,gen,paso){
   if(!hacer.length){if(saco)terminarClip(s.nombre,clip);return saco?1:0}
   const res=new Map();let hechos=0;
   const uno=async(c,w)=>{let r=null;
-    if(c.motor==="muestras")r=await cantarMuestras(c.notas,c.opc);
+    // sólo lo guardado: lo busca con la misma clave que el obrero (obrero.js, conMemoria); las muestras, que salen
+    // enseguida, se cantan
+    if(soloGuardadas&&c.motor!=="muestras"){const motor=c.motor||"difonos";
+      try{r=await guardadas.leer(await guardadas.claveDe(motor+"|"+JSON.stringify([c.opc,c.notas])),motor==="formantes"?["voz","ruido"]:["x"])}catch(e){r=null}}
+    else if(c.motor==="muestras")r=await cantarMuestras(c.notas,c.opc);
     else if(c.motor==="formantes"){if(w){try{r=await enObrero(w,{notas:c.notas,opc:c.opc})}catch(e){console.warn("canta la página:",e.message)}}
       if(!r){await pausa();r=cantar(c.notas,{...c.opc,separar:true})}}
     else{const msg={motor:c.motor||"difonos",notas:c.notas,opc:c.opc};
       if(w){try{if(msg.motor==="banco")await plantel.presentar(w,msg.opc.banco,enObrero);r=await enObrero(w,msg)}catch(e){console.warn("canta la página:",e.message)}}
       if(!r)r=await difonosEnHilo(msg.notas,msg.motor==="banco"?c.respaldo:msg.opc)}
-    res.set(c.clave,r);hechos++;if(gen===S.gen)avance(paso(hechos/hacer.length),`Cantando «${s.nombre}»: ${hechos} de ${hacer.length} cantores…`)};
-  avance(paso(0),`Cantando «${s.nombre}»: 0 de ${hacer.length} cantores…`);
+    res.set(c.clave,r);hechos++;if(gen===S.gen&&paso)avance(paso(hechos/hacer.length),`Cantando «${s.nombre}»: ${hechos} de ${hacer.length} cantores…`)};
+  if(paso)avance(paso(0),`Cantando «${s.nombre}»: 0 de ${hacer.length} cantores…`);
   const ws=losObreros();
   if(ws.length){const colas=ws.map(()=>[]);for(const c of hacer)colas[c.lugar%ws.length].push(c);
     await Promise.all(colas.map(async(q,i)=>{for(const c of q){if(gen!==S.gen)return;await uno(c,ws[i])}}))}
@@ -380,9 +386,21 @@ async function cantarUnaSeccion(s,gen,paso){
       buf=await ctx.startRendering();inicio=t0;if(gen!==S.gen)return-1}
     else{if(!r.x||r.x.length<2)continue;buf=decodeCtx.createBuffer(1,r.x.length,r.sr);buf.copyToChannel(r.x,0);inicio=r.inicio}
     clip.cantores[c.clave]={b:buf,inicio,firma:c.firma,cuerda:c.cuerda,base:c.base}}
+  const hechas=hacer.filter(c=>res.get(c.clave)).length;
+  if(soloGuardadas&&!hechas&&!saco)return 0;
+  if(!Object.keys(clip.cantores).length){S.clips.delete(s.nombre);return saco?1:0}
   terminarClip(s.nombre,clip);
-  return hacer.length;
+  return soloGuardadas?hechas:hacer.length;
 }
+// Al abrir una murga (o al componer), las voces que ya se habían cantado y quedaron guardadas en el navegador
+// (cantor/guardadas.js) entran solas, sin cantar nada: cada cantante en cada sección, si está guardado tal cual (con
+// las mismas notas, letra, voz y valores). Lo que falta queda para «Cantar». Si mientras tanto se pide cantar, para.
+async function cargarGuardadas(){if(!difonos()||!S.pieza)return;const gen=S.gen,pieza=S.pieza;
+  try{if(S.letraEn)await S.letraEn;await Promise.race([plantel.listo,new Promise(r=>setTimeout(r,4000))]);
+    let n=0,t=0;for(const x of seccionesConVoz()){if(gen!==S.gen||pieza!==S.pieza||S.cantando)return;
+      const r=await cantarUnaSeccion(x,gen,null,{soloGuardadas:true});if(r<0)return;if(r>0){n++;t+=r}}
+    if(n&&gen===S.gen&&!S.cantando){actualizarVistas();pasos();estadoTexto(`Voces guardadas: entraron ${t} pedazos en ${n} sección${n>1?"es":""}, sin cantar.`)}}
+  catch(e){console.warn("no se pudieron traer las voces guardadas:",e)}}
 // el pico de una sección: sus cantantes sumados con el volumen y el paneo de ahora
 function picoDeClip(clip){const cs=Object.entries(clip.cantores);if(!cs.length)return 0;
   let a=Infinity,b=0;for(const[,c]of cs){a=Math.min(a,c.inicio);b=Math.max(b,c.inicio+c.b.duration)}
@@ -683,6 +701,7 @@ async function generar(opc={}){
     S.stems={bateria:perc};
     listo();if(S.letraEn)estadoTexto("Escribiendo la letra…");else{resumen();guardarLuego()}
     if(opc.cantar){if(Array.isArray(opc.cantar)&&difonos())pedirSecciones(opc.cantar);else cantarVoces(false)}
+    else if(difonos())cargarGuardadas();
   }catch(e){if(gen!==S.gen)return;console.error(e);avance(null);estadoTexto(`No se pudo armar la pieza: ${e&&e.message||e}. Recargá la página para reintentar.`,true);$("play").textContent="Tocar"}
 }
 
