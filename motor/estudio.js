@@ -67,7 +67,7 @@ const obreros = Array.from({ length: N }, () => {
   return w;
 });
 const pedir = (w, msg) => new Promise((ok, mal) => { const id = ++pedidos; w.carga++; w.pend.set(id, { ok, mal }); w.postMessage({ ...msg, id }); });
-const fuenteDe = b => (b.handle ? { handle: b.handle } : { archivos: b.archivos });
+const fuenteDe = b => (b.url ? { url: b.url } : b.zip ? { zip: b.zip } : b.handle ? { handle: b.handle } : { archivos: b.archivos });
 function presentar(w, b) {
   if (!w.bancos.has(b.id)) { const p = pedir(w, { tipo: 'banco', banco: b.id, fuente: fuenteDe(b) }); w.bancos.set(b.id, p); p.catch(() => w.bancos.delete(b.id)); }
   return w.bancos.get(b.id);
@@ -86,10 +86,11 @@ async function cantarEnObrero(motor, notas, opc) {
 // ── los bancos ──
 const idDe = nombre => { let id = nombre || 'banco', k = 2; while (S.bancos.some(b => b.id === id)) id = `${nombre} (${k++})`; return id; };
 async function abrirBanco(b) {
-  // el primer obrero lo lee y dice qué es
-  b.listo = true;
-  try { const r = await presentar(obreros[0], b); b.datos = r.datos; }
+  // el primer obrero lo lee y dice qué es (hasta entonces no está listo: se dibuja «leyendo…»)
+  b.cargando = true; dibujarBancos();
+  try { const r = await presentar(obreros[0], b); b.datos = r.datos; b.listo = true; b.error = null; }
   catch (e) { b.listo = false; b.error = e.message; }
+  b.cargando = false;
   dibujarBancos(); dibujarVoces(); dibujarLugares();
 }
 async function agregarCarpeta(fuente, nombreCarpeta, sesion) {
@@ -98,7 +99,7 @@ async function agregarCarpeta(fuente, nombreCarpeta, sesion) {
   $('estadoBancos').textContent = `Leyendo «${nombreCarpeta}»…`;
   await abrirBanco(b);
   if (!b.listo) { $('estadoBancos').textContent = `No pude leer «${nombreCarpeta}»: ${b.error}`; return; }
-  if (!sesion) await guardarBanco({ id: b.id, nombre: b.nombre, handle: b.handle, agregado: b.agregado, datos: b.datos });
+  if (!sesion && !b.url) await guardarBanco({ id: b.id, nombre: b.nombre, handle: b.handle || b.zip, esZip: !!b.zip, agregado: b.agregado, datos: b.datos });
   // una voz por banco, y una más por cada color suelto (MIKE grave, MIKE suave)
   const base = b.datos.nombre || b.nombre;
   const nuevas = [{ nombre: base, banco: b.id }, ...b.datos.sueltos.map(s => ({ nombre: `${base} ${s}`, banco: b.id, capa: s }))];
@@ -106,6 +107,15 @@ async function agregarCarpeta(fuente, nombreCarpeta, sesion) {
   $('estadoBancos').textContent = `«${base}»: ${b.datos.entradas} entradas, ${b.datos.reclist}. ${nuevas.length > 1 ? `Suma ${nuevas.length} voces.` : 'Suma una voz.'}`;
   guardar(); dibujarBancos(); dibujarVoces(); dibujarLugares();
 }
+// un .zip suelto (el banco tal como lo baja su autor): por esta sesión (Chrome y Edge lo recuerdan)
+$('agregarZip').onclick = async () => {
+  try {
+    let zip, nombre;
+    if (typeof showOpenFilePicker === 'function') { const [h] = await showOpenFilePicker({ id: 'banco-utau', types: [{ description: 'Banco de UTAU (.zip)', accept: { 'application/zip': ['.zip', '.uar'] } }] }); zip = h; nombre = h.name; }
+    else { const f = await new Promise(ok => { const i = document.createElement('input'); i.type = 'file'; i.accept = '.zip,.uar'; i.onchange = () => ok(i.files[0]); i.click(); }); if (!f) return; zip = f; nombre = f.name; }
+    await agregarCarpeta({ zip }, nombre.replace(/\.(zip|uar)$/i, ''), !zip.getFile);
+  } catch (e) { if (e.name !== 'AbortError') $('estadoBancos').textContent = 'No se pudo: ' + e.message; }
+};
 $('agregarBanco').onclick = async () => {
   if (!hayLlaves()) { $('carpetaSesion').click(); return; }
   try { const h = await elegirCarpeta(); await agregarCarpeta({ handle: h }, h.name, false); }
@@ -135,8 +145,8 @@ function dibujarBancos() {
     const q = document.createElement('div'); q.className = 'que';
     q.innerHTML = '<b></b><small></small>';
     q.querySelector('b').textContent = dt?.nombre || b.nombre;
-    q.querySelector('small').textContent = !b.listo ? (b.error ? 'no se pudo leer: ' + b.error : 'falta el permiso para leer su carpeta')
-      : `${dt.reclist}, ${dt.entradas} entradas${r ? `, grabado de ${nombreNota(r[0])} a ${nombreNota(r[1])}` : ''}${dt.sueltos.length ? `, colores ${dt.sueltos.join(' ')}` : ''}${b.sesion ? ' · sólo por esta sesión' : ''}${dt.sinArchivo ? ` · ${dt.sinArchivo} entradas sin su .wav` : ''}`;
+    q.querySelector('small').textContent = b.cargando ? 'leyendo…' : !b.listo || !dt ? (b.error ? 'no se pudo leer: ' + b.error : 'falta el permiso para leerlo')
+      : `${dt.reclist}, ${dt.entradas} entradas${r ? `, grabado de ${nombreNota(r[0])} a ${nombreNota(r[1])}` : ''}${dt.sueltos.length ? `, colores ${dt.sueltos.join(' ')}` : ''}${b.deLaCarpeta ? ' · de la carpeta bancos/' : b.sesion ? ' · sólo por esta sesión' : ''}${dt.sinArchivo ? ` · ${dt.sinArchivo} entradas sin su .wav` : ''}`;
     d.append(q);
     if (b.handle && !b.listo) { const p = document.createElement('button'); p.textContent = 'Dar permiso'; p.onclick = async () => { if (await permiso(b.handle, true)) await abrirBanco(b); }; d.append(p); }
     const x = document.createElement('button'); x.textContent = 'Quitar'; x.title = 'Lo saca del estudio (no toca la carpeta)';
@@ -364,14 +374,24 @@ window.estudio = { S, agregarCarpeta, cantarVoz, repartirSolo };
   try {
     const [plantel, murga, opciones, bancos] = await Promise.all([leerDato('plantel'), leerDato('murga'), leerDato('opciones'), listarBancos()]);
     if (opciones) Object.assign(S.opciones, opciones);
-    S.plantel = plantel?.length ? plantel : JSON.parse(JSON.stringify(VOCES_MBROLA));
-    S.murga = murga || {};
-    S.bancos = (bancos || []).map(b => ({ ...b, listo: false }));
+    // el plantel de siempre (bancos/plantel.json) y sus bancos de la carpeta bancos/, si están
+    const base = await fetch(new URL('../bancos/plantel.json', import.meta.url)).then(r => r.json()).catch(() => null);
+    S.plantel = plantel?.length ? plantel : base?.voces ? JSON.parse(JSON.stringify(base.voces)) : JSON.parse(JSON.stringify(VOCES_MBROLA));
+    S.murga = murga || base?.murga || {};
+    for (const bb of base?.bancos || []) {
+      const url = new URL('../bancos/' + encodeURIComponent(bb.archivo), import.meta.url).href;
+      const hay = await fetch(url, { headers: { Range: 'bytes=0-0' } }).then(r => { r.body?.cancel?.(); return r.ok; }).catch(() => false);
+      if (hay) S.bancos.push({ id: bb.archivo, nombre: bb.nombre, url, sesion: true, listo: false, deLaCarpeta: true });
+    }
+    S.bancos.push(...(bancos || []).map(b => ({ ...b, listo: false })));   // y los que se agregaron a mano (carpetas o .zip)
   } catch (e) { $('estadoBancos').textContent = 'No pude leer lo guardado: ' + e.message; S.plantel = JSON.parse(JSON.stringify(VOCES_MBROLA)); }
   alAbrir = JSON.parse(JSON.stringify(S.plantel));
   $('frase').value = S.opciones.frase; $('cuerda').value = S.opciones.cuerda; $('auto').checked = S.opciones.auto;
   for (const id of ['forma', 'estilo', 'semilla', 'hasta']) $(id).value = S.opciones[id];
   dibujarBancos(); dibujarVoces(); dibujarLugares();
   // los bancos con permiso ya dado se abren solos; los otros esperan un clic («Dar permiso»)
-  for (const b of S.bancos) if (b.handle && await permiso(b.handle).catch(() => false)) abrirBanco(b);
+  for (const b of S.bancos) {
+    if (b.url) abrirBanco(b);
+    else if (b.handle && await permiso(b.handle).catch(() => false)) { if (b.esZip) { b.zip = b.handle; delete b.handle; } abrirBanco(b); }
+  }
 })();

@@ -130,7 +130,7 @@ licencia, y redistribuirlo pide permiso. Otros candidatos:
 - Del pedazo grabado se conserva el temblor natural de la altura: lo que se aparta de su altura suavizada a 100 ms.
 - `herramientas/utau_prueba.mjs <carpeta del banco>` canta una escala de «la» y tres frases en tres alturas, con el
   banco y con MBROLA, y deja una página para escucharlas lado a lado en `murga_trabajo/utau/<banco>/`.
-  `herramientas/utau_pagina.mjs` junta varios bancos en una sola página (`murga_trabajo/utau/comparar.html`).
+  Para escuchar y cambiar las voces está `estudio.html` (`docs/plan_cantantes.md`).
 - `herramientas/utau_medir.mjs` mide la escala.
 - `solista.mjs --motor banco --banco <carpeta>` canta las 24 frases del solista con el banco.
 
@@ -234,10 +234,10 @@ referencia, MIKE: su Re 4 de pecho da −14 dB y su falsete, +6 dB.
 Ottava y Rubato parecen tener voz plena en el agudo; Legato, más liviana. Vincen-oto figura como «alto» (Re 3 a
 Re 5): puede sonar joven.
 
-**La galería.** `herramientas/utau_galeria.mjs <cantantes.json>` deja `murga_trabajo/utau/galeria/index.html`. Cada
-voz (los seis bancos, los colores de MIKE y los tres de MBROLA) canta la misma frase en el registro de cada cuerda:
-bajos, segundos, primos, sobreprimos, y el agudo hasta Do 5. En esta compu tarda 84 s para 60 celdas.
-`cantantes.json` dice dónde está cada banco en la compu, con su color, su garganta y lo que evita.
+**La galería.** `herramientas/utau_galeria.mjs [plantel.json]` deja `murga_trabajo/utau/galeria/index.html`. Cada
+voz del plantel (por defecto, `bancos/plantel.json`: los bancos, los colores de MIKE y MBROLA) canta la misma frase en
+el registro de cada cuerda: bajos, segundos, primos, sobreprimos, y el agudo hasta Do 5. En esta compu, 12 voces
+tardaron 84 s para 60 celdas.
 
 **Para la página (paso 6).** Lo que va a necesitar el inspector de cantantes:
 - **Cada murguista con un banco lleva:** `voz: 'banco'` y `banco: { id, capa, evitar, tracto }`, más los valores de

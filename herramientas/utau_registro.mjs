@@ -2,8 +2,9 @@
 // H1−H2 (la fundamental contra el segundo armónico: en falsete la fundamental manda y H1−H2 sube mucho) y el brillo
 // (lo de arriba de 1,8 kHz frente al total). Sirve de pista, no de veredicto: se juzga de oído.
 //
-//   node herramientas/utau_registro.mjs <carpeta del banco> [<otra> ...]
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+//   node herramientas/utau_registro.mjs <banco> [<otro> ...]   (un .zip de bancos/, o una carpeta)
+import { readFileSync } from 'node:fs';
+import { abrirBancoNode } from './banco_node.mjs';
 import { join, dirname, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { crearBanco, nombreNota } from '../motor/cantor/banco.js';
@@ -15,9 +16,7 @@ const world = await crearWorld(readFileSync(join(RAIZ, 'motor', 'vendor', 'world
 const VOCALES = ['- a', '- あ', 'a', '- .a', 'a a', 'あ', '- e', '- え', 'e', '- o', '- お', 'o'];
 
 for (const C of process.argv.slice(2)) {
-  const rutas = [];
-  (function andar(d) { for (const f of readdirSync(d)) { const p = join(d, f); if (statSync(p).isDirectory()) andar(p); else rutas.push(relative(C, p).split(/[\\/]/).join('/')); } })(C);
-  const banco = crearBanco(rutas, r => { try { return new Uint8Array(readFileSync(join(C, r))); } catch { return null; } });
+  const banco = abrirBancoNode(C);
   console.log(`\n${banco.nombre} (${banco.reclist}, ${banco.entradas.length} entradas${banco.sinArchivo ? `, ${banco.sinArchivo} SIN SU .WAV` : ''})`);
   console.log('capa       altura grabada  H1−H2   brillo');
   // las capas: las del prefix.map o del character.yaml (prefijo y sufijo), y los colores que aparecen en los alias

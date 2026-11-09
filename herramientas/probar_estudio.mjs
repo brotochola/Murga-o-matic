@@ -3,27 +3,33 @@
 // enojados, canta una voz, canta la murga hasta el final de la primera sección y recarga para ver que el banco se
 // abre solo. Sale con código 1 si algo falla.
 //
-//   node herramientas/probar_estudio.mjs <carpeta de un banco chico>   (por ejemplo Sheep Oveja, 27 MB)
+//   node herramientas/probar_estudio.mjs [banco chico]   (un .zip, por defecto bancos/Sheep Oveja.zip, 27 MB; o una carpeta)
 import { spawn } from 'node:child_process';
 import http from 'node:http';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync, createReadStream } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { extname, join, normalize, resolve, relative } from 'node:path';
 import { RAIZ } from './corpus.js';
 
-const BANCO = resolve(process.argv[2] || '');
-if (!process.argv[2] || !existsSync(BANCO)) { console.error('uso: node herramientas/probar_estudio.mjs <carpeta de un banco>'); process.exit(2); }
+const BANCO = resolve(process.argv[2] || join(RAIZ, 'bancos', 'Sheep Oveja.zip')), ES_ZIP = /\.(zip|uar)$/i.test(BANCO);
+if (!existsSync(BANCO)) { console.error('uso: node herramientas/probar_estudio.mjs [un .zip o la carpeta de un banco]'); process.exit(2); }
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json', '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.wasm': 'application/wasm' };
 const esperar = ms => new Promise(r => setTimeout(r, ms));
 const archivos = [];
-(function andar(d) { for (const f of readdirSync(d)) { const p = join(d, f); if (statSync(p).isDirectory()) andar(p); else if (/\.(wav|ini|map|txt|yaml)$/i.test(f)) archivos.push(relative(BANCO, p).split(/[\\/]/).join('/')); } })(BANCO);
+if (!ES_ZIP) (function andar(d) { for (const f of readdirSync(d)) { const p = join(d, f); if (statSync(p).isDirectory()) andar(p); else if (/\.(wav|ini|map|txt|yaml)$/i.test(f)) archivos.push(relative(BANCO, p).split(/[\\/]/).join('/')); } })(BANCO);
 
 // el repositorio, y el banco en /_banco/ (para copiarlo a la carpeta privada del sitio)
 const srv = http.createServer((q, r) => {
   let p = decodeURIComponent(q.url.split('?')[0]);
   if (p === '/_banco/lista.json') { r.writeHead(200, { 'content-type': 'application/json' }); r.end(JSON.stringify(archivos)); return; }
+  if (p === '/_banco.zip') { r.writeHead(200, { 'content-type': 'application/zip' }); r.end(readFileSync(BANCO)); return; }
   const base = p.startsWith('/_banco/') ? BANCO : RAIZ, f = normalize(join(base, p.replace(/^\/_banco\//, '/')));
-  if (f.startsWith(base) && existsSync(f) && statSync(f).isFile()) { r.writeHead(200, { 'content-type': TIPOS[extname(f)] || 'application/octet-stream' }); r.end(readFileSync(f)); }
+  if (f.startsWith(base) && existsSync(f) && statSync(f).isFile()) {
+    // de a pedazos, como herramientas/servir.js (los bancos de bancos/ se leen así)
+    const tam = statSync(f).size, m = /^bytes=(\d+)-(\d*)$/.exec(q.headers.range || ''), tipo = TIPOS[extname(f)] || 'application/octet-stream';
+    if (m) { const a = +m[1], z = m[2] === '' ? tam - 1 : Math.min(tam - 1, +m[2]); if (a > z) { r.writeHead(416); r.end(); return; } r.writeHead(206, { 'content-type': tipo, 'content-range': `bytes ${a}-${z}/${tam}`, 'content-length': z - a + 1 }); createReadStream(f, { start: a, end: z }).pipe(r); }
+    else { r.writeHead(200, { 'content-type': tipo }); r.end(readFileSync(f)); }
+  }
   else { r.writeHead(404); r.end(); }
 });
 await new Promise(ok => srv.listen(0, '127.0.0.1', ok));
@@ -62,7 +68,10 @@ await env('Page.navigate', { url });
 ok(await hasta('!!window.estudio', 20000), 'abre el estudio');
 // el banco a la carpeta privada del sitio
 const t0 = Date.now();
-const copiados = await leer(`(async () => {
+const copiados = ES_ZIP ? await leer(`(async () => {
+  const raiz = await navigator.storage.getDirectory(), h = await raiz.getFileHandle('banco_de_prueba.zip', { create: true }), w = await h.createWritable();
+  await w.write(await (await fetch('/_banco.zip')).arrayBuffer()); await w.close(); window.__zip = h; return 1;
+})()`) : await leer(`(async () => {
   const raiz = await navigator.storage.getDirectory(), dir = await raiz.getDirectoryHandle('banco_de_prueba', { create: true });
   const lista = await (await fetch('/_banco/lista.json')).json();
   for (const ruta of lista) {
@@ -73,12 +82,14 @@ const copiados = await leer(`(async () => {
   }
   window.__dir = dir; return lista.length;
 })()`);
-ok(copiados === archivos.length, `copia el banco a la carpeta del sitio (${copiados} archivos, ${((Date.now() - t0) / 1000).toFixed(1)} s)`);
-await leer(`window.estudio.agregarCarpeta({ handle: window.__dir }, 'banco_de_prueba', false)`);
+ok(ES_ZIP ? copiados === 1 : copiados === archivos.length, `copia el banco a la carpeta del sitio (${copiados} archivos, ${((Date.now() - t0) / 1000).toFixed(1)} s)`);
+await leer(ES_ZIP ? `window.estudio.agregarCarpeta({ zip: window.__zip }, 'banco_de_prueba', false)` : `window.estudio.agregarCarpeta({ handle: window.__dir }, 'banco_de_prueba', false)`);
 const info = await leer(`document.getElementById('bancos').innerText`);
 ok(/entradas/.test(info), 'agrega el banco: ' + info.replace(/\s+/g, ' ').slice(0, 160));
 const voces = await leer(`window.estudio.S.plantel.map(v => v.nombre).join(', ')`);
 ok(voces.split(', ').length >= 3, 'el plantel: ' + voces);
+const deCarpeta = await hasta(`window.estudio.S.bancos.filter(b => b.url && b.listo).length`, 60000);
+ok(deCarpeta >= 1, `los bancos de bancos/ se cargan solos: ${deCarpeta}`);
 // todos enojados, y que cante la voz del banco
 await leer(`document.getElementById('enojados').click()`);
 const grito = await leer(`window.estudio.S.plantel.find(v => v.banco)?.grito`);

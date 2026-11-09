@@ -1,0 +1,35 @@
+{
+  "bancos": [
+    { "archivo": "LongWei Symphonia ES.zip", "nombre": "LongWei Symphonia ES", "autor": "deadbyte (LW)", "idioma": "castellano (no nativo)", "web": "https://lw-winery.carrd.co/", "condiciones": "Uso personal. Lo comercial, con licencia. No se redistribuye." },
+    { "archivo": "MIKE.zip", "nombre": "MIKE", "autor": "AkuP (Miguel Rocha)", "idioma": "castellano", "web": "http://utau.wikidot.com/utau:mike", "condiciones": "Lo comercial, con permiso. MIKE.zip es el Mike_Normal.uar que viene adentro del .zip original (también sirve el .zip original)." },
+    { "archivo": "Sheep Oveja.zip", "nombre": "Sheep Oveja", "autor": "EdusheeP", "idioma": "castellano", "web": "https://sites.google.com/view/edusheep/sheep", "condiciones": "La página no dice." },
+    { "archivo": "Sheep Cordeiro.zip", "nombre": "Sheep Cordeiro", "autor": "EdusheeP", "idioma": "portugués de Brasil", "web": "https://sites.google.com/view/edusheep/sheep", "condiciones": "La página no dice." },
+    { "archivo": "Sheep Hitsuji.zip", "nombre": "Sheep Hitsuji", "autor": "EdusheeP", "idioma": "japonés", "web": "https://sites.google.com/view/edusheep/sheep", "condiciones": "La página no dice." },
+    { "archivo": "Vincen-oto Legato.zip", "nombre": "Vincen-oto Legato", "autor": "snowsorry", "idioma": "japonés", "web": "https://snowsorry-voicebanks.carrd.co/", "condiciones": "Uso personal, con crédito al banco y a su autor. Lo comercial, con permiso. Sin derivados, sin redistribuir, nada R18." },
+    { "archivo": "Vincen-oto Ottava.zip", "nombre": "Vincen-oto Ottava", "autor": "snowsorry", "idioma": "japonés", "web": "https://snowsorry-voicebanks.carrd.co/", "condiciones": "Uso personal, con crédito al banco y a su autor. Lo comercial, con permiso. Sin derivados, sin redistribuir, nada R18." },
+    { "archivo": "Vincen-oto Rubato.zip", "nombre": "Vincen-oto Rubato", "autor": "snowsorry", "idioma": "japonés", "web": "https://snowsorry-voicebanks.carrd.co/", "condiciones": "Uso personal, con crédito al banco y a su autor. Lo comercial, con permiso. Sin derivados, sin redistribuir, nada R18." },
+    { "archivo": "Sanfu.zip", "nombre": "Sanfu Jurani", "autor": "Rafu", "idioma": "italiano", "web": "https://rafup.altervista.org/vbs/Sanfu_Jurani_CVVC_ITA_V2.zip", "condiciones": "Pide crédito por los dibujos de su carpeta Extras." }
+  ],
+  "voces": [
+    { "nombre": "LongWei", "banco": "LongWei Symphonia ES.zip", "nota": "barítono de ópera; grabado de La♭ 2 a Mi 4" },
+    { "nombre": "MIKE", "banco": "MIKE.zip", "evitar": ["_F"], "nota": "con el pecho, sin su falsete; grabado en Sol 3 y Re 4" },
+    { "nombre": "MIKE grave", "banco": "MIKE.zip", "capa": "_dp", "nota": "su color grave, grabado en La# 2" },
+    { "nombre": "MIKE suave", "banco": "MIKE.zip", "capa": "_sf", "nota": "su color suave, grabado en Do 3" },
+    { "nombre": "Sheep Oveja", "banco": "Sheep Oveja.zip", "nota": "barítono; grabado en Re 3" },
+    { "nombre": "Sheep Cordeiro", "banco": "Sheep Cordeiro.zip", "nota": "la misma voz en portugués: tiene la jota, la sh y la zh; de Do 3 a La 3" },
+    { "nombre": "Sheep Hitsuji", "banco": "Sheep Hitsuji.zip", "nota": "la misma voz en japonés (CV: las codas se pierden); de La 2 a Fa 4" },
+    { "nombre": "Vincen-oto Legato", "banco": "Vincen-oto Legato.zip", "nota": "japonés con l, rr y zh; de Mi 3 a Re 5" },
+    { "nombre": "Vincen-oto Ottava", "banco": "Vincen-oto Ottava.zip", "nota": "japonés con l, rr y zh; voz plena hasta Do 5" },
+    { "nombre": "Vincen-oto Rubato", "banco": "Vincen-oto Rubato.zip", "nota": "japonés VCV; de La 2 a Re# 5, fuerte en el agudo" },
+    { "nombre": "Sanfu", "banco": "Sanfu.zip", "nota": "italiano con rr de verdad; oscuro; de Si 2 a Do 4" },
+    { "nombre": "MBROLA es2", "mbrola": "es2", "nota": "difonos de MBROLA" },
+    { "nombre": "MBROLA es1", "mbrola": "es1", "nota": "difonos de MBROLA" }
+  ],
+  "murga": {
+    "bajos0": "LongWei", "bajos1": "MIKE grave",
+    "segundos0": "Sheep Oveja", "segundos1": "Sheep Cordeiro", "segundos2": "Vincen-oto Rubato",
+    "primos0": "MIKE", "primos1": "Vincen-oto Legato", "primos2": "Sheep Hitsuji", "primos3": "Sanfu", "primos4": "Vincen-oto Ottava",
+    "sobreprimos0": "Vincen-oto Ottava", "sobreprimos1": "Vincen-oto Rubato",
+    "tercia0": "Vincen-oto Legato"
+  }
+}

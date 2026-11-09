@@ -32,3 +32,8 @@ murga_trabajo/jurado/
 murga_trabajo/un_archivo/
 # Las pruebas con bancos de UTAU (herramientas/utau_prueba.mjs): audio hecho con bancos ajenos, que no se redistribuyen.
 murga_trabajo/utau/
+# Los bancos de voces de UTAU (bancos/*.zip): cada uno tiene sus condiciones de uso y no se redistribuyen. Van en
+# esta carpeta en la compu de cada uno; el repositorio sólo lleva bancos/plantel.json (qué bancos y voces hay) y
+# bancos/LEEME.md (de dónde bajarlos).
+bancos/*.zip
+bancos/*.uar

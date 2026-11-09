@@ -4,11 +4,12 @@
 // Do 5). Y una escala de «la» sostenidos de Sol 3 a Do 5. Deja los wav y una página para escucharlos lado a lado en
 // murga_trabajo/utau/<banco>/.
 //
-//   node herramientas/utau_prueba.mjs <carpeta del banco> [--nombre lw] [--voz es2] [--solo escala|frases] [--evitar _F]
+//   node herramientas/utau_prueba.mjs <banco (.zip de bancos/ o carpeta)> [--nombre lw] [--voz es2] [--solo escala|frases] [--evitar _F]
 //     --evitar _F: no usar esas alturas grabadas (el falsete de MIKE: un sobreprimo canta con el pecho)
 //
 // El banco no va al repositorio (cada banco tiene sus condiciones de uso): se baja aparte y se le pasa la carpeta.
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { abrirBancoNode, rutaDelBanco } from './banco_node.mjs';
 import { join, dirname, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { silabasCantadas, partes } from '../motor/cantor/letra.js';
@@ -21,15 +22,13 @@ import { crearMbrola } from '../motor/cantor/mbrola.js';
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2), arg = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : d; };
 const CARPETA = args.find((a, i) => !a.startsWith('--') && !args[i - 1]?.startsWith('--'));
-if (!CARPETA || !existsSync(CARPETA)) { console.error('uso: node herramientas/utau_prueba.mjs <carpeta del banco> [--nombre x] [--voz es2]'); process.exit(1); }
+if (!CARPETA || !existsSync(rutaDelBanco(CARPETA))) { console.error('uso: node herramientas/utau_prueba.mjs <carpeta del banco> [--nombre x] [--voz es2]'); process.exit(1); }
 const NOMBRE = arg('nombre', 'banco'), VOZ = arg('voz', 'es2'), SOLO = arg('solo', ''), EVITAR = arg('evitar', '') ? arg('evitar').split(',') : null;
 const SAL = join(RAIZ, 'murga_trabajo', 'utau', NOMBRE);
 mkdirSync(SAL, { recursive: true });
 
 // el banco, desde la carpeta
-const rutas = [];
-(function andar(d) { for (const f of readdirSync(d)) { const p = join(d, f); if (statSync(p).isDirectory()) andar(p); else rutas.push(relative(CARPETA, p).split('\\').join('/')); } })(CARPETA);
-const banco = crearBanco(rutas, r => { try { return new Uint8Array(readFileSync(join(CARPETA, r))); } catch { return null; } });
+const banco = abrirBancoNode(CARPETA);
 const world = await crearWorld(readFileSync(join(RAIZ, 'motor', 'vendor', 'world', 'world.wasm')));
 const mb = await crearMbrola(readFileSync(join(RAIZ, 'motor', 'vendor', 'mbrola', 'mbrola.wasm')), readFileSync(join(RAIZ, 'motor', 'vendor', 'mbrola', VOZ)));
 console.log(`banco «${banco.nombre}»: ${banco.entradas.length} entradas, alturas ${banco.alturas.map(a => (a.sufijo || '(sin sufijo)') + '=' + nombreNota(a.midi)).join(' ')}`);

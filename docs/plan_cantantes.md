@@ -47,7 +47,46 @@ Lo decidido el 9 de noviembre de 2026:
   en Node en un solo hilo;
 - al recargar, el banco se abre solo.
 
-Lo que sigue, abajo, es el plan para la página principal.
+## En la página principal (9 de noviembre de 2026)
+
+**Los bancos son .zip en la carpeta `bancos/` del repositorio.** No se suben: los ignora `.gitignore`, porque cada
+banco tiene sus condiciones. El repositorio lleva `bancos/plantel.json`, el plantel de siempre, y `bancos/LEEME.md`,
+que dice de dónde bajar cada banco.
+- **El plantel** tiene:
+  - los bancos: archivo, nombre, autor, idioma, de dónde bajarlo y sus condiciones;
+  - las voces que salen de cada uno: «MIKE», «MIKE grave» (capa `_dp`)… y sus valores;
+  - quién canta en cada uno de los 13 lugares (`murga`).
+- **Los zips se leen de a pedazos:** `zip.js` lee el directorio del zip y después cada archivo que hace falta, con
+  pedidos de un rango de bytes. Eso lo dan GitHub Pages y `servir.js`, que ahora acepta pedidos por pedazos. Lo
+  comprimido se descomprime con `DecompressionStream`. Si el .zip trae adentro un .uar (el instalador de UTAU), se
+  abre el .uar. La carpeta del banco es la más cercana que tenga su `character.txt`, `prefix.map` o
+  `character.yaml`.
+- **Node usa los mismos zips:** `herramientas/banco_node.mjs` los abre para las herramientas (galería, murga, registro,
+  solista).
+- **`herramientas/utau_adelgazar.mjs`** deja en cada .zip sólo lo que el cantor usa: los .wav que nombra algún
+  `oto.ini`, los `oto.ini`, el `prefix.map`, el `character.txt` y `.yaml`, y los readme con las condiciones.
+
+**El plantel en «Cantantes»** (`motor/plantel.js`, enganchado en `app.js`):
+- **Cada banco del plantel** aparece con su casilla, marcada por defecto si su .zip está. Al pasar el mouse se ven
+  quién lo grabó, sus voces y sus condiciones.
+- **Si un .zip no está** (la página publicada no los trae), el banco queda apagado y tachado, y ofrece «Buscar el
+  archivo…». Chrome y Edge recuerdan el archivo elegido; la próxima vez piden un clic para dar permiso.
+- **Desmarcar un banco** saca sus voces: sus lugares cantan con MBROLA.
+- **En el inspector de cada murguista,** «Voz» ofrece MBROLA (es2, es1, es4) y las voces de los bancos. Las que no
+  están aparecen apagadas y dicen qué falta. Con una voz de banco aparecen también tensión, ronquera, aire, esfuerzo
+  y temblor de la grabación.
+- **Por defecto,** cada lugar canta con la voz que le da el plantel si su banco está; si no, con MBROLA.
+- **Las voces de banco** cantan en los obreros con el motor `banco`. Si algo falla, ese cantor canta con MBROLA.
+- **El panel «Cantantes»** se ve siempre (antes se escondía con las muestras de coro, y por eso no aparecían los
+  nombres y las caras). Con muestras o formantes, avisa que los murguistas no cantan con su voz y ofrece pasar a
+  difonos.
+
+**La prueba** (Chrome sin ventana, con `servir.js`): los 9 bancos aparecen listos y los 13 murguistas, con nombre,
+cara y su voz del plantel. Una presentación entera (4:16) cantada con los bancos tarda 147 s, con 2927 pedidos por
+pedazos a los zips desde los obreros y ninguno entero. Con `Sheep Oveja.zip` escondido, el plantel dice «8 de 9», su
+banco queda apagado con «Buscar el archivo…», su voz aparece apagada en el inspector y su lugar canta con es2.
+
+Lo que sigue, abajo, es el plan original para la página principal.
 
 ## Lo que hay hoy en la página
 

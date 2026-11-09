@@ -6,7 +6,7 @@
 //   node herramientas/solista.mjs [--motor formantes|difonos:es2[:opción=valor...]|mbrola:es2] [--tempo 100] [--midi 0]
 //     difonos:es2:consonantes=1.1:vibrato=.2   el cantor de la página (motor/cantor/difonos.js) con esas opciones
 //     mbrola:es2                               el primer guion, más simple, con el programa mbrola instalado
-//     banco --banco <carpeta> [--evitar _F]    un banco de voz cantada de UTAU (motor/cantor/banco.js, docs/utau.md)
+//     banco --banco <banco> [--evitar _F]      un banco de UTAU (un .zip de bancos/ o una carpeta; motor/cantor/banco.js)
 //     --habla                                  dicha en lugar de cantada (prosodia de habla, sin vibrato)
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
@@ -194,14 +194,10 @@ let elBanco = null; const cacheBanco = new Map();
 async function bancoUtau() {
   if (elBanco) return elBanco;
   const carpeta = arg('banco');
-  if (!carpeta || !existsSync(carpeta)) throw new Error('falta --banco <carpeta del banco de UTAU>');
-  const { readdirSync, statSync } = await import('node:fs');
-  const { relative } = await import('node:path');
-  const { crearBanco } = await import('../motor/cantor/banco.js');
+  if (!carpeta) throw new Error('falta --banco <banco de UTAU: un .zip de bancos/ o una carpeta>');
+  const { abrirBancoNode } = await import('./banco_node.mjs');
   const { crearWorld } = await import('../motor/cantor/world.js');
-  const rutas = [];
-  (function andar(d) { for (const f of readdirSync(d)) { const p = join(d, f); if (statSync(p).isDirectory()) andar(p); else rutas.push(relative(carpeta, p).split(/[\\/]/).join('/')); } })(carpeta);
-  const banco = crearBanco(rutas, r => { try { return new Uint8Array(readFileSync(join(carpeta, r))); } catch { return null; } });
+  const banco = abrirBancoNode(carpeta);
   const world = await crearWorld(readFileSync(join(RAIZ, 'motor', 'vendor', 'world', 'world.wasm')));
   return (elBanco = { banco, world });
 }

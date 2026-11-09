@@ -58,8 +58,8 @@ pre{white-space:pre-wrap;font-size:12px;color:var(--suave);margin:6px 0 0;max-he
 
 <section class="parte" aria-labelledby="t-bancos">
 <h2 id="t-bancos">Los bancos</h2>
-<p class="sub">Elegí la carpeta de cada banco de UTAU (la que tiene su <code>oto.ini</code> o su <code>character.txt</code>). La primera vez el navegador pide permiso para leerla; elegí «permitir siempre» y la próxima vez va solo a buscar los archivos.</p>
-<div class="fila"><button class="fuerte" id="agregarBanco">Agregar un banco</button><input type="file" id="carpetaSesion" webkitdirectory hidden><button id="permisos" hidden>Dar permiso a las carpetas</button><span class="estado" id="estadoBancos" role="status"></span></div>
+<p class="sub">Los de <code>bancos/plantel.json</code> que estén en la carpeta <code>bancos/</code> se cargan solos. Se pueden sumar otros: un .zip (como lo baja su autor) o una carpeta. La primera vez el navegador pide permiso para leerlos; elegí «permitir siempre» y la próxima vez los busca solo.</p>
+<div class="fila"><button class="fuerte" id="agregarZip" title="Un banco de UTAU en .zip (tal como lo baja su autor, con o sin carpetas)">Agregar un .zip</button><button id="agregarBanco" title="Un banco ya desarmado, en una carpeta">Agregar una carpeta</button><input type="file" id="carpetaSesion" webkitdirectory hidden><button id="permisos" hidden>Dar permiso a las carpetas</button><span class="estado" id="estadoBancos" role="status"></span></div>
 <div class="lista-bancos" id="bancos"></div>
 </section>
 

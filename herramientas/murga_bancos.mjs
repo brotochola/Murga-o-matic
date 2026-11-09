@@ -2,16 +2,18 @@
 // motor/cantor/murga_bancos.js). Compone una pieza como la página, le escribe la letra, reparte los trece cantores y a
 // cada uno le da una voz del plantel según su lugar. Batería con los loops reales, sala, y sale un mp3 (ffmpeg).
 //
-//   node herramientas/murga_bancos.mjs <plantel.json> <reparto.json> [opciones]
+//   node herramientas/murga_bancos.mjs [plantel.json] [reparto.json] [opciones]
 //     --forma retirada  --estilo trasnochada  --semilla 56  --tonica 9  --modo mayor  --largo corta
 //     --hasta 60        cortar al final de la primera sección que termine después de ese segundo (0: entera)
 //     --letra-semilla 1 --salida murga_trabajo/utau/murga
 //
-// plantel.json: [{ "nombre": "MIKE grave", "carpeta": "D:/.../Mike_Normal", "capa": "_dp", "grito": .8, ... },
-//   { "nombre": "MBROLA es2", "mbrola": "es2" }] (en Node los bancos van por su carpeta)
-// reparto.json: { "bajos0": "nombre", ... } (la murga del estudio) o { "bajos": ["nombre", ...], ... } (por cuerda,
-//   en el orden de sus cantores; si una cuerda tiene menos voces que cantores, se repiten)
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
+// plantel.json (por defecto bancos/plantel.json): { "voces": [{ "nombre": "MIKE grave", "banco": "MIKE.zip",
+//   "capa": "_dp", "grito": .8, ... }, { "nombre": "MBROLA es2", "mbrola": "es2" }], "murga": { "bajos0": ... } }.
+//   El banco es un .zip de bancos/ (o una carpeta, con «carpeta»).
+// reparto.json (si no, la «murga» del plantel): { "bajos0": "nombre", ... } (la murga del estudio) o
+//   { "bajos": ["nombre", ...], ... } (por cuerda, en el orden de sus cantores; si faltan voces, se repiten)
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { abrirBancoNode } from './banco_node.mjs';
 import { join, dirname, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -26,8 +28,9 @@ import { LUGARES, prepararMurga, repartir, mezclarMurga, wavEstereo } from '../m
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2), arg = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : d; };
 const [rPlantel, rReparto] = args.filter((a, i) => !a.startsWith('--') && !args[i - 1]?.startsWith('--'));
-if (!rPlantel || !rReparto) { console.error('uso: node herramientas/murga_bancos.mjs <plantel.json> <reparto.json> [opciones]'); process.exit(1); }
-const PLANTEL = JSON.parse(readFileSync(rPlantel, 'utf8')), REP = JSON.parse(readFileSync(rReparto, 'utf8'));
+const PL = JSON.parse(readFileSync(rPlantel || join(RAIZ, 'bancos', 'plantel.json'), 'utf8'));
+const PLANTEL = Array.isArray(PL) ? PL : PL.voces, REP = rReparto ? JSON.parse(readFileSync(rReparto, 'utf8')) : PL.murga;
+if (!REP) { console.error('falta el reparto: el plantel no trae «murga» y no se pasó reparto.json'); process.exit(1); }
 // el reparto por cuerda se pasa a la murga por lugar
 const MURGA = Object.values(REP).some(Array.isArray)
   ? Object.fromEntries(LUGARES.map(l => { const v = REP[l.cuerda] || REP.primos; return [l.clave, v[l.n % v.length]]; }))
@@ -44,9 +47,7 @@ for (const s of M.P.secs) if (s.t0 < M.corte) console.log(`  ${s.t0.toFixed(1).p
 const bancos = new Map(), mbs = {};
 function banco(carpeta) {
   if (!bancos.has(carpeta)) {
-    const rutas = [];
-    (function andar(d) { for (const f of readdirSync(d)) { const p = join(d, f); if (statSync(p).isDirectory()) andar(p); else rutas.push(relative(carpeta, p).split(/[\\/]/).join('/')); } })(carpeta);
-    bancos.set(carpeta, { b: crearBanco(rutas, r => { try { return new Uint8Array(readFileSync(join(carpeta, r))); } catch { return null; } }), cache: new Map() });
+    bancos.set(carpeta, { b: abrirBancoNode(carpeta), cache: new Map() });
   }
   return bancos.get(carpeta);
 }
@@ -59,8 +60,7 @@ for (const [i, t] of tareas.entries()) {
     mbs[t.opc.voz] ??= await crearMbrola(readFileSync(join(RAIZ, 'motor', 'vendor', 'mbrola', 'mbrola.wasm')), readFileSync(join(RAIZ, 'motor', 'vendor', 'mbrola', t.opc.voz)));
     r = cantarDifonos(mbs[t.opc.voz], t.c.notas, t.opc);
   } else {
-    if (!t.voz.carpeta) throw new Error(`${t.voz.nombre}: en Node el banco va por su carpeta`);
-    const { b, cache } = banco(t.voz.carpeta);
+    const { b, cache } = banco(t.voz.banco || t.voz.carpeta);
     r = cantarBanco(b, world, t.c.notas, { ...t.opc, cache });
   }
   cantados.push({ x: r.x, sr: r.sr, inicio: r.inicio, pan: t.c.pan, ganancia: t.c.ganancia });

@@ -2,8 +2,11 @@
 // mismos segundos (las de la transcripción), con «la» o con la letra si está en murga_trabajo/banco/letras/<id>.txt
 // (un verso por línea). Sale en mono, como las voces separadas, para comparar con banco_medir.py.
 //
-//   node herramientas/banco_sintetizar.mjs [--motor formantes|difonos] [--variacion params.json] [--salida dir] [--solo id] [--exportar]
-//     --motor       formantes (cantor.js, el de siempre) o difonos (difonos.js con MBROLA y la voz es2)
+//   node herramientas/banco_sintetizar.mjs [--motor formantes|difonos|banco] [--variacion params.json] [--salida dir] [--solo id] [--exportar]
+//     --motor       formantes (cantor.js, el de siempre), difonos (difonos.js con MBROLA y la voz es2) o banco (las voces de
+//                   los bancos de UTAU del plantel, bancos/plantel.json: cada lugar con su voz de la «murga»)
+//     --voz         con banco: el nombre de una voz del plantel para todos (si no, la murga del plantel)
+//     --plantel p   con banco: otro plantel (por defecto bancos/plantel.json)
 //     --emision 0   difonos sin la emisión murguera de difonos.js (para medir el timbre crudo)
 //     --curva no    sin la curva de ecualización (para medir el timbre crudo, como hace herramientas/curva_difonos.py)
 //     --variacion   cuánto se diferencian los cantores (lo que prueba banco_ajustar.py); si no, motor/cantor/variacion.js
@@ -22,6 +25,10 @@ import { versosDe, silabasCantadas, alinear, partes } from '../motor/cantor/letr
 import { VARIACION } from '../motor/cantor/variacion.js';
 import { crearMbrola } from '../motor/cantor/mbrola.js';
 import { cantarDifonos, cantorDifonos, remuestrear, vozDelCantor } from '../motor/cantor/difonos.js';
+import { cantarBanco } from '../motor/cantor/banco.js';
+import { crearWorld } from '../motor/cantor/world.js';
+import { opcionesDe } from '../motor/cantor/murga_bancos.js';
+import { abrirBancoNode } from './banco_node.mjs';
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TRABAJO = resolve(process.env.MURGA_TRABAJO || join(RAIZ, 'murga_trabajo'));
@@ -36,8 +43,14 @@ const VOZ = arg('voz', 'coro'), mbs = {};
 // --opc brillo=1,color=0: opciones de cada cantor de difonos (las de cantorDifonos), para medir
 const OPC = Object.fromEntries((arg('opc', '') || '').split(',').filter(Boolean).map(e => e.split('=')).map(([k, v]) => [k, +v]));
 if (MOTOR === 'difonos') for (const v of VOZ === 'coro' ? ['es2', 'es1', 'es4'] : [VOZ]) mbs[v] = await crearMbrola(readFileSync(join(RAIZ, 'motor/vendor/mbrola/mbrola.wasm')), readFileSync(join(RAIZ, 'motor/vendor/mbrola', v)));
-// los difonos llevan su curva adentro (difonos.js, cantor por cantor, sin tocar las eses)
-const LA_CURVA = arg('curva') === 'no' || MOTOR === 'difonos' ? null : CURVA;
+// los bancos: el plantel, WORLD y cada banco abierto una vez (con su análisis guardado)
+const PL = MOTOR === 'banco' ? JSON.parse(readFileSync(arg('plantel', join(RAIZ, 'bancos', 'plantel.json')), 'utf8')) : null;
+const mundo = MOTOR === 'banco' ? await crearWorld(readFileSync(join(RAIZ, 'motor/vendor/world/world.wasm'))) : null;
+const bancosAbiertos = new Map();
+const elBanco = b => { if (!bancosAbiertos.has(b)) bancosAbiertos.set(b, { b: abrirBancoNode(b), cache: new Map() }); return bancosAbiertos.get(b); };
+if (MOTOR === 'banco') for (const v of ['es2', 'es1']) mbs[v] = await crearMbrola(readFileSync(join(RAIZ, 'motor/vendor/mbrola/mbrola.wasm')), readFileSync(join(RAIZ, 'motor/vendor/mbrola', v)));
+// los difonos y los bancos llevan su color adentro (difonos.js, cantor por cantor; los bancos, el de sus grabaciones)
+const LA_CURVA = arg('curva') === 'no' || MOTOR === 'difonos' || MOTOR === 'banco' ? null : CURVA;
 const igualar = (x) => LA_CURVA ? ecualizar(x, SR, LA_CURVA) : Float32Array.from(x);
 const solo = arg('solo'), exportar = args.includes('--exportar'), ids = arg('ids') ? new Set(arg('ids').split(',')) : null, cuantaSala = +arg('sala', .24);
 mkdirSync(SAL, { recursive: true });
@@ -120,6 +133,15 @@ for (const f of fragmentos) {
       const o = { ...cantorDifonos(k, semilla, { c, V }), voz, ...OPC, ...(arg('emision') != null ? { emision: +arg('emision') } : {}), ...(arg('curva') === 'no' ? { curva: null } : {}) };
       const d = cantarDifonos(mbs[voz], notas, { ...o, retraso: o.retraso + ret });
       const y = remuestrear(d.x, d.sr, SR), desde = Math.round(d.inicio * SR), z = new Float32Array(n);
+      for (let s = 0; s < y.length; s++) { const j = desde + s; if (j >= 0 && j < n) z[j] = y[s]; }
+      r = { voz: z, ruido: new Float32Array(n) };
+    } else if (MOTOR === 'banco') {
+      // la voz del lugar según la murga del plantel (o --voz para todos), con las opciones de un cantor de su cuerda
+      const nombre = VOZ !== 'coro' ? VOZ : PL.murga[k + c], voz = PL.voces.find(v => v.nombre === nombre) || PL.voces.find(v => v.mbrola);
+      const { motor, opc } = opcionesDe({ cuerda: k, c, semilla, retraso: ret }, voz);
+      const o = { ...opc, ...OPC };
+      const d = motor === 'banco' ? cantarBanco(elBanco(voz.banco).b, mundo, notas, { ...o, cache: elBanco(voz.banco).cache }) : cantarDifonos(mbs[o.voz] || mbs.es2, notas, o);
+      const y = d.sr === SR ? d.x : remuestrear(d.x, d.sr, SR), desde = Math.round(d.inicio * SR), z = new Float32Array(n);
       for (let s = 0; s < y.length; s++) { const j = desde + s; if (j >= 0 && j < n) z[j] = y[s]; }
       r = { voz: z, ruido: new Float32Array(n) };
     } else r = cantar(notas, { sr: SR, tipo: cfg.tipo, semilla, separar: true, variacion: variacion || undefined, retraso: ret });

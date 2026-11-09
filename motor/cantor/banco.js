@@ -13,6 +13,8 @@
 //      funden cuadro por cuadro (envolvente en dB) y se sintetiza la frase entera con nuestra curva de altura
 //      (la de guion(), en difonos.js: portamento, vibrato, caída) sin mover los formantes.
 import { guion, correr, esforzar } from './difonos.js';
+import { ecualizar } from './eq.js';
+import { CURVAS_BANCO } from './curvas_banco.js';
 
 // ── leer el banco ────────────────────────────────────────────────────────
 const NOMBRES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -694,6 +696,15 @@ export function cantarBanco(banco, world, notas, opc = {}) {
     // el grito, como los cantores de difonos (esforzar(): la boca más abierta, la voz apretada y pareja), sobre la voz
     // ya sintetizada
     if (o.grito > 0) esforzar(p.x, p.sr, { ...g, inicio: p.inicio }, o);
+    // el color de esta voz contra el coro real (curvas_banco.js, de herramientas/curva_bancos.mjs), en la proporción
+    // colorReal (0 a 1; por defecto entera). Cambia el color, no el volumen del cantor.
+    const curva = o.curva ?? CURVAS_BANCO[`${o.banco}|${o.capa || ''}`], cr = o.colorReal ?? 1;
+    if (curva && cr > 0) {
+      let e0 = 0; for (const v of p.x) e0 += v * v;
+      const y = ecualizar(p.x, p.sr, cr === 1 ? curva : curva.map(([f, db]) => [f, db * cr]));
+      let e1 = 0; for (const v of y) e1 += v * v;
+      const k = e1 > 0 ? Math.sqrt(e0 / e1) : 1; for (let i = 0; i < y.length; i++) p.x[i] = y[i] * k;
+    }
     piezas.push(p);
   }
   if (!piezas.length) return { x: new Float32Array(0), sr, inicio: notas[0].t0, faltan };

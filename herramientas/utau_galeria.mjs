@@ -2,12 +2,13 @@
 // el registro de cada cuerda, para elegir de oído qué voz va en qué cuerda. Los bancos salen crudos; MBROLA, como el
 // que lleva cada cuerda en la página (cantorDifonos).
 //
-//   node herramientas/utau_galeria.mjs <cantantes.json>   → murga_trabajo/utau/galeria/index.html
+//   node herramientas/utau_galeria.mjs [plantel.json] [frase]   → murga_trabajo/utau/galeria/index.html
 //
-// cantantes.json: [{ "nombre": "MIKE grave", "carpeta": "D:/.../Mike_Normal", "color": "_dp", "evitar": ["_F"],
-//                    "tracto": 1 }, { "nombre": "MBROLA es2", "mbrola": "es2" }, ...]
-// (las carpetas de los bancos son de cada compu: los bancos no van al repositorio)
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
+// plantel.json (por defecto bancos/plantel.json): { "voces": [{ "nombre": "MIKE grave", "banco": "MIKE.zip",
+//   "capa": "_dp", ... }, { "nombre": "MBROLA es2", "mbrola": "es2" }] } (o la lista de voces sola). El banco es un
+//   .zip de bancos/ o una carpeta («carpeta»): los bancos no van al repositorio.
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { abrirBancoNode } from './banco_node.mjs';
 import { join, dirname, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { melodia } from './solista.mjs';
@@ -17,7 +18,8 @@ import { cantarDifonos, cantorDifonos } from '../motor/cantor/difonos.js';
 import { crearMbrola } from '../motor/cantor/mbrola.js';
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const CANTANTES = JSON.parse(readFileSync(process.argv[2], 'utf8'));
+const PL = JSON.parse(readFileSync(process.argv[2] || join(RAIZ, 'bancos', 'plantel.json'), 'utf8'));
+const CANTANTES = Array.isArray(PL) ? PL : PL.voces;
 const SAL = join(RAIZ, 'murga_trabajo', 'utau', 'galeria');
 mkdirSync(SAL, { recursive: true });
 const FRASE = process.argv[3] || 'Llegó el carnaval con su bombo y platillo';
@@ -28,10 +30,7 @@ const mbs = {};
 const bancos = new Map();
 function banco(carpeta) {
   if (!bancos.has(carpeta)) {
-    const rutas = [];
-    (function andar(d) { for (const f of readdirSync(d)) { const p = join(d, f); if (statSync(p).isDirectory()) andar(p); else rutas.push(relative(carpeta, p).split(/[\\/]/).join('/')); } })(carpeta);
-    const b = crearBanco(rutas, r => { try { return new Uint8Array(readFileSync(join(carpeta, r))); } catch { return null; } });
-    bancos.set(carpeta, { b, cache: new Map() });
+    bancos.set(carpeta, { b: abrirBancoNode(carpeta), cache: new Map() });
   }
   return bancos.get(carpeta);
 }
@@ -51,7 +50,8 @@ const filas = [];
 for (const c of CANTANTES) {
   const fila = { ...c, celdas: [] };
   let info = '';
-  if (c.carpeta) { const { b } = banco(c.carpeta); info = `${b.reclist}; grabado en ${b.alturas.map(a => nombreNota(a.midi)).sort().join(', ')}${b.sinArchivo ? `; ${b.sinArchivo} entradas sin su .wav` : ''}`; }
+  const donde = c.banco || c.carpeta;
+  if (donde) { const { b } = banco(donde); info = `${b.reclist}; grabado en ${b.alturas.map(a => nombreNota(a.midi)).sort().join(', ')}${b.sinArchivo ? `; ${b.sinArchivo} entradas sin su .wav` : ''}`; }
   fila.info = info;
   for (const [cuerda, sube] of CUERDAS) {
     const notas = melodia(FRASE, { tempo: 100, sube });
@@ -62,8 +62,9 @@ for (const c of CANTANTES) {
       const k = cuerda.startsWith('agudo') ? 'sobreprimos' : cuerda;
       r = cantarDifonos(mbs[c.mbrola], notas, { ...cantorDifonos(k, 3, { c: 0 }), voz: c.mbrola, w: c.mbrola !== 'es4', retraso: 0 });
     } else {
-      const { b, cache } = banco(c.carpeta);
-      r = cantarBanco(b, world, notas, { semilla: 3, cache, capa: c.capa ?? c.color, evitar: c.evitar, tracto: c.tracto });
+      const { b, cache } = banco(donde);
+      const { nombre, banco: _b, carpeta, mbrola, nota, ...valores } = c;
+      r = cantarBanco(b, world, notas, { semilla: 3, cache, ...valores, capa: c.capa ?? c.color });
     }
     const archivo = `${slug(c.nombre)}_${slug(cuerda)}.wav`;
     wav(archivo, r.x, r.sr, r.inicio);

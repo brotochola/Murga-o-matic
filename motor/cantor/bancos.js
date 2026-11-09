@@ -6,6 +6,7 @@
 // Del lado de la página: guardar y listar los bancos, pedir permiso, y guardar datos sueltos (el plantel, la murga).
 // Del lado del obrero: cargarBanco(fuente), que arma el banco (banco.js) leyendo de la carpeta.
 import { crearBanco } from './banco.js';
+import { desdeUrl, desdeBlob, abrirZip, leerEntrada, fuenteDeEntrada } from './zip.js';
 
 // ── IndexedDB ────────────────────────────────────────────────────────────
 const BASE = 'murga-o-matic-estudio', VERSION = 1;
@@ -50,12 +51,22 @@ export async function permiso(handle, pedir = false) {
 // ── leer un banco (en el obrero) ────────────────────────────────────────
 // Sólo hacen falta los .wav y los textos del banco (las .frq, .llsm, imágenes... no)
 const SIRVE = /\.(wav|ini|map|txt|yaml)$/i;
-// fuente: { handle } (una carpeta con permiso) o { archivos: [{ ruta, file }] } (de un <input webkitdirectory>).
-// Devuelve { rutas, leer(ruta) → Promise<Uint8Array> }, con las rutas desde la carpeta del banco (si se eligió la de
-// arriba, la que la contiene sola, se baja hasta la que tiene sus archivos)
+// fuente: un .zip ({ url } en la web, como bancos/MIKE.zip; { zip: File o FileSystemFileHandle } elegido de la
+// compu), una carpeta ({ handle }, con permiso) o sus archivos ({ archivos: [{ ruta, file }] }, de un
+// <input webkitdirectory>). Devuelve { rutas, leer(ruta) → Promise<Uint8Array> }, con las rutas desde la carpeta del
+// banco (si se eligió la de arriba, la que la contiene sola, se baja hasta la que tiene sus archivos)
 export async function abrirFuente(fuente) {
   const mapa = new Map();
-  if (fuente.handle) {
+  if (fuente.url || fuente.zip) {
+    let f = fuente.url ? await desdeUrl(fuente.url) : desdeBlob(fuente.zip.getFile ? await fuente.zip.getFile() : fuente.zip);
+    let lista = await abrirZip(f);
+    // el instalador de UTAU (.uar) adentro del .zip: si el banco no está afuera, el .uar más grande
+    if (!lista.some(e => /(^|\/)oto\.ini$/i.test(e.nombre))) {
+      const uar = lista.filter(e => /\.uar$/i.test(e.nombre)).sort((a, b) => b.tamano - a.tamano)[0];
+      if (uar) { f = await fuenteDeEntrada(f, uar); lista = await abrirZip(f); }
+    }
+    for (const e of lista) if (SIRVE.test(e.nombre)) mapa.set(e.nombre, { f, e });
+  } else if (fuente.handle) {
     const andar = async (dir, pre) => {
       for await (const [nombre, h] of dir.entries()) {
         if (h.kind === 'directory') await andar(h, pre + nombre + '/');
@@ -64,8 +75,16 @@ export async function abrirFuente(fuente) {
     };
     await andar(fuente.handle, '');
   } else for (const { ruta, file } of fuente.archivos) if (SIRVE.test(ruta)) mapa.set(ruta, file);
-  // la carpeta que contiene sola a otra: se baja
-  let rutas = [...mapa.keys()], carpeta = fuente.handle?.name || '';
+  // la carpeta del banco: la más cercana que tiene su character.txt, prefix.map o character.yaml (el .uar de MIKE trae
+  // afuera el install.txt de UTAU); si no, la carpeta que contiene sola a otra se baja
+  let rutas = [...mapa.keys()], carpeta = fuente.handle?.name || (fuente.url ? decodeURIComponent(fuente.url.split('/').pop()).replace(/\.zip$/i, '') : '') || (fuente.zip?.name || '').replace(/\.zip$/i, '');
+  const raiz = rutas.filter(r => /(^|\/)(character\.txt|prefix\.map|character\.yaml)$/i.test(r)).map(r => r.split('/').slice(0, -1).join('/')).sort((a, b) => a.length - b.length)[0];
+  if (raiz) {
+    carpeta = raiz.split('/').pop();
+    const viejo = [...mapa.entries()]; mapa.clear();
+    for (const [r, h] of viejo) if (r.startsWith(raiz + '/')) mapa.set(r.slice(raiz.length + 1), h);
+    rutas = [...mapa.keys()];
+  }
   for (;;) {
     const primera = rutas[0]?.split('/')[0];
     if (!primera || !rutas.every(r => r.startsWith(primera + '/'))) break;
@@ -76,6 +95,7 @@ export async function abrirFuente(fuente) {
   }
   const leer = async r => {
     const h = mapa.get(r); if (!h) return null;
+    if (h.e) return leerEntrada(h.f, h.e);
     const f = h.getFile ? await h.getFile() : h;
     return new Uint8Array(await f.arrayBuffer());
   };
