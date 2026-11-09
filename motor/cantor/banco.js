@@ -641,6 +641,7 @@ function analisis(cache, world, banco, e, len) {
   return r;
 }
 
+const azarNota = (a, b) => { let x = Math.imul(a ^ 0x51ed27, 0x85ebca6b) ^ Math.imul(b + 0x2545f491, 0xc2b2ae35); x ^= x >>> 16; x = Math.imul(x, 0x7feb352d); x ^= x >>> 15; return (x >>> 0) / 4294967296; };
 // las frases de un cantor (notas ligadas) y, en cada una, sus unidades con el pedazo del banco que le toca
 function frasesDe(banco, notas, o) {
   const frases = [[]];
@@ -669,6 +670,9 @@ export function cantarBanco(banco, world, notas, opc = {}) {
   if (!notas.length) return { x: new Float32Array(0), sr: 44100, inicio: 0 };
   // cada cantor entra un poco tarde y corre un poco cada nota, como los de difonos (retraso, desfase)
   notas = correr(notas, o);
+  // y cada nota un poco alta o baja (desafinaNota, semitonos; el azar sale de su semilla y del momento de la nota, como
+  // el desfase de correr): el coro real no canta clavado en la nota, cada uno se abre de los otros
+  if (o.desafinaNota > 0) notas = notas.map(n => ({ ...n, midi: n.midi + o.desafinaNota * (2 * azarNota(o.semilla || 1, Math.round(n.t0 * 1000)) - 1) }));
   const g = guion(notas, o);
   // la altura de guion(), una sola pasada en orden (tiene estado: la fase del vibrato)
   const tA0 = g.inicio, nA = Math.ceil((g.fin + .5 - tA0) / (PERIODO / 1000)) + 2, alt = new Float64Array(nA);

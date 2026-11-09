@@ -11,6 +11,7 @@ import { escribirLetraLocal } from './letrista_local.js';
 import { DATOS } from './datos.js';
 import { sala, normalizar } from './mezcla.js';
 import { cantorDifonos, remuestrear } from './difonos.js';
+import { VARIACION, VARIACION_BANCO, GRITO_BANCO } from './variacion.js';
 
 // los 13 lugares, en el orden de coro.js: bajos0, bajos1, segundos0...
 export const LUGARES = Object.entries(CORO).flatMap(([cuerda, cfg]) => Array.from({ length: cfg.cantores }, (_, n) => ({ cuerda, n, clave: cuerda + n })));
@@ -26,12 +27,16 @@ const GARGANTAS = [1, 1.04, .96, 1.07, .93];
 // las opciones de un cantor (c, de coro.js cantores()) con una voz del plantel. veces: cuántas veces ya se usó esa voz.
 // Los valores de un cantor de difonos de su cuerda (vibrato, entrada, adornos, retraso...) y encima los de la voz; a
 // un banco no le tocan la garganta, el color ni el grito de MBROLA (el grito es el que diga la voz).
-export function opcionesDe(c, voz, veces = 0) {
-  const base = cantorDifonos(c.cuerda === 'tercia' ? 'sobreprimos' : c.cuerda, c.semilla, { c: c.c || 0 });
+// V: lo que se cambia de la variación entre cantores (la prueba banco_sintetizar.mjs --variacion). Los cantores de banco
+// parten de VARIACION_BANCO (más abiertos: variacion.js); los de MBROLA, de VARIACION.
+export function opcionesDe(c, voz, veces = 0, V = null) {
+  const cuerda = c.cuerda === 'tercia' ? 'sobreprimos' : c.cuerda;
+  const Vb = voz.mbrola ? { ...VARIACION, ...(V || {}) } : { ...VARIACION, ...VARIACION_BANCO, ...(V || {}) };
+  const base = cantorDifonos(cuerda, c.semilla, { c: c.c || 0, V: Vb });
   const v = valoresDe(voz), retraso = (base.retraso || 0) + (c.retraso || 0) + (v.retraso || 0);
   if (voz.mbrola) return { motor: 'difonos', opc: { ...base, ...v, voz: voz.mbrola, w: voz.mbrola !== 'es4', tracto: base.tracto * (v.tracto ?? 1) * GARGANTAS[veces % GARGANTAS.length], retraso } };
   const { tracto, color, inclinacion, grito, ...b } = base;
-  return { motor: 'banco', opc: { ...b, grito: 0, ...v, tracto: (v.tracto ?? 1) * GARGANTAS[veces % GARGANTAS.length], retraso, semilla: c.semilla, banco: voz.banco, capa: voz.capa ?? voz.color, evitar: voz.evitar } };
+  return { motor: 'banco', opc: { ...b, desafinaNota: Vb.desafinaNota, modulacion: Vb.modulacion, temblor: Vb.temblor, grito: (grito ?? .6) / .6 * GRITO_BANCO, ...v, tracto: (v.tracto ?? 1) * GARGANTAS[veces % GARGANTAS.length], retraso, semilla: c.semilla, banco: voz.banco, capa: voz.capa ?? voz.color, evitar: voz.evitar } };
 }
 
 // la pieza, su letra y los cantores (como la página: exportar_voces.mjs), cortada al final de la primera sección que

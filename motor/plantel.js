@@ -6,7 +6,8 @@
 // Todos los bancos que estén vienen marcados; desmarcarlos saca sus voces. Las voces de banco se eligen en el inspector
 // de cada murguista («banco:MIKE»), y cantan en los obreros con el motor de bancos (cantor/obrero.js).
 import { guardarBanco, listarBancos, guardarDato, leerDato, permiso } from './cantor/bancos.js';
-import { CUERDAS_DIFONOS } from './cantor/difonos.js';
+import { CUERDAS_DIFONOS, cantorDifonos } from './cantor/difonos.js';
+import { VARIACION, VARIACION_BANCO, GRITO_BANCO } from './cantor/variacion.js';
 
 const URL_PLANTEL = new URL('../bancos/plantel.json', import.meta.url);
 const urlDelBanco = a => new URL('../bancos/' + encodeURIComponent(a), import.meta.url).href;
@@ -50,11 +51,16 @@ export function vozDeLugar(clave) {
 // las opciones del motor de bancos para una voz: o, las de un cantor de difonos (cantorDifonos + lo cambiado a mano);
 // manuales, lo cambiado a mano (gana sobre los valores de la voz). La garganta de difonos es la de MBROLA para esa
 // cuerda: para un banco cuenta sólo lo que cada cantor tiene de más o de menos.
-export function opcionesBanco(valor, cuerda, o, manuales = {}) {
+// c: el número del cantor en su cuerda. Los cantores de banco cantan más abiertos que los de MBROLA (VARIACION_BANCO,
+// medida contra el coro real): su desafinación y su vibrato salen de la misma semilla con esa variación.
+export function opcionesBanco(valor, cuerda, o, manuales = {}, c = 0) {
   const v = vozDe(valor); if (!disponible(v)) return null;
   const { tracto, color, inclinacion, voz, w, memo, ...b } = o;
   const T = CUERDAS_DIFONOS[cuerda]?.tracto || 1;
-  return { ...b, ...valoresDe(v), ...Object.fromEntries(Object.entries(manuales).filter(([k]) => k !== 'voz' && k !== 'tracto')), tracto: (manuales.tracto ?? tracto ?? T) / T * (valoresDe(v).tracto ?? 1), banco: v.banco, capa: v.capa, evitar: v.evitar };
+  const vb = cantorDifonos(cuerda, o.semilla, { c, V: { ...VARIACION, ...VARIACION_BANCO } });
+  // el grito de MBROLA (0,6 con «Gritan», por cantor y por «Cuánto gritan»), llevado al de los bancos (GRITO_BANCO)
+  const abiertos = { grito: (o.grito ?? .6) / .6 * GRITO_BANCO, transporte: vb.transporte, vibrato: vb.vibrato, vibVel: vb.vibVel, vibEntra: vb.vibEntra, desafinaNota: VARIACION_BANCO.desafinaNota, modulacion: VARIACION_BANCO.modulacion, temblor: VARIACION_BANCO.temblor };
+  return { ...b, ...abiertos, ...valoresDe(v), ...Object.fromEntries(Object.entries(manuales).filter(([k]) => k !== 'voz' && k !== 'tracto')), tracto: (manuales.tracto ?? tracto ?? T) / T * (valoresDe(v).tracto ?? 1), banco: v.banco, capa: v.capa, evitar: v.evitar };
 }
 // presentarle un banco a un obrero (una vez por obrero)
 const presentados = new WeakMap();

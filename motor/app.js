@@ -262,7 +262,7 @@ async function cantarDifonosCoro(pieza,P,gen,solo,incremental){
   for(const c of lista){const aj=S.ajustes[c.clave]||{};
     const o={...cantorDifonos(c.cuerda,aj.semilla??c.semilla,{c:solo?0:c.c||0}),voz:solo?"es2":(plantel.vozDeLugar(c.clave)??vozDelCantor(c.c||0)),...elegidos(aj)};o.adornos*=ADORNOS_COR[S.adornos]??1;o.grito*=GRITO_COR[S.grito]??1;
     c.opc={...o,retraso:o.retraso+(c.retraso||0),memo:true};c.motor="difonos";
-    if(plantel.esDeBanco(o.voz)){const vb=plantel.opcionesBanco(o.voz,c.cuerda,c.opc,elegidos(aj));
+    if(plantel.esDeBanco(o.voz)){const vb=plantel.opcionesBanco(o.voz,c.cuerda,c.opc,elegidos(aj),c.c||0);
       c.respaldo={...c.opc,voz:vozDelCantor(c.c||0)};if(vb){c.motor="banco";c.opc=vb}else c.opc=c.respaldo}c.mezcla=[(solo?1:c.ganancia)*Math.pow(10,(aj.db||0)/20),aj.pan??(solo?0:c.pan)]}
   const len=Math.ceil(P.total*SR);
   const firmas=Object.fromEntries(ORDEN.map(k=>[k,huella(JSON.stringify([len,lista.filter(c=>c.cuerda===k).map(c=>[c.clave,c.notas,c.opc,c.mezcla])]))]));

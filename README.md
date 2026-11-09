@@ -10,6 +10,17 @@ Elegís presentación o retirada, murga, tono y largo, y compone una pieza nueva
   - *Muestras de coro:* cinco cuerdas (bajos, segundos, primos, sobreprimos y tercia) con muestras "aah" de FluidR3 y MusyngKite, tomadas de [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts). Cada cuerda tiene de dos a cinco cantores (la tercia es una voz sola), y el timbre se ecualiza hacia el de un coro de murga medido.
   - *Cantores sintéticos:* un letrista algorítmico escribe una letra rioplatense que entra en la melodía, sílaba por nota y con rima, y trece voces de fuente glótica y formantes la cantan. No usa muestras ni modelos de lenguaje, y anda sin conexión. La letra se puede editar o pedir otra, y un panel muestra paso a paso cómo se hizo cada verso. La voz se calibró contra La Trasnochada 2020. Detalles y mediciones en [docs/cantores_y_letras.md](docs/cantores_y_letras.md).
   - *Difonos:* la misma letra la cantan trece cantores armados con difonos (pedacitos de voz grabada) de [MBROLA](https://github.com/numediart/MBROLA), compilado a WebAssembly, con acento rioplatense exagerado de murguista. Cada cuerda tiene su largo de garganta y cada cantor sus mañas. Se entiende mucho más: con el coro entero, Whisper erra el 13 % de las letras, contra el 45 % del coro de formantes. Con «Sólo un solista» canta uno solo la melodía. En «Los cantantes» se puede cambiar cada uno de los trece (voz, garganta, afinación, vibrato, brillo, dicción, adornos, volumen, paneo) y escucharlo solo ([docs/solista.md](docs/solista.md)).
+  - *Bancos de voz cantada (UTAU):* grabaciones de cantantes de verdad, cortadas en sílabas, en varias alturas: MIKE
+    y Sheep Oveja (castellano), LongWei, Sheep Cordeiro (portugués), los tres Vincen-oto (japonés, con voz plena hasta
+    Do 5) y Sanfu (italiano). Cada banco es un .zip en `bancos/`. No vienen con la página: cada uno tiene sus
+    condiciones de uso. Se bajan de la página de su autor ([bancos/LEEME.md](bancos/LEEME.md)), y la página los lee
+    de a pedazos. En «Cantantes → El plantel» se marcan los bancos que cantan, y cada lugar canta por defecto con la
+    voz que le da [bancos/plantel.json](bancos/plantel.json). Un banco que falta se apaga, con «Buscar el archivo…».
+    El corte y pegado de los pedazos, como un «resampler» de UTAU, lo hace WORLD (compilado a WebAssembly), y cada voz
+    tiene además tensión, ronquera, aire, esfuerzo y grito ([docs/utau.md](docs/utau.md),
+    [docs/plan_cantantes.md](docs/plan_cantantes.md)).
+  - *El estudio de voces* ([estudio.html](estudio.html)): cada voz del plantel con sus deslizadores, escuchada en una
+    frase; quién canta en cada uno de los trece lugares; y la murga entera en mp3.
   - *El coro, como lo cuenta* Sin Disfraz *(Lamolle y Lombardo, 1998):* 2 bajos, 3 segundos, 5 primos, 2 sobreprimos y la tercia, parados como en La Unión (segundos a la izquierda, sobreprimos en el medio, primos a la derecha) o como en La Teja (al revés). En las clarinadas y en los acordes finales, algunos cantores adornan su nota a su manera: vibrato, trino, una vuelta o pasarse a otra voz del acorde ([INVESTIGACION.md](INVESTIGACION.md)).
 
 ## La página

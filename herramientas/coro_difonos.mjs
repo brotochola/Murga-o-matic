@@ -1,9 +1,10 @@
 // coro_difonos.mjs — las frases del banco del solista cantadas por el coro entero, para medir si se entiende la letra
 // cuando cantan todos: primos con la melodía, segundos y bajos una tercera abajo y sobreprimos una tercera arriba,
 // con la cantidad de cantores, los volúmenes y los corrimientos de coro.js. El mismo coro se canta con
-// difonos (difonos.js + MBROLA) y con formantes (cantor.js); herramientas/solista_jurado.py los juzga.
+// difonos (difonos.js + MBROLA), con formantes (cantor.js) o con las voces de los bancos de UTAU (banco: cada lugar con
+// su voz del plantel, bancos/plantel.json); herramientas/solista_jurado.py los juzga.
 //
-//   node herramientas/coro_difonos.mjs [--motor difonos|formantes] [--voz coro|es2|es1] [--opc desfase=0,retraso=0]
+//   node herramientas/coro_difonos.mjs [--motor difonos|formantes|banco] [--voz coro|es2|es1] [--opc desfase=0,retraso=0]
 import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,6 +14,10 @@ import { cantar } from '../motor/cantor/cantor.js';
 import { CORO, volumenDe } from '../motor/cantor/coro.js';
 import { VARIACION } from '../motor/cantor/variacion.js';
 import { FRASES, melodia } from './solista.mjs';
+import { cantarBanco } from '../motor/cantor/banco.js';
+import { crearWorld } from '../motor/cantor/world.js';
+import { opcionesDe } from '../motor/cantor/murga_bancos.js';
+import { abrirBancoNode } from './banco_node.mjs';
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TRABAJO = resolve(process.env.MURGA_TRABAJO || join(RAIZ, 'murga_trabajo'));
@@ -39,6 +44,11 @@ const wav = (ruta, x) => {
 const mbs = {};
 if (MOTOR === 'difonos') for (const v of VOZ === 'coro' ? ['es2', 'es1', 'es4'] : [VOZ]) mbs[v] = await crearMbrola(readFileSync(join(RAIZ, 'motor/vendor/mbrola/mbrola.wasm')), readFileSync(join(RAIZ, 'motor/vendor/mbrola', v)));
 
+// los bancos: el plantel, WORLD y cada banco abierto una vez
+const PL = MOTOR === 'banco' ? JSON.parse(readFileSync(join(RAIZ, 'bancos', 'plantel.json'), 'utf8')) : null;
+const mundo = MOTOR === 'banco' ? await crearWorld(readFileSync(join(RAIZ, 'motor/vendor/world/world.wasm'))) : null;
+const abiertos = new Map(), elBanco = b => { if (!abiertos.has(b)) abiertos.set(b, { b: abrirBancoNode(b), cache: new Map() }); return abiertos.get(b); };
+if (MOTOR === 'banco') for (const v of ['es2', 'es1']) mbs[v] = await crearMbrola(readFileSync(join(RAIZ, 'motor/vendor/mbrola/mbrola.wasm')), readFileSync(join(RAIZ, 'motor/vendor/mbrola', v)));
 const lista = [];
 for (const [k, texto] of FRASES.entries()) {
   let mezcla = new Float32Array(0), n = 0;
@@ -54,6 +64,13 @@ for (const [k, texto] of FRASES.entries()) {
         const voz = VOCES_PRUEBA ? VOCES_PRUEBA[c % VOCES_PRUEBA.length] : VOZ === 'coro' ? vozDelCantor(c) : VOZ;
         const o = { ...cantorDifonos(cuerda, sem, { c, D: DIF }), voz, ...EXTRA };
         const r = cantarDifonos(mbs[voz], notas, { ...o, retraso: o.retraso + ret });
+        const y = remuestrear(r.x, r.sr, SR), desde = Math.round(r.inicio * SR), z = new Float32Array(Math.max(0, desde) + y.length);
+        z.set(desde >= 0 ? y : y.subarray(-desde), Math.max(0, desde)); sumar(z, g);
+      } else if (MOTOR === 'banco') {
+        const voz = PL.voces.find(v => v.nombre === PL.murga[cuerda + c]) || PL.voces.find(v => v.mbrola);
+        const { motor, opc } = opcionesDe({ cuerda, c, semilla: sem, retraso: ret }, voz);
+        const o = { ...opc, ...EXTRA };
+        const r = motor === 'banco' ? cantarBanco(elBanco(voz.banco).b, mundo, notas, { ...o, cache: elBanco(voz.banco).cache }) : cantarDifonos(mbs[o.voz] || mbs.es2, notas, o);
         const y = remuestrear(r.x, r.sr, SR), desde = Math.round(r.inicio * SR), z = new Float32Array(Math.max(0, desde) + y.length);
         z.set(desde >= 0 ? y : y.subarray(-desde), Math.max(0, desde)); sumar(z, g);
       } else sumar(cantar(notas, { sr: SR, tipo: cfg.tipo, semilla: sem, retraso: ret }), g);

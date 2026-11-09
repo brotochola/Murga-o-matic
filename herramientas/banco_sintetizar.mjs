@@ -138,7 +138,7 @@ for (const f of fragmentos) {
     } else if (MOTOR === 'banco') {
       // la voz del lugar según la murga del plantel (o --voz para todos), con las opciones de un cantor de su cuerda
       const nombre = VOZ !== 'coro' ? VOZ : PL.murga[k + c], voz = PL.voces.find(v => v.nombre === nombre) || PL.voces.find(v => v.mbrola);
-      const { motor, opc } = opcionesDe({ cuerda: k, c, semilla, retraso: ret }, voz);
+      const { motor, opc } = opcionesDe({ cuerda: k, c, semilla, retraso: ret }, voz, 0, variacion || null);
       const o = { ...opc, ...OPC };
       const d = motor === 'banco' ? cantarBanco(elBanco(voz.banco).b, mundo, notas, { ...o, cache: elBanco(voz.banco).cache }) : cantarDifonos(mbs[o.voz] || mbs.es2, notas, o);
       const y = d.sr === SR ? d.x : remuestrear(d.x, d.sr, SR), desde = Math.round(d.inicio * SR), z = new Float32Array(n);

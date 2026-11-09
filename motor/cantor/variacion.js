@@ -19,3 +19,22 @@ export const VARIACION = {
   liderDb: 1.0,               // el primer cantor de cada cuerda, tantos dB más fuerte
   liderAdelanto: 0.006,       // y tantos segundos adelantado
 };
+
+// Los cantores de banco (voces de UTAU, motor/cantor/banco.js) cantaban demasiado juntos con la variación de arriba:
+// sus grabaciones, resintetizadas con WORLD, son más limpias que MBROLA, y en el banco del coro la energía de cada
+// armónico quedaba más pegada a la nota que en el coro real («una voz» 0,40–0,68 contra 0,30–0,44). Medido la noche del
+// 9 de noviembre de 2026 (murga_trabajo/plan/noche_2026-11-09.md): con esto, y las curvas de color de cada voz
+// (curvas_banco.js), la distancia al coro real bajó de 6,31 a 4,27 en los fragmentos de ajuste y de 9,77 a 6,01 en los
+// de control. Más apertura (0,30 y 0,08 por nota) mejoraba los de ajuste y empeoraba los de control.
+export const VARIACION_BANCO = {
+  desafinacion: 0.25,         // semitonos, en vez de 0,17
+  vibrato: [0.12, 0.30],      // en vez de 0,09–0,24
+  desafinaNota: 0.06,         // cada nota hasta este tanto alta o baja (banco.js)
+  modulacion: 1.5,            // cuánto del temblor de altura de la grabación queda (1: el de la grabación)
+  temblor: 0.08,              // semitonos de temblor rápido de la afinación (difonos.js guion), en vez de 0,04
+};
+// Cuánto gritan los cantores de banco (esforzar() de difonos.js), con «Gritan, como en el tablado»: la mitad que los
+// de MBROLA (0,6). En el banco del coro, gritar acerca el timbre al del coro real (de 4,0 a 3,7 dB en los de ajuste)
+// pero llena los huecos entre sílabas: con 0,3 la distancia de los 12 fragmentos sube de 4,85 a 5,12, con 0,6 a 5,32.
+// «Gritan mucho» lo multiplica por 1,6 y «No gritan» lo apaga, como a los de MBROLA.
+export const GRITO_BANCO = 0.3;

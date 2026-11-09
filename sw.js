@@ -8,7 +8,7 @@
 //   cambió se copia del guardado anterior en vez de bajarse otra vez.
 // - VERSION la reescribe herramientas/offline.mjs: si cambia un archivo cambia este, y el navegador instala el nuevo.
 //   El nuevo espera; la página avisa «Hay una versión nueva» y al recargar toma su lugar.
-const VERSION = '1b8ad48479';
+const VERSION = '6248f2ade6';
 const PREFIJO = 'murga-', CACHE = PREFIJO + VERSION, FUENTES = PREFIJO + 'fuentes';
 const BASE = new URL('./', self.location).href;
 
