@@ -108,6 +108,7 @@ export function guion(notas, opc = {}) {
   // los adornos de las notas largas de las clarinadas y de los finales (adornos.js; con su propio azar)
   const adorno = adornar(notas, { cuanto: o.adornos, semilla: o.semilla });
   const altura = t => {
+    if (t < tPrev - 1e-6) { fase = 0; tPrev = inicio; } // otra pasada desde el principio (banco.js): el mismo vibrato
     const i = notaEn(t), n = notas[i], sig = notas[i + 1];
     let m = n.midi;
     // la nota anterior todavía suena durante el ataque: el portamento va del ataque al comienzo de la vocal
@@ -157,7 +158,8 @@ export function guion(notas, opc = {}) {
     if (finales.has(i)) db -= 12 * suave((t - (n.t1 - .12)) / .12);
     return Math.pow(10, db / 20);
   };
-  return { pho: lineas.join('\n') + '\n', inicio, fin, segs, ganancia, notas };
+  // altura(t) en semitonos MIDI, con estado (la fase del vibrato): se pide con t creciente. La usa también banco.js.
+  return { pho: lineas.join('\n') + '\n', inicio, fin, segs, ganancia, notas, altura };
 }
 
 // Después de MBROLA: el volumen de cada nota, las eses más suaves, un poco de aire (ruido que sigue a la voz) y la

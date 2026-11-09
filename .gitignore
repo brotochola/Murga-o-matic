@@ -30,3 +30,5 @@ murga_trabajo/solista/
 murga_trabajo/jurado/
 # La página en un solo archivo (herramientas/un_archivo.mjs): pesa 25 MB y se rehace en un momento.
 murga_trabajo/un_archivo/
+# Las pruebas con bancos de UTAU (herramientas/utau_prueba.mjs): audio hecho con bancos ajenos, que no se redistribuyen.
+murga_trabajo/utau/

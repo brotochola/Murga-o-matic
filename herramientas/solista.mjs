@@ -6,6 +6,7 @@
 //   node herramientas/solista.mjs [--motor formantes|difonos:es2[:opción=valor...]|mbrola:es2] [--tempo 100] [--midi 0]
 //     difonos:es2:consonantes=1.1:vibrato=.2   el cantor de la página (motor/cantor/difonos.js) con esas opciones
 //     mbrola:es2                               el primer guion, más simple, con el programa mbrola instalado
+//     banco --banco <carpeta>                  un banco de voz cantada de UTAU (motor/cantor/banco.js, docs/utau.md)
 //     --habla                                  dicha en lugar de cantada (prosodia de habla, sin vibrato)
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
@@ -178,7 +179,31 @@ async function cantarFrase(notas) {
     const r = cantarDifonos(mb, notas, { w: voz !== 'es4', semilla: 3, voz, ...(HABLA ? HABLADO : {}), ...opc });
     return { x: r.x, sr: r.sr };
   }
+  if (MOTOR === 'banco' || MOTOR.startsWith('banco:')) {
+    // un banco de UTAU (motor/cantor/banco.js con WORLD): la carpeta del banco va en --banco
+    const { cantarBanco } = await import('../motor/cantor/banco.js');
+    const { banco, world } = await bancoUtau();
+    const opc = Object.fromEntries(MOTOR.split(':').slice(1).map(e => e.split('=')).map(([k, v]) => [k, +v]));
+    const r = cantarBanco(banco, world, notas, { semilla: 3, cache: cacheBanco, ...(HABLA ? HABLADO : {}), ...opc });
+    return { x: r.x, sr: r.sr };
+  }
   throw new Error('motor desconocido: ' + MOTOR);
+}
+
+let elBanco = null; const cacheBanco = new Map();
+async function bancoUtau() {
+  if (elBanco) return elBanco;
+  const carpeta = arg('banco');
+  if (!carpeta || !existsSync(carpeta)) throw new Error('falta --banco <carpeta del banco de UTAU>');
+  const { readdirSync, statSync } = await import('node:fs');
+  const { relative } = await import('node:path');
+  const { crearBanco } = await import('../motor/cantor/banco.js');
+  const { crearWorld } = await import('../motor/cantor/world.js');
+  const rutas = [];
+  (function andar(d) { for (const f of readdirSync(d)) { const p = join(d, f); if (statSync(p).isDirectory()) andar(p); else rutas.push(relative(carpeta, p).split(/[\\/]/).join('/')); } })(carpeta);
+  const banco = crearBanco(rutas, r => { try { return new Uint8Array(readFileSync(join(carpeta, r))); } catch { return null; } });
+  const world = await crearWorld(readFileSync(join(RAIZ, 'motor', 'vendor', 'world', 'world.wasm')));
+  return (elBanco = { banco, world });
 }
 
 // las voces: la de la página (motor/vendor/mbrola) o las del paquete mbrola-esN de Debian y Ubuntu

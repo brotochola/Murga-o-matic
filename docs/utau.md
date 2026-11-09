@@ -93,6 +93,59 @@ neuronales**. (Los bancos de DiffSinger o NNSVS que también usa OpenUtau sí so
 - Contra el coro real (`armonicos.py`, `envolvente.py`): bandas y H1−H2.
 - Cuánto tarda.
 
+## Primera prueba (9 de noviembre de 2026)
+
+Se armaron los pasos 2 a 5 en Node, para escuchar antes de tocar la página.
+
+**Los bancos.** Hay muy pocos bancos de hombre en castellano, y ninguno rioplatense. Se bajó el que mejor se ajusta
+y se puede bajar sin trámites: **LW_Symphonia_es v1.0** (deadbyte, <https://lw-winery.carrd.co/>). Es un barítono
+cantado, en VCCV de nJokis, con cinco alturas (La♭ 2, Re 3, Sol 3, Do 4 y Mi 4), unas 830 entradas por altura y
+141 MB. Su autor avisa que no es hablante nativo. Las condiciones no hablan del uso personal; el comercial pide
+licencia, y redistribuirlo pide permiso. Otros candidatos:
+
+- **MIKE**: castellano nativo, VCCV, Sol 3, Re 4 y falsete. Está en Icedrive, que hay que bajar a mano desde un
+  navegador.
+- **Koru Fivet RETAKE**: barítono nativo con 13 alturas y expresiones. No tiene descarga pública.
+- **Kreic Umine**: VCV. No se encontró la descarga.
+
+**Lo que se armó:**
+
+- `herramientas/compilar_world.sh` compila WORLD a `motor/vendor/world/world.wasm` (149 KB), con zig, como MBROLA.
+  `motor/cantor/world.js` lo carga.
+- `motor/cantor/banco.js` lee el banco: los `oto.ini`, el `prefix.map` y los `.wav`. Pasa nuestras sílabas a las
+  entradas de nJokis, por ejemplo «-pr _ro o m me e t te». Las ubica en el tiempo como UTAU (el preutterance en el
+  comienzo de la vocal, la parte fija a su velocidad, el resto estirado). Las funde cuadro por cuadro, con la envolvente
+  en logaritmo, y sintetiza la frase entera con WORLD.
+- La altura y el volumen son los de `guion()` (portamento, vibrato, caída), los mismos que usa MBROLA: `guion()`
+  ahora devuelve también `altura`. Los guiones de MBROLA no cambian: 456 guiones iguales a los de antes.
+- Del pedazo grabado se conserva el temblor natural de la altura: lo que se aparta de su altura suavizada a 100 ms.
+- `herramientas/utau_prueba.mjs <carpeta del banco>` canta una escala de «la» y tres frases en tres alturas, con el
+  banco y con MBROLA, y deja una página para escucharlas lado a lado en `murga_trabajo/utau/<banco>/`.
+- `herramientas/utau_medir.mjs` mide la escala.
+- `solista.mjs --motor banco --banco <carpeta>` canta las 24 frases del solista con el banco.
+
+**Lo medido:**
+
+- **Altura.** Cada nota sostenida de la escala, de Sol 3 a Do 5, queda a entre 0 y 3 cents de la pedida.
+- **Cobertura.** En las 24 frases hay 704 unidades, y al banco le faltan tres: «rry» (barrio, que se canta «barro»),
+  «s y» e «IU».
+- **Tiempo.** Analizar cada pedazo tarda de 0,3 a 1 s (44,1 kHz, DIO). Con los pedazos ya analizados, una frase de
+  4 a 5 s tarda de 0,5 a 1,9 s. MBROLA tarda 0,1 a 0,3 s.
+- **Brillo.** Lo de arriba de 1,8 kHz frente al total, en la «a» sostenida: el banco crudo da −16 dB de Sol 4 a
+  Do 5, y MBROLA, con su curva de timbre, de −8 a −10 dB. El banco todavía no tiene curva de timbre.
+- **Se entiende igual en el registro de siempre, y menos en el agudo.** Whisper sobre las 24 frases (letras mal /
+  palabras mal):
+
+| | Sol 3 a Fa# 4 | seis semitonos arriba (hasta Do 5) |
+|---|---|---|
+| banco LW_Symphonia_es | 15,0 % / 43,1 % | 22,9 % / 51,5 % |
+| difonos es2 (como en la página) | 16,4 % / 35,7 % | 15,6 % / 36,2 % |
+
+Con 24 frases, una diferencia de 1 o 2 puntos es ruido. Whisper además alucina: con MBROLA, en las dos alturas, oyó
+«(Cantando)» en la frase 23 (85 %); con el banco en el agudo, «ven, ven, ven…» en la 14 (que cuenta 100 %).
+
+Falta lo principal: el veredicto de oído sobre el agudo.
+
 ## Riesgos
 
 - **Licencia**: muchos bancos no dejan redistribuirlos o piden crédito; por eso se cargan desde la compu.
