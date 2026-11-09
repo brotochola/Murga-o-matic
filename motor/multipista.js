@@ -50,7 +50,7 @@ export function crearMultipista(raiz, cb = {}) {
     fila('mt-regla', '<b>Compás</b>', regla).querySelector('.mt-c').onclick = ev => { const r = ev.currentTarget.getBoundingClientRect(); cb.alBuscar?.(D.T(Math.max(0, (ev.clientX - r.left) / E.bw * 16))); };
     // secciones
     let secs = '';
-    D.secciones.forEach((s, i) => { secs += `<button class="mt-sec${E.selSec === s.nombre ? ' elegida' : ''}${s.bateria ? '' : ' capela'}" data-i="${i}" style="left:${X(s.q0) + 1}px;width:${Math.max(4, X(s.q1) - X(s.q0) - 2)}px;--c:var(${COLOR_TIPO[s.tipo] || '--muted'})" title="${esc(s.nombre)} · ${esc(s.textura)}">${esc(s.nombre)}</button>`; });
+    D.secciones.forEach((s, i) => { secs += `<button class="mt-sec${E.selSec === s.nombre ? ' elegida' : ''}${s.bateria ? '' : ' capela'}${s.cantada ? ' cantada' : ''}" data-i="${i}" style="left:${X(s.q0) + 1}px;width:${Math.max(4, X(s.q1) - X(s.q0) - 2)}px;--c:var(${COLOR_TIPO[s.tipo] || '--muted'})" title="${esc(s.nombre)} · ${esc(s.textura)}">${esc(s.nombre)}</button>`; });
     const fs = fila('mt-secs', '<b>Secciones</b>', secs);
     fs.querySelectorAll('.mt-sec').forEach(b => b.onclick = () => cb.alElegirSeccion?.(D.secciones[+b.dataset.i].nombre));
     // acordes (dos por compás)

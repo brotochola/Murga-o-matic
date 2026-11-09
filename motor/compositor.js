@@ -621,6 +621,10 @@ export function componer(M, op) {
   const nueva = s => {
     const sec = { tonica: o.tonica, modo: o.modo, din: 88, bateria: true, loop, tempo: tPri, parte, densidad: 'medio', tipo: 'coro', recita: o.recita, ...s, inicio: ini };
     sec.largo = (sec.compases || 0) * PB;
+    // el tono que pidió la persona para esta sección (o.tonos[nombre]: { tonica, modo }); tonoPlan, el del plan
+    sec.tonoPlan = sec.tonoPlan || { tonica: sec.tonica, modo: sec.modo };
+    const pedido = o.tonos?.[sec.nombre];
+    if (pedido && sec.tipo !== 'llamada') { sec.tonica = pedido.tonica; sec.modo = pedido.modo; }
     secs.push(sec);
     return sec;
   };

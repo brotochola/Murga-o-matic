@@ -115,9 +115,9 @@ button,select,input{font:inherit;color:inherit}
 .panel-sup.mezcla{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 24px}
 .panel-sup.mezcla>.cabeza,.panel-sup.mezcla>p,.panel-sup.mezcla>h2{grid-column:1/-1}
 .cant-dos{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
-@media (min-width:1000px){.cant-dos{grid-template-columns:minmax(0,1.4fr) minmax(320px,1fr)}}
+@container (min-width:860px){.cant-dos{grid-template-columns:minmax(0,1.4fr) minmax(320px,1fr)}}
 .cant-editor{border-left:1px solid var(--line);padding-left:16px}
-@media (max-width:999px){.cant-editor{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:12px}}
+@container (max-width:859px){.cant-editor{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:12px}}
 .panel-sup.letra #libreto{max-height:60vh;overflow:auto}
 .mt-caja{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:12px}
 .gen-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-bottom:8px}
@@ -144,6 +144,7 @@ button,select,input{font:inherit;color:inherit}
 .mt-secs .mt-c{height:28px}
 .mt-sec{position:absolute;top:3px;bottom:3px;border:1px solid color-mix(in srgb,var(--c) 55%,var(--line));border-radius:6px;background:color-mix(in srgb,var(--c) 22%,var(--panel));padding:0 6px;font:600 12px/20px var(--body);color:var(--ink);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:left;cursor:pointer}
 .mt-sec.capela{background-image:repeating-linear-gradient(135deg,transparent 0 6px,color-mix(in srgb,var(--c) 18%,transparent) 6px 12px)}
+.mt-sec.cantada::before{content:"♪ ";color:var(--accent);font-weight:700}
 .mt-sec.elegida{box-shadow:0 0 0 2px var(--accent);border-color:var(--accent)}
 .mt-acs .mt-c{height:24px}
 .mt-ac{position:absolute;top:2px;bottom:2px;border:0;border-left:1px solid var(--line);background:transparent;font:600 11px/20px var(--body);color:var(--ink);padding:0 3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:left;cursor:pointer}
@@ -167,6 +168,7 @@ button,select,input{font:inherit;color:inherit}
 /* la sección elegida */
 .sec-caja{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:24px}
 .sec-cabeza{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;margin-bottom:10px}
+.tono-sec select{width:auto;padding:3px 6px;font-size:13px}.tono-sec.cambiado select{color:var(--accent);border-color:var(--accent)}
 .sec-quien h2{font-family:var(--display);font-weight:400;font-size:18px;margin:0}
 .sec-cuerpo{display:grid;gap:12px;grid-template-columns:minmax(0,1fr);align-items:start}
 @media (min-width:720px){.sec-cuerpo{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -394,6 +396,36 @@ p.elegido{font-size:16px;font-weight:600}
 .fonemas abbr{text-decoration:underline dotted;cursor:help}
 .nada{color:var(--muted)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ── a lo Ableton: todo en una pantalla. Arriba la barra y los pasos; en el medio el multipista, con su propio
+   scroll; abajo la sección elegida (la vista de detalle), con una manija para cambiarle el alto. Los paneles
+   flotan encima, como ventanas: se arrastran de la cabeza y se agrandan desde la esquina (app.js). ── */
+.paneles{display:contents}
+.panel-sup{position:fixed;z-index:40;top:76px;right:16px;width:min(640px,calc(100vw - 32px));max-height:calc(100dvh - 88px);overflow:auto;margin:0;
+  box-shadow:0 18px 50px rgba(0,0,0,.28),0 2px 8px rgba(0,0,0,.14);resize:both;container-type:inline-size;overscroll-behavior:contain}
+.panel-sup>.cabeza{position:sticky;top:-14px;z-index:5;margin:-14px -16px 12px;padding:7px 10px 7px 16px;background:var(--panel);
+  border-bottom:1px solid var(--line);border-radius:12px 12px 0 0;cursor:move;user-select:none;touch-action:none}
+.panel-sup>.cabeza h2{font-size:16px}
+.panel-sup.letra #libreto{max-height:none}
+.barra .la-murga{flex:0 1 220px;min-width:120px}
+.barra .la-murga input{width:100%}
+.manija{display:none}
+@media (min-width:821px){
+  html,body{height:100%;overflow:hidden}
+  .app{height:100dvh;display:flex;flex-direction:column;padding-bottom:6px}
+  .barra{position:relative;flex:none}
+  .estado-top{flex:none;margin-bottom:6px;min-height:0}
+  .mt-caja{flex:1 1 0;min-height:90px;overflow:auto;margin-bottom:0}
+  .manija{display:block;flex:none;height:12px;cursor:ns-resize;position:relative;touch-action:none}
+  .manija::after{content:"";position:absolute;left:50%;top:4px;width:56px;height:4px;margin-left:-28px;border-radius:2px;background:var(--line)}
+  .manija:hover::after,.manija:focus-visible::after,.manija.arrastrando::after{background:var(--accent)}
+  .manija:focus-visible{outline:none}
+  .sec-caja{flex:0 0 var(--detalle,38vh);min-height:46px;overflow:auto;margin-bottom:0}
+}
+@media (max-width:820px){
+  .panel-sup{left:0!important;right:0;top:auto!important;bottom:0;width:auto!important;height:auto!important;max-height:86dvh!important;border-radius:14px 14px 0 0;resize:none}
+  .panel-sup>.cabeza{cursor:default}
+}
 </style>
 </head>
 <body>
@@ -401,6 +433,8 @@ p.elegido{font-size:16px;font-weight:600}
 <div class="app">
   <div class="barra">
     <span class="logo">murga·o·matic</span>
+    <div class="la-murga"><input id="nombreMurga" maxlength="60" placeholder="Murga sin nombre" aria-label="Nombre de esta murga" autocomplete="off"><span class="guardado" id="guardado" role="status"></span></div>
+    <button class="btn ghost" id="misMurgas">Mis murgas</button>
     <button class="btn play" id="play" disabled title="Tocar o pausar (barra espaciadora)">Cargando…</button>
     <button class="btn ghost" id="detener" title="Detener y volver al principio" aria-label="Detener y volver al principio">■</button>
     <div class="pos" aria-live="off"><b id="posCompas">1</b> / <span id="posTotal">–</span> · <span id="time">0:00 / 0:00</span></div>
@@ -425,7 +459,7 @@ p.elegido{font-size:16px;font-weight:600}
     <div class="etapas" aria-label="Los pasos: la música, la letra y las voces">
       <div class="etapa trabajando" id="pasoMusica"><span class="num"><span>1</span></span><div><b>Música</b><small id="pasoMusicaTxt">componiendo…</small></div><span class="btns"><button class="btn" id="otraMusica" disabled title="Otra pieza: otra melodía y otra armonía, con lo que está elegido en «La pieza». Las voces quedan sin cantar.">Otra música</button></span></div>
       <div class="etapa" id="pasoLetra"><span class="num"><span>2</span></span><div><b>Letra</b><small id="pasoLetraTxt">…</small></div><span class="btns"><button class="btn" id="otraLetra2" disabled title="Otra letra para la misma música (el tema y los versos que escribiste a mano, en «Letra»)">Otra letra</button><button class="btn ghost" id="lailareo2" disabled title="Que canten «la la la» en vez de la letra">Lailareo</button></span></div>
-      <div class="etapa" id="pasoVoces"><span class="num"><span>3</span></span><div><b>Voces</b><small id="pasoVocesTxt">…</small></div><span class="btns"><button class="btn fuerte" id="cantarVoces" disabled data-que="cantar">Cantar las voces</button></span></div>
+      <div class="etapa" id="pasoVoces"><span class="num"><span>3</span></span><div><b>Voces</b><small id="pasoVocesTxt">…</small></div><span class="btns"><button class="btn" id="cantarSeccion" disabled hidden>Cantar la sección</button><button class="btn fuerte" id="cantarVoces" disabled data-que="cantar">Cantar las voces</button></span></div>
     </div>
     <progress id="avance" max="1" value="0" hidden></progress>
     <p class="status" id="status" role="status"></p>
@@ -610,6 +644,8 @@ p.elegido{font-size:16px;font-weight:600}
     </section>
     <section class="panel-sup acerca" id="tabAcerca" aria-labelledby="t-tabAcerca">
       <div class="cabeza"><h2 id="t-tabAcerca">Cómo funciona</h2><button class="btn ghost cerrar-panel" aria-label="Cerrar">×</button></div>
+      <p class="tag"><b>Cómo se usa:</b> Tocá un compás para escuchar desde ahí · una sección para verla abajo · un acorde o el loop de un compás para cambiarlo · una nota para editarla (o arrastrala para arriba o abajo) · la letra para ver cómo se hizo ese verso.</p>
+      <p class="tag"><b>La pantalla:</b> arriba los tres pasos (música, letra, voces); en el medio el multipista; abajo la sección elegida, con la manija para cambiarle el alto. Los paneles (La pieza, Mezcla, Cantantes, Letra, Partitura, Exportar y éste) flotan encima: se arrastran de la cabeza, se agrandan desde la esquina de abajo a la derecha y se pueden tener varios abiertos; Escape cierra el de adelante.</p>
 
       
       <p class="tag">Generador de murga uruguaya. Aprendió de presentaciones y retiradas reales transcriptas nota por nota; la batería son los loops de La Tríada. Puede cantar con muestras de coro o con cantores sintéticos que cantan una letra escrita para la melodía.</p>
@@ -642,18 +678,14 @@ p.elegido{font-size:16px;font-weight:600}
   </div>
 
   <section class="mt-caja" aria-label="La pieza como multipista">
-    <div class="gen-head">
-      <div class="la-murga"><input id="nombreMurga" maxlength="60" placeholder="Murga sin nombre" aria-label="Nombre de esta murga" autocomplete="off"><span class="guardado" id="guardado" role="status"></span></div>
-      <button class="btn ghost" id="misMurgas">Mis murgas</button>
-    </div>
     <div id="multipista" class="multipista"></div>
-    <p class="ayuda">Tocá un compás para escuchar desde ahí · una sección para verla abajo · un acorde o el loop de un compás para cambiarlo · una nota para editarla (o arrastrala para arriba o abajo) · la letra para ver cómo se hizo ese verso.</p>
   </section>
 
+  <div class="manija" id="manija" role="separator" aria-orientation="horizontal" tabindex="0" aria-label="El alto de la sección de abajo" title="Arrastrá para cambiar el alto de la sección de abajo (doble clic: achicarla o abrirla)"></div>
   <section class="sec-caja" id="secCaja" aria-labelledby="secNombre">
     <div class="sec-cabeza">
       <button class="btn ghost" id="secAnt" aria-label="Sección anterior" title="Sección anterior">←</button>
-      <div class="sec-quien"><div class="sec-titulo"><h2 id="secNombre">La sección</h2><button class="btn ghost" id="secEscuchar" title="Escuchar desde el principio de esta sección">▶ Desde acá</button></div><p class="sub" id="secInfo"></p></div>
+      <div class="sec-quien"><div class="sec-titulo"><h2 id="secNombre">La sección</h2><button class="btn ghost" id="secEscuchar" title="Escuchar desde el principio de esta sección">▶ Desde acá</button><button class="btn ghost" id="secCantar" hidden title="Que los murguistas canten sólo esta sección (mucho más rápido que la pieza entera)">♪ Cantar esta sección</button><span class="ctl tono-sec" id="secTono">Tono <select id="secTonica" aria-label="Tónica de esta sección"></select><select id="secModo" aria-label="Modo de esta sección"><option value="mayor">mayor</option><option value="menor">menor</option></select></span></div><p class="sub" id="secInfo"></p></div>
       <button class="btn ghost" id="secSig" aria-label="Sección siguiente" title="Sección siguiente">→</button>
     </div>
     <div class="sec-cuerpo">

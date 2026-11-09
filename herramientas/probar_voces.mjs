@@ -69,15 +69,17 @@ const LISTO = `(()=>{const S=window.murga?.S;return !!(S&&S.stems&&!S.cantando&&
 const CANTADAS = `(()=>{const S=window.murga?.S;return !!(S&&S.vozHecha&&!S.cantando)})()`;
 // espera a que la página empiece a cantar otra vez (S.gen cambia) y a que termine; devuelve los segundos
 async function cantaDeNuevo(accion, ms = 900000) {
-  const g = await leer(`window.murga?.S?.gen ?? -1`), t0 = Date.now();
+  // (cambia S.gen cuando se arma la pieza o se corta lo que cantaba; S.cantos, cada vez que termina de cantar)
+  const g = await leer(`(window.murga?.S?.gen ?? -1)+'|'+(window.murga?.S?.cantos ?? 0)`), t0 = Date.now();
   await leer(accion);
-  if (!await hasta(`(window.murga?.S?.gen ?? -1) !== ${g}`, 20000)) return null;
+  if (!await hasta(`(window.murga?.S?.gen ?? -1)+'|'+(window.murga?.S?.cantos ?? 0) !== ${JSON.stringify(g)}`, ms)) return null;
   if (!await hasta(LISTO, ms)) return null;
   return (Date.now() - t0) / 1000;
 }
 const CANTAR = `document.getElementById('cantarVoces').click()`;
 // la energía de lo que cantaron (todas las cuerdas, sin la normalización de la página)
-const ENERGIA = `(()=>{const S=window.murga.S;let e=0;for(const k of ['bajos','segundos','primos','sobreprimos','tercia']){const b=S.stems[k];if(!b)continue;for(let c=0;c<b.numberOfChannels;c++){const x=b.getChannelData(c);for(let i=0;i<x.length;i++)e+=x[i]*x[i]}}return e*S.pv*S.pv})()`;
+// (cada uno con su voz: las voces están por sección, en S.clips, sin normalizar)
+const ENERGIA = `(()=>{const S=window.murga.S;let e=0;for(const clip of S.clips.values())for(const k in clip.cuerdas){const b=clip.cuerdas[k].b;for(let c=0;c<b.numberOfChannels;c++){const x=b.getChannelData(c);for(let i=0;i<x.length;i++)e+=x[i]*x[i]}}return e})()`;
 
 console.log(`página en http://127.0.0.1:${PW}/ ${COEP ? 'con la regla COEP (como el Chrome del dueño)' : 'sin COEP'}`);
 const tEntra = Date.now();
@@ -90,6 +92,12 @@ console.log('aislada (COEP activa):', await leer('self.crossOriginIsolated'));
 // una pieza corta: así cada vuelta tarda menos
 const tCorta = await cantaDeNuevo(`(()=>{const s=document.getElementById('largo');s.value='corta';s.dispatchEvent(new Event('change',{bubbles:true}))})()`);
 console.log(`pieza corta, armada en ${tCorta} s (sin cantar)`);
+// una sección sola: la segunda que tiene voces
+const sec = await leer(`(()=>{const S=window.murga.S,s=S.pieza.secs.filter(x=>x.tipo!=='llamada')[1];document.querySelector('[data-panel=cantantes]');return s.nombre})()`);
+await leer(`(()=>{const b=[...document.querySelectorAll('.mt-sec')].find(e=>e.textContent.trim()===${JSON.stringify(sec)});b&&b.click()})()`);
+const ts = Date.now(); await leer(`document.getElementById('secCantar').click()`);
+const unaSec = await hasta(`(()=>{const S=window.murga.S;return !S.cantando&&S.clips.size?[...S.clips.keys()]:null})()`, 600000);
+ok(unaSec && unaSec.length === 1 && unaSec[0] === sec, `«Cantar esta sección» («${sec}»): ${((Date.now() - ts) / 1000).toFixed(1)} s, cantadas: ${JSON.stringify(unaSec)} — ${await leer(`document.getElementById('pasoVocesTxt').textContent`)}`);
 const t0 = Date.now(); await leer(CANTAR);
 const canto = await hasta(CANTADAS, 900000);
 ok(!!canto, `«Cantar las voces» (los trece con es2): ${((Date.now() - t0) / 1000).toFixed(1)} s — ${await leer(`document.getElementById('pasoVocesTxt').textContent`)}`);

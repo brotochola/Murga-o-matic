@@ -32,15 +32,21 @@ Es un multipista, como el Timba-o-matic: una fila por cosa y los compases de izq
 
 - Tocando un acorde o el loop de un compás se elige otro, en un globito. Cualquier compás puede llevar cualquier loop, o ninguno, también en las partes a capela.
 - Tocando una nota aparece un globito para subirla, bajarla, alargarla o borrarla. También se puede arrastrar.
-- Abajo está la sección elegida: sus acordes de a medio compás, el loop de cada compás y su letra, que se escribe ahí mismo.
-- Los paneles de la barra (La pieza, Mezcla, Cantantes, Letra, Partitura, Exportar) se abren arriba del multipista, de a uno.
+- Abajo está la sección elegida: su tono, sus acordes de a medio compás, el loop de cada compás y su letra, que se
+  escribe ahí mismo. Cambiando el tono (tónica y modo) se compone de nuevo sólo esa sección en el tono nuevo: así se
+  modula donde uno quiere.
+- Todo entra en una pantalla, como en un programa de audio: el multipista tiene su propio scroll, y una manija entre
+  el multipista y la sección de abajo le cambia el alto. Los paneles de la barra (La pieza, Mezcla, Cantantes, Letra,
+  Partitura, Exportar, Cómo funciona) flotan encima, como ventanas: se arrastran de la cabeza, se agrandan desde la
+  esquina, se pueden tener varios abiertos y se acuerdan dónde quedaron. En el teléfono suben desde abajo, de a uno.
 
 Arriba hay tres pasos, cada uno con su botón: **1 Música** (Otra música), **2 Letra** (Otra letra, Lailareo) y **3
-Voces** (Cantar las voces). Al entrar se compone la pieza y la página la muestra enseguida, con la letra apenas el
-letrista la termina (en un obrero, sin trabar la página) y la batería lista para tocar en un segundo y medio. Las
-voces no se cantan solas: con los bancos tardan minutos, así que las canta el botón del paso 3, y mientras tanto la
-página se usa igual (se toca la batería, se edita, se cambian cantantes). Con música nueva las voces vuelven a quedar
-sin cantar.
+Voces** (Cantar «la sección elegida», Cantar todo). Al entrar se compone la pieza y la página la muestra enseguida, con
+la letra apenas el letrista la termina (en un obrero, sin trabar la página) y la batería lista para tocar en un
+segundo y medio. Las voces no se cantan solas, y se cantan por sección: «Cantar esta sección» (también en la cabeza
+de la sección) canta sólo ésa, en unos segundos con MBROLA o unos 20 a 40 con los bancos; «Cantar todo» las canta una
+por una, y cada una suena apenas está, aunque esté tocando. Las secciones cantadas llevan ♪ en el multipista. Mientras
+cantan la página se usa igual. Con música nueva las voces vuelven a quedar sin cantar.
 
 Cada cambio rehace sólo lo que toca:
 - Un acorde recompone sólo su sección (y las bajadas que la repiten), y vuelven a cantar sólo sus frases.
