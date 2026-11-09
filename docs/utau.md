@@ -121,8 +121,9 @@ licencia, y redistribuirlo pide permiso. Otros candidatos:
     cortar, «a ra» para la r simple. La reconoce sola.
 
   Ubica los pedazos en el tiempo como UTAU (el preutterance en el comienzo de la vocal, la parte fija a su velocidad,
-  el resto estirado). Los funde cuadro por cuadro, con la envolvente en logaritmo, y sintetiza la frase entera con
-  WORLD. Lleva cada archivo al mismo nivel (el de su 30 % más fuerte), como UTAU: en MIKE, la carpeta de Sol 3
+  el resto estirado). Los funde cuadro por cuadro, sumando en potencia (como el wavtool de UTAU funde las
+  ondas; en logaritmo, una consonante que se fundía con el silencio del pedazo siguiente se apagaba), y sintetiza la
+  frase entera con WORLD. Lleva cada archivo al mismo nivel (el de su 30 % más fuerte), como UTAU: en MIKE, la carpeta de Sol 3
   estaba de 6 a 15 dB abajo de la de Re 4. Con `evitar` no usa una altura grabada, por ejemplo el falsete
   (`_F`).
 - La altura y el volumen son los de `guion()` (portamento, vibrato, caída), los mismos que usa MBROLA: `guion()`
@@ -295,6 +296,27 @@ El coro entero de bancos, 25,1 %; sólo con voces en castellano, 19,0 %; el de M
 extranjeras, una por una, y Sheep Oveja: pierde las codas («esquina esperaba» → «ikinai se vea»). Además, la dicción
 1,2 de MBROLA en un banco estira el pedazo grabado y se entiende menos (MIKE 11,9 % contra 8,2 %), así que los bancos
 cantan con 1.
+
+**Lo que estaba mal** (un agente, sólo en banco.js; `herramientas/banco_alias.mjs`, nuevo, muestra qué alias le toca a
+cada sílaba y marca los que el banco no tiene):
+- **Los pedazos se mezclaban en dB.** Una consonante que se fundía con el silencio del principio del pedazo siguiente
+  se apagaba enseguida: se perdían las codas («esquina» → «ikina»). Ahora se mezclan en potencia.
+- **En las notas cortas los pedazos se pisaban** (`ubicar`, reescrito). Con un preutterance largo (200 ms en Oveja, 250
+  en los VCV de Rubato), la sílaba que seguía arrancaba antes que el paso vocal → consonante. Ahora cada sílaba deja
+  sonar su vocal por lo menos el 40 % del camino; si no entra, saltea el principio de los pasos que empiezan con vocal
+  (el «skip over» de OpenUtau) y después aprieta las consonantes, hasta 0,6.
+- **Por tabla:**
+  - Oveja (`aliasCvvc`): sin el paso antes de la r simple y de b, d, g suaves, que metía «rr» y «mb» («vereda» →
+    «merenda»).
+  - Japonesas (`aliasJapones`): las codas con la consonante cortada antes de su vocal, los grupos con la primera
+    consonante cortada, un silencio de 45 ms antes de p, t, k y ch entre vocales, la s de adentro como «a s».
+  - Cordeiro (`aliasBrapa`): los grupos sueltan la primera consonante.
+  - Sanfu y LongWei (`aliasNjokis`): la deslizada después de rr («barrio», no «barro»).
+
+Whisper, letras mal, semilla 3 (la de siempre), antes → después: MIKE 8,3 → **5,6** · Sanfu 17,3 → **9,8** · LongWei
+14,0 → 11,8 · Oveja 24,4 → 17,3 · Legato 21,5 → 17,4 · Cordeiro 26,8 → 23,5 · Ottava 27,7 → 26,0 · Rubato 33,1 →
+27,2 · Hitsuji 39,7 → 27,5. Con dos semillas, Oveja 28,5 → 16,3 y Hitsuji 40,4 → 25,4. Whisper salta mucho de una
+semilla a otra (Oveja vieja: 24,4 y 32,6).
 
 ## Riesgos
 

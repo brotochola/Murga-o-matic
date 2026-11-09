@@ -19,7 +19,7 @@ Lo decidido el 9 de noviembre de 2026:
 - **Los bancos:** agregar la carpeta de cada uno y ver su reclist, sus alturas grabadas y sus colores. Si un banco no
   dice su altura, se mide de una vocal.
 - **Las voces:** cada una con sus deslizadores (garganta, afinación, vibrato, grito, tensión, ronquera, aire,
-  esfuerzo, dicción, golpe, pique, caída, temblor de la grabación) y «Cantar», que canta una frase en el registro
+  esfuerzo, dicción, golpe, pique, caída, respiración, temblor de la grabación) y «Cantar», que canta una frase en el registro
   elegido. Arriba:
   - «Enojados y gritando» y «Como estaban al abrir»;
   - «Cantar todas»;
@@ -178,6 +178,9 @@ neuronales.
 - **Grito:** `esforzar()` de `difonos.js`, que es la boca más abierta (Mo), la voz apretada (Mt) y el volumen parejo.
   Hoy se aplica sólo después de MBROLA. **Se puede pasar al banco**: corre sobre la voz ya sintetizada.
 - **Brillo y color propio:** la ecualización de cada cantor (`terminar()`), que también **se puede pasar al banco**.
+- **Entrada desde abajo, caída al final y respiración** (nuevos, la noche del 9 de noviembre): `pique`, `caida` y
+  `respira`, en el inspector de la página y en el estudio. Por defecto, lo medido en los solistas y en el coro real
+  (`docs/solistas_reales.md`, `docs/respiraciones.md`; los valores, en `ESTILO` y `ESTILO_BANCO` de `variacion.js`).
 
 **Sólo para los bancos, nuevos:**
 - **Sin falsete:** `evitar` (que no use una altura o un color). Ya está en `banco.js`.
@@ -189,6 +192,8 @@ neuronales.
 - **Esfuerzo** (SHFT): usar la grabación de una altura más aguda que la nota, que suena más esforzada; o más grave,
   más relajada.
 - **Respiraciones:** muchos bancos traen respiraciones grabadas («br», «-bre»), que podrían ir entre frase y frase.
+  Por ahora, `respirar()` (difonos.js) sintetiza el soplo medido en el coro real para las dos clases de voces; las
+  grabadas quedan para probar.
 
 **El acento, para las dos:** cómo se dicen la ll/y (sh, zh o ll), la jota (h, o k en los bancos que no tienen
 jota), las eses (aspiradas, comidas o enteras) y la rr (de verdad o simple). Hoy `guion()` tiene `acento` y

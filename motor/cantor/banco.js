@@ -10,9 +10,9 @@
 //   3. ubicarlas en el tiempo como UTAU: el «preutterance» de cada pedazo cae en el momento que le toca (el comienzo
 //      de la vocal, en una sílaba), la parte fija («consonante») queda como está y el resto se estira;
 //   4. el «resampler» y el «wavtool»: WORLD (world.js) separa cada pedazo en altura, envolvente y aire; los pedazos se
-//      funden cuadro por cuadro (envolvente en dB) y se sintetiza la frase entera con nuestra curva de altura
-//      (la de guion(), en difonos.js: portamento, vibrato, caída) sin mover los formantes.
-import { guion, correr, esforzar } from './difonos.js';
+//      funden cuadro por cuadro (en potencia, como el wavtool funde las ondas) y se sintetiza la frase entera con
+//      nuestra curva de altura (la de guion(), en difonos.js: portamento, vibrato, caída) sin mover los formantes.
+import { guion, correr, esforzar, respirar } from './difonos.js';
 import { ecualizar } from './eq.js';
 import { CURVAS_BANCO } from './curvas_banco.js';
 
@@ -217,10 +217,18 @@ const YOON = { k: 'き', g: 'ぎ', b: 'び', p: 'ぴ', m: 'み', r: 'り', n: '�
 const YO = ['ゃ', null, 'ゅ', 'ぇ', 'ょ'];
 // las sílabas que un banco japonés de siempre puede no tener, y la más parecida
 const KANA_ALT = { 'ふぁ': 'は', 'ふぃ': 'ひ', 'ふぇ': 'へ', 'ふぉ': 'ほ', 'いぇ': 'え', 'ほぅ': 'ふ', 'すぃ': 'し', 'ずぃ': 'じ', 'てぃ': 'ち', 'とぅ': 'つ', 'でぃ': 'じ', 'どぅ': 'ず', 'うぃ': 'い', 'うぇ': 'え', 'うぉ': 'お' };
+// las mismas en letras, que algunos bancos (Sheep Hitsuji) tienen y en kana no: «si» es [si] y «し», [ʃi]
+const KANA_ROMA = { 'すぃ': 'si', 'ずぃ': 'zi', 'てぃ': 'ti', 'とぅ': 'tu', 'でぃ': 'di', 'どぅ': 'du', 'ふぁ': 'fa', 'ふぃ': 'fi', 'ふぇ': 'fe', 'ふぉ': 'fo', 'いぇ': 'ye', 'うぃ': 'wi', 'うぇ': 'we', 'うぉ': 'wo', 'ほぅ': 'hu' };
 const LATINO = { l: 'l', R: 'rr', Z: 'zh' };                 // las sílabas con letras: «la», «rra», «zha»
 const ROMAJI = { k: 'k', g: 'g', s: 's', t: 't', d: 'd', n: 'n', x: 'h', b: 'b', p: 'p', m: 'm', r: 'r', R: 'rr', l: 'l', f: 'f', C: 'ch', S: 'sh', Z: 'zh', N: 'n', j: 'y', w: 'w', h: 'hh' };
 const SUAVE = { B: 'b', D: 'd', G: 'g', h: 's' };
 const IV = { a: 0, i: 1, u: 2, e: 3, o: 4 };
+// p, t, k y ch entre vocales: en un banco CV la sílaba empieza en la explosión, y sin un silencio antes (el cierre, en
+// segundos, ver ubicar) la vocal de antes se pega a la explosión y la oclusiva casi no se oye
+const CIERRE = new Set(['p', 't', 'k', 'C']);
+// la consonante sola (en un grupo o en una coda sin paso): una sílaba del banco cortada antes de su vocal (corte, ver
+// cantarBanco). La u japonesa es la más corta (く, ぷ, す); la t y la d van con la o (つ y ず son otra consonante)
+const SOLA = { k: 'く', g: 'ぐ', s: 'す', h: 'す', t: 'と', d: 'ど', b: 'ぶ', p: 'ぷ', f: 'ふ', x: 'ほ', m: 'む', n: 'ぬ', N: 'にゅ', r: 'る', l: 'る', R: 'る', C: 'ち', S: 'しゅ', Z: 'しゅ' };
 function aliasJapones(notas, existe, o = {}) {
   const U = [], faltan = [];
   const pon = (alias, nota, tipo, extra) => { if (alias) U.push({ alias, nota, tipo, ...extra }); };
@@ -235,8 +243,9 @@ function aliasJapones(notas, existe, o = {}) {
     if (c === 'R') return sil('r', v);
     if (c === 'h') return sil('s', v);
     const k = KANA[c]?.[IV[v]] || KANA[''][IV[v]];
-    return existe(k) || !KANA_ALT[k] ? k : KANA_ALT[k];
+    return existe(k) || !KANA_ALT[k] ? k : existe(KANA_ROMA[k]) ? KANA_ROMA[k] : KANA_ALT[k];
   };
+  const sola = c => { const L = LATINO[c] && LATINO[c] + 'u'; return L && existe(L) ? L : SOLA[c] && existe(SOLA[c]) ? SOLA[c] : null; };
   let antes = { tipo: 'silencio' };
   for (let i = 0; i < notas.length; i++) {
     const n = notas[i], sig = notas[i + 1], s = n.sil;
@@ -245,32 +254,50 @@ function aliasJapones(notas, existe, o = {}) {
     // el ataque: lo que no es la última consonante va solo (un grupo: «p» + «ら» no existe en japonés: la primera
     // consonante con su paso y la segunda como sílaba)
     const c0 = K[K.length - 1] || null;
-    let cv = null, extra = [];
+    let cv = null, extra = [], cierre = {};
     if (desliz.length && c0 && desliz[0] === 'y' && YOON[c0] && YO[IV[v1]] && existe(YOON[c0] + YO[IV[v1]])) cv = YOON[c0] + YO[IV[v1]];
     else if (desliz.length && !c0) cv = sil(desliz[0] === 'y' ? 'j' : 'w', v1);
     else if (desliz.length) { cv = sil(c0, desliz[0] === 'y' ? 'i' : 'u'); extra = [desliz[0] === 'y' ? 'i' : 'u']; }
     else cv = sil(c0, v1);
     const paso = (v, c) => elegir(v + ' ' + ROMAJI[c], c === 'R' && v + ' r', c === 'l' && v + ' r');
+    // de la n a la consonante que sigue («n t»); sin «n l» (Rubato), «n r»
+    const deN = c => elegir('n ' + ROMAJI[c], (c === 'l' || c === 'R') && 'n r');
+    // los grupos (pr, bl, tr), que el japonés no tiene: la primera consonante sola (con el paso de la vocal anterior
+    // si el banco lo tiene: «o k» + «く» cortada, o el VCV «o く» cortado) y la segunda con la vocal. Antes la primera
+    // se perdía: «cre» era «れ», «pla» era «la».
+    if (K.length > 1) {
+      const k0 = K[0], c1 = sola(k0);
+      if (!c1) faltan.push(SOLA[k0] || k0);
+      if (antes.tipo === 'vocal') {
+        if (c1 && existe(antes.v + ' ' + c1)) pon(antes.v + ' ' + c1, i - 1, 'antes', { corte: true });
+        else { const p = paso(antes.v, k0); pon(p, i - 1, 'antes'); pon(c1, i - 1, 'antes', { corte: true, ...(!p && CIERRE.has(k0) ? { cierre: .045 } : {}) }); }
+      } else if (antes.tipo === 'consonante') {
+        if (antes.c === 'n') pon(deN(k0), i - 1, 'antes');
+        pon(c1, i - 1, 'antes', { corte: true });
+      } else pon(c1 && existe('- ' + c1) ? '- ' + c1 : c1, i, 'antes', { corte: true });
+    }
     // en los bancos VCV la sílaba viene con la vocal de antes («a か») o con el silencio («- か»): una sola unidad
-    if (antes.tipo === 'silencio') {
+    else if (antes.tipo === 'silencio') {
       if (!K.length && !desliz.length) cv = elegir('- ' + KANA[''][IV[v1]], KANA[''][IV[v1]]);
       else if (existe('- ' + cv)) cv = '- ' + cv;
     } else if (antes.tipo === 'vocal') {
       if (!K.length && !desliz.length) cv = elegir(antes.v + ' ' + KANA[''][IV[v1]], KANA[''][IV[v1]]);
       else if (existe(antes.v + ' ' + cv)) cv = antes.v + ' ' + cv;
-      else if (K.length) pon(paso(antes.v, K[0]), i - 1, 'antes');
+      else if (K.length) { const p = paso(antes.v, K[0]); pon(p, i - 1, 'antes'); if (!p && CIERRE.has(K[0])) cierre = { cierre: .045 }; }
     } else if (antes.tipo === 'consonante') {
       if (!K.length && !desliz.length) cv = sil(antes.c, v1);
-      else if (K.length && antes.c === 'n') pon(elegir('n ' + ROMAJI[K[0]]), i - 1, 'antes');
+      else if (K.length && antes.c === 'n') pon(deN(K[0]), i - 1, 'antes');
     }
-    // los grupos (pr, bl, tr): la primera consonante, sola, con el paso de la vocal anterior; la segunda, sílaba
-    if (K.length > 1 && antes.tipo === 'vocal') { /* el paso a K[0] ya está */ }
-    pon(existe(cv) ? cv : elegir(cv), i, 'cv');
-    // dentro de la nota: la vocal que sigue a una deslizada, las vocales que siguen y el diptongo
+    pon(existe(cv) ? cv : elegir(cv), i, 'cv', cierre);
+    // dentro de la nota: la vocal que sigue a una deslizada, las vocales que siguen y el diptongo. Sin el paso entre
+    // vocales («o あ», que un banco CV no tiene), la vocal sola: antes la segunda vocal de una sinalefa se perdía
     let v = extra[0] || v1;
-    for (const w of [...(extra.length ? [v1] : []), ...vocs.slice(1)]) { pon(elegir(v + ' ' + KANA[''][IV[w]]), i, 'medio', { frac: .3 }); v = w; }
+    // (la vocal sostenida, «a あ», mejor que la que empieza del silencio, «あ», que trae su ataque)
+    const vv = (v, w) => elegir(v + ' ' + KANA[''][IV[w]], w + ' ' + KANA[''][IV[w]], KANA[''][IV[w]]);
+    // (cada una en su lugar: «dió‿en» son dos, «o» y «e», que caían juntas)
+    for (const [j, w] of [...(extra.length ? [v1] : []), ...vocs.slice(1)].entries()) { pon(vv(v, w), i, 'medio', { frac: Math.min(.7, .3 + .25 * j) }); v = w; }
     let dipt = null;
-    if (cola.length) { const g = cola[0] === 'I' ? 'i' : 'u'; if (existe(v + g)) { dipt = v + g; pon(dipt, i, 'medio', { frac: .62 }); } else pon(elegir(v + ' ' + KANA[''][IV[g]]), i, 'medio', { frac: .62 }); v = g; }
+    for (const [j, x] of cola.entries()) { const g = x === 'I' ? 'i' : 'u', frac = .62 + .15 * j; if (!j && existe(v + g)) { dipt = v + g; pon(dipt, i, 'medio', { frac }); } else { dipt = null; pon(vv(v, g), i, 'medio', { frac }); } v = g; }
     // la coda y el final
     let coda = s.coda.map(fon);
     const sigK0 = sig?.sil.ataque[0] ? fon(sig.sil.ataque[0]) : null;
@@ -282,10 +309,15 @@ function aliasJapones(notas, existe, o = {}) {
       if (!sig) pon(elegir((dipt || v) + ' R', v + ' R'), i, 'fin');
       antes = { tipo: 'vocal', v };
     } else {
-      // la s aspirada de adentro de la palabra: un soplo («a hh»)
-      const pc = c === 'h' || c === 's' && !s.fin ? elegir(v + ' hh', v + ' s') : paso(v, c);
-      if (!sig) { pon(pc, i, 'antes'); pon(elegir(c === 'n' ? 'n R' : c === 'l' ? 'L R' : null), i, 'fin'); }
-      else pon(pc, i, 'antes');
+      // la s aspirada (h): un soplo («a hh»). La s de adentro de la palabra iba también con el soplo, y Whisper no la
+      // oía («esquina» → «ehkina»): va la s, como en las otras tablas
+      const pc = c === 'h' ? elegir(v + ' hh', v + ' s') : paso(v, c);
+      // un banco CV (Sheep Hitsuji) no tiene pasos de la vocal a la consonante, y las codas se perdían: la n y la m
+      // van con la n sostenida («n ん», o «ん»; 100 ms: el pedazo dura un segundo), lo demás con la consonante sola
+      if (pc) pon(pc, i, 'antes');
+      else if (['n', 'm', 'N'].includes(c) && (existe('n ん') || existe('ん'))) pon(existe('n ん') ? 'n ん' : 'ん', i, 'antes', { largo: 100 });
+      else pon(sola(c), i, 'antes', { corte: true });
+      if (!sig) pon(elegir(c === 'n' ? 'n R' : c === 'l' ? 'L R' : null), i, 'fin');
       antes = { tipo: 'consonante', c };
     }
   }
@@ -310,19 +342,20 @@ function aliasBrapa(notas, existe, o = {}) {
     // la deslizada: «bien» = «b i» + «i e» (o «y e»)
     const vAtaque = desliz.length ? (desliz[0] === 'y' ? 'i' : 'u') : v1;
     const c0 = K[K.length - 1];
-    // los grupos (pr, bl): la primera consonante con su paso o sola, la segunda con la vocal
+    // los grupos (pr, bl, tr), que la reclist no trae juntos: la primera consonante del silencio («- k», que ya trae
+    // la soltada) o con su paso de la vocal («o k», que termina cerrada) y su soltada («k -»); la segunda con la
+    // vocal («r e»). Antes faltaba la soltada y la primera casi no se oía: «cre» sonaba «re»
+    const grupo = K.length > 1, suelta = grupo ? elegir(K[0] + ' -') : null;
     if (antes.tipo === 'silencio') {
       if (!K.length) pon(elegir('- ' + vAtaque, vAtaque), i, 'cv');
-      else {
-        if (K.length > 1) pon(elegir('- ' + K[0]), i, 'antes');
-        pon(elegir('-' + c0 + ' ' + vAtaque, c0 + ' ' + vAtaque), i, 'cv');
-      }
+      else if (grupo) { pon(elegir('- ' + K[0]), i, 'antes', { largo: 200 }); pon(elegir(c0 + ' ' + vAtaque, '-' + c0 + ' ' + vAtaque), i, 'cv'); }
+      else pon(elegir('-' + c0 + ' ' + vAtaque, c0 + ' ' + vAtaque), i, 'cv');
     } else if (antes.tipo === 'vocal') {
       if (!K.length) pon(elegir(antes.v + ' ' + vAtaque, vAtaque), i, 'cv');
-      else { pon(elegir(antes.v + ' ' + K[0]), i - 1, 'antes'); pon(elegir(c0 + ' ' + vAtaque), i, 'cv'); }
+      else { pon(elegir(antes.v + ' ' + K[0]), i - 1, 'antes'); pon(suelta, i - 1, 'antes', { largo: 200 }); pon(elegir(c0 + ' ' + vAtaque), i, 'cv'); }
     } else {
       if (!K.length) pon(elegir(antes.c + ' ' + vAtaque, vAtaque), i, 'cv');
-      else pon(elegir(c0 + ' ' + vAtaque), i, 'cv');
+      else { pon(suelta, i - 1, 'antes', { largo: 200 }); pon(elegir(c0 + ' ' + vAtaque), i, 'cv'); }
     }
     let v = vAtaque;
     for (const w of [...(desliz.length ? [v1] : []), ...vocs.slice(1), ...cola.map(g => g === 'I' ? 'i' : 'u')]) {
@@ -354,6 +387,7 @@ function aliasBrapa(notas, existe, o = {}) {
 // + «ba», la consonante sola en los grupos («p» + «ra»), «a -» y «b -» al cortar, «a e» entre vocales. La deslizada
 // va como vocal («bien» = «bi» + «i e»). La jota es «j», la s aspirada «h», la ñ «nh» y la ll/y rioplatense «ll».
 const CV_ = { a: 'a', e: 'e', i: 'i', o: 'o', u: 'u', l: 'l', r: 'r', R: 'rr', m: 'm', n: 'n', N: 'nh', B: 'b', D: 'd', G: 'g', b: 'b', d: 'd', g: 'g', p: 'p', t: 't', k: 'k', C: 'ch', f: 'f', s: 's', h: 'h', x: 'j', S: 'll', Z: 'll', j: 'y', w: 'w' };
+const SIN_PASO = new Set(['r', 'B', 'D', 'G']);
 function aliasCvvc(notas, existe, o = {}) {
   const U = [], faltan = [];
   const pon = (alias, nota, tipo, extra) => { if (alias) U.push({ alias, nota, tipo, ...extra }); };
@@ -373,6 +407,10 @@ function aliasCvvc(notas, existe, o = {}) {
       else { pon(['- ' + K[0]].find(existe) || null, i, 'antes'); silaba(); }
     } else if (antes.tipo === 'vocal') {
       if (!K.length) pon(elegir(antes.v + ' ' + v1, v1), i, 'cv');
+      // la r simple y b, d, g suaves entre vocales, sin paso: el paso («a r», «a b») trae una r más (la grabación
+      // termina con una r final) o el cierre de una oclusiva, y se oía «rr» y «mb» («vereda» → «merenda»). La sílaba
+      // sola ya trae la consonante (Sheep Oveja, media de 3 semillas: 19,3 → 17,4 % de letras mal)
+      else if (K.length === 1 && SIN_PASO.has(s.ataque[0])) silaba();
       else { pon(elegir(antes.v + ' ' + K[0]), i - 1, 'antes'); silaba(); }
     } else {
       if (!K.length) pon(elegir(antes.c + v1, v1), i, 'cv');
@@ -515,6 +553,10 @@ function aliasNjokis(notas, existe, o = {}) {
       if (todo) { pon(todo, i, 'cv'); return; }
       const alt = (FRICATIVA[K[0]] || OCLUSIVA[K[0]]) && (FRICATIVA[K[0]] || OCLUSIVA[K[0]]) + K.slice(1).join('');
       const g = elegir(k, '-' + k, alt, alt && alt + v1);
+      // sin la consonante con la deslizada («rry»): la consonante con la i y el paso a la vocal («rri» + «i o»); antes
+      // la deslizada se perdía y «barrio» sonaba «barro»
+      const gl = K.length === 2 && { y: 'i', w: 'u' }[K[1]];
+      if (!g && gl && existe(gl + ' ' + v1)) { pon(cv(K[0], gl), i, 'cv'); pon(gl + ' ' + v1, i, 'medio', { frac: .3 }); return; }
       if (!g) { pon(cv(K[0], v1), i, 'cv'); return; }   // sin el grupo: la primera consonante con la vocal
       pon(g, i, g.endsWith(v1) && g !== k ? 'cv' : 'antes');
       if (!g.endsWith(v1) || g === k) pon(elegir('_' + K[K.length - 1] + v1, K[K.length - 1] + v1), i, 'cv');
@@ -579,30 +621,71 @@ function largoDe(e, wav) {
   const len = e.cutoff < 0 ? -e.cutoff : dur - e.offset - e.cutoff;
   return Math.max(10, Math.min(len, dur - e.offset));
 }
+// Las medidas de una unidad en el tiempo de la frase (ms) salen de las del pedazo (…Src, en ms del .wav) y de su
+// dicción k: la parte fija (consonante), el preutterance y el overlap van con k; lo demás del largo queda igual.
+function medidas(u) {
+  u.cons = u.consSrc * u.k; u.len = u.lenSrc + u.consSrc * (u.k - 1); u.pre = u.preSrc * u.k; u.ovl = u.ovlSrc * u.k;
+}
+// un paso que empieza con una vocal («a s», «a e», «a か», «I p»): su principio es la vocal de antes, que ya suena
+const CABEZA_VOCAL = /^[aeiouIU] /, VCV = /^[aeiouIU] [^\x00-\x7f]/;
+// saltear x ms del principio de un pedazo (el «skip over» de OpenUtau): lo que viene después de su preutterance no se
+// toca, y quedan por lo menos 30 ms de la vocal antes de la consonante. En un VCV («a か») el preutterance cae en la
+// vocal que sigue y la consonante va antes: se saltea, como mucho, el overlap o algo menos de la mitad.
+function saltear(u, x) {
+  x = Math.min(x, VCV.test(u.alias) ? Math.min(u.pre - 10, Math.max(u.ovl, .45 * u.pre)) : u.pre - 30, u.cons - 5);
+  if (!(x > 0)) return 0;
+  const xs = x / u.k, p0 = u.preSrc;
+  u.salto += xs; u.preSrc -= xs; u.consSrc -= xs; u.lenSrc -= xs; u.ovlSrc *= u.preSrc / p0;
+  medidas(u);
+  return x;
+}
+// cuánto se funde un pedazo con el que sigue: el overlap del que sigue; una consonante cortada (corte, largo), que es
+// corta, apenas (si no, casi toda se iba en la fundida)
+const fundida = (p, s) => (p.corte || p.largo ? Math.min(s.ovl, 20) : s.ovl);
 export function ubicar(U, notas) {
-  for (let k = U.length - 1; k >= 0; k--) {
-    const u = U[k], n = notas[u.nota];
+  for (const u of U) {
+    // (unidades armadas a mano, sin las medidas del pedazo: las de salida son las del pedazo)
+    if (u.salto == null) { u.salto = 0; u.k ??= 1; u.preSrc ??= u.pre / u.k; u.ovlSrc ??= u.ovl / u.k; u.consSrc ??= u.cons / u.k; u.lenSrc ??= u.len - u.consSrc * (u.k - 1); }
+    const n = notas[u.nota];
     if (u.tipo === 'cv') u.T = n.t0;
     else if (u.tipo === 'medio') u.T = n.t0 + u.frac * (n.t1 - n.t0);
     else if (u.tipo === 'fin') u.T = n.t1 - Math.min(.08, .3 * (n.t1 - n.t0));
-    else {
-      // antes de la que sigue, con su largo natural
-      const s = U[k + 1];
-      const E = s ? s.T - s.pre / 1000 + s.ovl / 1000 : n.t1;
-      u.T = E + u.pre / 1000 - u.len / 1000;
-    }
   }
-  // que un paso (o el final) no se coma la vocal anterior: empieza, como muy temprano, a mitad de camino desde la
-  // última sílaba
-  let fijo = -Infinity;
+  // En una nota corta (una corchea de 0,3 s) los pedazos de un banco con preutterances largos (200 ms en Sheep Oveja)
+  // no entran: la sílaba que sigue empezaba antes que el paso de la vocal a la consonante («e s» + «ki») y el paso se
+  // perdía en la fundida («esquina» → «ikina»), y la vocal de una sinalefa («o e») tapaba la consonante de su sílaba
+  // («do‿en» → «oen»). Como la corrección automática de UTAU: cada sílaba deja sonar su vocal por lo menos un trecho
+  // (roce: el 40 % del camino hasta la sílaba que sigue, el 25 % hasta una vocal de la misma nota, la mitad hasta el
+  // final); para que entre lo que viene, primero se saltea el principio de un paso que empieza con la vocal (es la
+  // misma vocal que ya suena) y, si no alcanza, se aprietan las consonantes (hasta 0,6). Sin esto, sacar el paso de la
+  // r simple y de b, d y g suaves (aliasCvvc) empeoraba: la sílaba se comía la vocal de antes.
+  let F = -Infinity;
   for (let k = 0; k < U.length; k++) {
     const u = U[k];
-    if (u.tipo !== 'antes' && u.tipo !== 'fin') { fijo = Math.max(fijo, u.T); continue; }
-    if (fijo === -Infinity) continue;
-    const sig = U.slice(k + 1).find(x => x.tipo !== 'antes'), hasta = u.tipo === 'fin' ? u.T : sig ? sig.T - sig.pre / 1000 : u.T + .05;
-    const minS = fijo + (u.tipo === 'fin' ? .5 : .45) * Math.max(0, hasta - fijo);
-    if (u.T - u.pre / 1000 < minS) u.T = minS + u.pre / 1000;
-    fijo = Math.max(fijo, u.T - u.pre / 1000 + .01);
+    if (u.tipo === 'antes') continue;
+    let a = k; while (a > 0 && U[a - 1].tipo === 'antes') a--;
+    const cadena = U.slice(a, k + 1);              // los pasos de antes y la unidad que los sigue
+    const lugar = () => {                         // los pasos, cada uno terminando cuando el que sigue lleva su overlap
+      for (let j = cadena.length - 2; j >= 0; j--) { const s = cadena[j + 1], p = cadena[j]; p.T = s.T - s.pre / 1000 + fundida(p, s) / 1000 + p.pre / 1000 - p.len / 1000; }
+      return cadena[0].T - cadena[0].pre / 1000 - (cadena[0].cierre || 0);
+    };
+    let primero = lugar();
+    if (F > -Infinity && u.T > F) {
+      const roce = u.tipo === 'medio' ? .25 : u.tipo === 'fin' ? .5 : .4;
+      const desde = F + roce * (u.T - F);
+      if (primero < desde && CABEZA_VOCAL.test(cadena[0].alias)) { saltear(cadena[0], (desde - primero) * 1000); primero = lugar(); }
+      if (primero < desde) {
+        const r = Math.max(.6, 1 - (desde - primero) / Math.max(1e-3, u.T - primero));
+        for (const x of cadena) { x.k *= r; medidas(x); }
+        primero = lugar();
+      }
+    }
+    F = Math.max(F, u.T);
+  }
+  // pasos al final de la frase sin nada después: terminan con la nota
+  for (let k = U.length - 1; k >= 0 && U[k].tipo === 'antes'; k--) {
+    const u = U[k], s = U[k + 1];
+    u.T = (s ? s.T - s.pre / 1000 + fundida(u, s) / 1000 : notas[u.nota].t1) + u.pre / 1000 - u.len / 1000;
   }
   for (let k = 0; k < U.length; k++) {
     const u = U[k], s = U[k + 1];
@@ -611,8 +694,10 @@ export function ubicar(U, notas) {
   }
   for (let k = 0; k < U.length; k++) {
     const u = U[k], s = U[k + 1];
-    u.fundir = s ? Math.max(.012, s.ovl / 1000) : .06;
+    u.fundir = s ? Math.max(.012, fundida(u, s) / 1000) : .06;
     u.E = s ? s.S + u.fundir : u.S + u.len / 1000;
+    // el cierre de una oclusiva (aliasJapones, en un banco CV): lo de antes se calla un poco antes de la explosión
+    if (s?.cierre) { u.fundir = .015; u.E = Math.max(u.S + .03, s.S - s.cierre); }
     // el final: como mucho un cuarto de segundo después de cortar la vocal. Si el banco no tiene con qué terminar
     // (un banco CV), la última sílaba se estira hasta el final de su nota
     if (!s && u.tipo === 'fin') u.E = Math.min(u.E, u.T + .25);
@@ -623,11 +708,32 @@ export function ubicar(U, notas) {
 // ── el resampler y el wavtool, con WORLD ─────────────────────────────────
 const PERIODO = 5, PAD = 60;
 // analiza el pedazo (con un margen) y lo guarda: f0, envolvente en logaritmo, aire
-function analisis(cache, world, banco, e, len) {
+// Las cachés (o.cache, una por banco; en la página, banco.cacheAnalisis) guardan cada análisis: unos 850 KB por pedazo,
+// y un coro de 24 frases llegaba a casi 2 GB por proceso. Entre todas las del proceso tienen un tope en bytes
+// (o.cacheMax, por defecto CACHE_MAX, unos 600 pedazos); cuando se pasa, salen de la caché más grande los que hace más
+// que no se usan (cada Map va en orden de inserción, y el que se usa se vuelve a poner al final).
+const CACHE_MAX = 500e6, CACHES = new Set();
+function guardar(cache, clave, r, max) {
+  if (!cache.size) cache.bytes = 0;            // (una caché vaciada de afuera, con clear())
+  cache.set(clave, r);
+  cache.bytes = (cache.bytes || 0) + (r?.bytes || 0);
+  if (!cache.ref) { cache.ref = typeof WeakRef === 'function' ? new WeakRef(cache) : { deref: () => cache }; CACHES.add(cache.ref); }
+  const vivas = [];
+  for (const w of CACHES) { const c = w.deref(); if (c) vivas.push(c); else CACHES.delete(w); }
+  let total = vivas.reduce((s, c) => s + c.bytes, 0);
+  while (total > max) {
+    const c = vivas.reduce((a, b) => (b.bytes > a.bytes ? b : a));
+    const it = c.entries().next();
+    if (it.done || it.value[0] === clave) break;   // (lo recién analizado se queda)
+    const [k, v] = it.value;
+    c.delete(k); c.bytes -= v?.bytes || 0; total -= v?.bytes || 0;
+  }
+}
+function analisis(cache, world, banco, e, len, max = CACHE_MAX) {
   const clave = e.archivo + '|' + e.offset + '|' + len;
-  if (cache.has(clave)) return cache.get(clave);
+  if (cache.has(clave)) { const r = cache.get(clave); cache.delete(clave); cache.set(clave, r); return r; }
   const w = banco.wav(e.archivo);
-  if (!w) { cache.set(clave, null); return null; }
+  if (!w) { guardar(cache, clave, null, max); return null; }
   const desde = Math.max(0, Math.round((e.offset - PAD) / 1000 * w.sr)), hasta = Math.min(w.x.length, Math.round((e.offset + Math.max(len, e.consonante) + PAD) / 1000 * w.sr));
   const x = new Float64Array(hasta - desde); for (let i = 0; i < x.length; i++) x[i] = w.x[desde + i];
   const a = world.analizar(x, w.sr, { periodo: PERIODO, harvest: false, f0min: 70, f0max: 800 });
@@ -637,7 +743,8 @@ function analisis(cache, world, banco, e, len) {
   const f0 = a.f0, liso = new Float64Array(f0.length);
   for (let i = 0; i < f0.length; i++) { let s = 0, c = 0; for (let j = Math.max(0, i - 10); j <= Math.min(f0.length - 1, i + 10); j++) if (f0[j] > 0) { s += Math.log(f0[j]); c++; } liso[i] = c ? s / c : 0; }
   const r = { lsp, ap, f0, liso, cuadros: a.cuadros, ancho: a.ancho, fft: a.fft, sr: w.sr, t0: desde / w.sr * 1000 };
-  cache.set(clave, r);
+  r.bytes = lsp.byteLength + ap.byteLength + f0.byteLength + liso.byteLength;
+  guardar(cache, clave, r, max);
   return r;
 }
 
@@ -687,9 +794,16 @@ export function cantarBanco(banco, world, notas, opc = {}) {
       const w = banco.wav(u.e.archivo); if (w) sr = w.sr;
       // dicción (consonantes, el VEL de UTAU al revés): la parte fija del pedazo (la consonante y el paso a la vocal)
       // más larga (más de 1) o más corta; el preutterance y el overlap, con ella
-      const k = Math.max(.5, Math.min(2, o.consonantes ?? 1));
-      u.k = k; u.lenSrc = largoDe(u.e, w); u.consSrc = Math.min(u.e.consonante, u.lenSrc);
-      u.cons = u.consSrc * k; u.len = u.lenSrc + u.consSrc * (k - 1); u.pre = u.e.pre * k; u.ovl = Math.max(0, u.e.overlap) * k;
+      // (salto: lo que se saltea del principio del pedazo, ver ubicar; lenAn: el largo que se analiza)
+      u.k = Math.max(.5, Math.min(2, o.consonantes ?? 1)); u.salto = 0;
+      u.lenSrc = u.lenAn = largoDe(u.e, w); u.consSrc = Math.min(u.e.consonante, u.lenSrc);
+      u.preSrc = u.e.pre; u.ovlSrc = Math.max(0, u.e.overlap);
+      // corte: sólo hasta el preutterance, la consonante sin su vocal (una coda o la primera de un grupo, en un banco
+      // que no tiene ese paso); largo: como mucho tantos ms (la «ん» de un banco CV dura un segundo)
+      if (u.corte) { u.lenSrc = Math.max(20, Math.min(u.lenSrc, u.e.pre)); u.consSrc = u.lenSrc; }
+      if (u.largo) { u.lenSrc = Math.min(u.lenSrc, u.largo); u.consSrc = Math.min(u.consSrc, u.lenSrc); }
+      if (u.corte || u.largo) { u.preSrc = Math.min(u.preSrc, u.lenSrc); u.ovlSrc = Math.min(u.ovlSrc, u.preSrc); }
+      medidas(u);
       // normalizar (0 a 1): cuánto se lleva cada archivo al mismo nivel
       u.lg = w ? 2 * (o.normalizar ?? 1) * Math.log(.1 / w.nivel) : 0;
     }
@@ -716,7 +830,9 @@ export function cantarBanco(banco, world, notas, opc = {}) {
   const t0 = Math.min(...piezas.map(p => p.inicio)), fin = Math.max(...piezas.map(p => p.inicio + p.x.length / sr));
   const x = new Float32Array(Math.ceil((fin - t0) * sr) + 1);
   for (const p of piezas) { const a = Math.round((p.inicio - t0) * sr); for (let i = 0; i < p.x.length; i++) if (a + i < x.length) x[a + i] += p.x[i]; }
-  return { x, sr, inicio: t0, frases: piezas.map(p => p.unidades), faltan };
+  // y respira antes de algunas frases, como los cantores de difonos (respirar(): o.respira, 1 por defecto; puede
+  // adelantar el inicio)
+  return respirar({ x, sr, inicio: t0, frases: piezas.map(p => p.unidades), faltan }, notas, o);
 }
 
 function sintetizarFrase(U, banco, world, o, alturaEn, ganancia) {
@@ -724,9 +840,11 @@ function sintetizarFrase(U, banco, world, o, alturaEn, ganancia) {
   const inicio = Math.floor((Math.min(...U.map(u => u.S)) - .02) / P) * P, fin = Math.max(...U.map(u => u.E)) + .02;
   const cuadros = Math.ceil((fin - inicio) / P) + 1;
   let ancho = 0, fft = 0, sr = 44100;
-  const A = U.map(u => { const a = analisis(o.cache, world, banco, u.e, u.lenSrc); if (a) { ancho = a.ancho; fft = a.fft; sr = a.sr; } return a; });
-  const lsp = new Float64Array(cuadros * ancho), ap = new Float64Array(cuadros * ancho), peso = new Float64Array(cuadros);
-  const voz = new Float64Array(cuadros), tiembla = new Float64Array(cuadros), pesoVoz = new Float64Array(cuadros);
+  const A = U.map(u => { const a = analisis(o.cache, world, banco, u.e, u.lenAn ?? u.lenSrc, o.cacheMax); if (a) { ancho = a.ancho; fft = a.fft; sr = a.sr; } return a; });
+  // sp: la envolvente, sumada en potencia; ap: el aire, pesado por la potencia de cada pedazo; energia: la potencia
+  // de cada cuadro (para pesar si suena con voz)
+  const sp = new Float64Array(cuadros * ancho), ap = new Float64Array(cuadros * ancho), peso = new Float64Array(cuadros);
+  const voz = new Float64Array(cuadros), tiembla = new Float64Array(cuadros), pesoVoz = new Float64Array(cuadros), energia = new Float64Array(cuadros);
   U.forEach((u, k) => {
     const a = A[k]; if (!a || a.ancho !== ancho) return;
     const L = u.E - u.S, cons = u.cons / 1000, consS = u.consSrc / 1000, lenS = u.lenSrc / 1000, ult = k === U.length - 1;
@@ -740,18 +858,23 @@ function sintetizarFrase(U, banco, world, o, alturaEn, ganancia) {
       if (u.tipo === 'fin' || ult && u.tipo === 'antes') src = d <= cons ? d / u.k : consS + (d - cons);
       else if (L >= cons) src = d <= cons ? d / u.k : consS + (d - cons) * Math.max(0, lenS - consS) / Math.max(1e-3, L - cons);
       else src = d * consS / L;
-      const ms = u.e.offset + src * 1000, x = (ms - a.t0) / PERIODO, j = Math.max(0, Math.min(a.cuadros - 2, Math.floor(x))), f = Math.max(0, Math.min(1, x - j));
+      const ms = u.e.offset + (u.salto || 0) + src * 1000, x = (ms - a.t0) / PERIODO, j = Math.max(0, Math.min(a.cuadros - 2, Math.floor(x))), f = Math.max(0, Math.min(1, x - j));
       let w = Math.min(1, d / entra, (u.E - t) / sale);
       if (w <= 0) continue;
       w = .5 - .5 * Math.cos(Math.PI * w);
       const b0 = j * ancho, b1 = (j + 1) * ancho, bq = q * ancho;
+      // los pedazos se funden en potencia, como el wavtool de UTAU funde las ondas. Antes se fundían en dB (el promedio
+      // de los logaritmos): una consonante que se fundía con el silencio del principio del pedazo que sigue se apagaba
+      // enseguida, y se perdían las codas («esquina» → «ikina» en Sheep Oveja: de 27 a 19 % de letras mal)
+      let en = 0;
       for (let m = 0; m < ancho; m++) {
-        lsp[bq + m] += w * (a.lsp[b0 + m] * (1 - f) + a.lsp[b1 + m] * f + u.lg);
-        ap[bq + m] += w * (a.ap[b0 + m] * (1 - f) + a.ap[b1 + m] * f);
+        const P = Math.exp(a.lsp[b0 + m] * (1 - f) + a.lsp[b1 + m] * f + u.lg);
+        sp[bq + m] += w * P; en += P;
+        ap[bq + m] += w * P * (a.ap[b0 + m] * (1 - f) + a.ap[b1 + m] * f);
       }
       peso[q] += w;
       const f0a = a.f0[j], f0b = a.f0[j + 1], sonora = (f0a > 0 ? 1 - f : 0) + (f0b > 0 ? f : 0);
-      voz[q] += w * sonora;
+      voz[q] += w * en * sonora; energia[q] += w * en;
       const fa = f0a > 0 ? f0a : f0b, la = a.liso[j] || a.liso[j + 1];
       if (fa > 0 && la) { tiembla[q] += w * (Math.log(fa) - la); pesoVoz[q] += w; }
     }
@@ -779,23 +902,24 @@ function sintetizarFrase(U, banco, world, o, alturaEn, ganancia) {
   const rnd = () => { azar = (Math.imul(azar ^ (azar >>> 15), 2246822519) + 3266489917) >>> 0; return azar / 4294967296 - .5; };
   for (let q = 0; q < cuadros; q++) {
     const bq = q * ancho, p = peso[q];
-    if (p < 1e-6) { for (let m = 0; m < ancho; m++) { lsp[bq + m] = Math.exp(-46); ap[bq + m] = 1; } continue; }
+    if (p < 1e-6) { for (let m = 0; m < ancho; m++) { sp[bq + m] = 1e-20; ap[bq + m] = 1; } continue; }
     if (a !== 1) {
-      for (let m = 0; m < ancho; m++) { filaL[m] = lsp[bq + m]; filaA[m] = ap[bq + m]; }
-      for (let m = 0; m < ancho; m++) { const x = Math.min(ancho - 1, m / a), j = Math.min(ancho - 2, Math.floor(x)), f = x - j; lsp[bq + m] = filaL[j] * (1 - f) + filaL[j + 1] * f; ap[bq + m] = filaA[j] * (1 - f) + filaA[j + 1] * f; }
+      for (let m = 0; m < ancho; m++) { filaL[m] = sp[bq + m]; filaA[m] = ap[bq + m]; }
+      for (let m = 0; m < ancho; m++) { const x = Math.min(ancho - 1, m / a), j = Math.min(ancho - 2, Math.floor(x)), f = x - j; sp[bq + m] = filaL[j] * (1 - f) + filaL[j + 1] * f; ap[bq + m] = filaA[j] * (1 - f) + filaA[j + 1] * f; }
     }
     for (let m = 0; m < ancho; m++) {
-      lsp[bq + m] = Math.exp(lsp[bq + m] / p + gT[m]);
-      const v = Math.min(1, Math.max(0, ap[bq + m] / p));
+      const v = Math.min(1, Math.max(0, ap[bq + m] / Math.max(1e-300, sp[bq + m])));
+      sp[bq + m] = Math.max(1e-20, sp[bq + m] / p) * Math.exp(gT[m]);
       ap[bq + m] = 1 - (1 - v) * (1 - sA[m]) * (1 - sR[m]);
     }
     amp[q] = Math.min(1, p);
     const t = inicio + q * P;
     jit = .4 * jit + .6 * rnd() * 2;
-    if (voz[q] / p >= .5) f0[q] = 440 * Math.pow(2, (alturaEn(t) - 69) / 12) * (pesoVoz[q] > 0 ? Math.exp(o.modulacion * tiembla[q] / pesoVoz[q]) : 1) * Math.exp(.035 * ronq * jit);
-    if (o.depurar) o.depurar.push({ t: +t.toFixed(3), peso: +p.toFixed(2), voz: +(voz[q] / p).toFixed(2), f0: +f0[q].toFixed(1), db: +(10 * Math.log10(lsp.subarray(bq, bq + ancho).reduce((s, v) => s + v, 0))).toFixed(1) });
+    const sonora = voz[q] / Math.max(1e-300, energia[q]);
+    if (sonora >= .5) f0[q] = 440 * Math.pow(2, (alturaEn(t) - 69) / 12) * (pesoVoz[q] > 0 ? Math.exp(o.modulacion * tiembla[q] / pesoVoz[q]) : 1) * Math.exp(.035 * ronq * jit);
+    if (o.depurar) o.depurar.push({ t: +t.toFixed(3), peso: +p.toFixed(2), voz: +sonora.toFixed(2), f0: +f0[q].toFixed(1), db: +(10 * Math.log10(sp.subarray(bq, bq + ancho).reduce((s, v) => s + v, 0))).toFixed(1) });
   }
-  const y = world.sintetizar({ f0, sp: lsp, ap, fft, periodo: PERIODO, fs: sr });
+  const y = world.sintetizar({ f0, sp, ap, fft, periodo: PERIODO, fs: sr });
   const x = new Float32Array(y.length);
   let fase = 0;
   for (let i = 0; i < y.length; i++) {
@@ -805,5 +929,5 @@ function sintetizarFrase(U, banco, world, o, alturaEn, ganancia) {
     if (ronq > 0) { const fq = f0[q] > 0 && f0[q + 1] > 0 ? f0[q] * (1 - f) + f0[q + 1] * f : 0; if (fq > 0) { fase += Math.PI * fq / sr; v *= 1 + .5 * ronq * Math.cos(fase); } }
     x[i] = v;
   }
-  return { x, sr, inicio, unidades: U.map(u => ({ alias: u.alias, archivo: u.e.archivo, T: +u.T.toFixed(3), S: +u.S.toFixed(3), E: +u.E.toFixed(3) })) };
+  return { x, sr, inicio, unidades: U.map(u => ({ alias: u.alias, archivo: u.e.archivo, T: +u.T.toFixed(3), S: +u.S.toFixed(3), E: +u.E.toFixed(3), ...(u.salto ? { salto: Math.round(u.salto) } : {}), ...(u.k !== 1 ? { k: +u.k.toFixed(2) } : {}) })) };
 }
