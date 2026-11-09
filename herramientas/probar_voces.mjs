@@ -78,8 +78,10 @@ async function cantaDeNuevo(accion, ms = 900000) {
 }
 const CANTAR = `document.getElementById('cantarVoces').click()`;
 // la energía de lo que cantaron (todas las cuerdas, sin la normalización de la página)
-// (cada uno con su voz: las voces están por sección, en S.clips, sin normalizar)
-const ENERGIA = `(()=>{const S=window.murga.S;let e=0;for(const clip of S.clips.values())for(const k in clip.cuerdas){const b=clip.cuerdas[k].b;for(let c=0;c<b.numberOfChannels;c++){const x=b.getChannelData(c);for(let i=0;i<x.length;i++)e+=x[i]*x[i]}}return e})()`;
+// (cada uno con su voz: las voces están por sección y por cantante, en S.clips, en mono y sin su volumen: se les pone
+// su ganancia y el nivel de su motor, base[0] y base[2]; el paneo de potencia constante no cambia la energía; cada
+// muestra pesa por su frecuencia)
+const ENERGIA = `(()=>{const S=window.murga.S;let e=0;for(const clip of S.clips.values())for(const k in clip.cantores){const c=clip.cantores[k],g=c.base[0]*c.base[2],x=c.b.getChannelData(0);let s=0;for(let i=0;i<x.length;i++)s+=x[i]*x[i];e+=s*g*g*44100/c.b.sampleRate}return e})()`;
 
 console.log(`página en http://127.0.0.1:${PW}/ ${COEP ? 'con la regla COEP (como el Chrome del dueño)' : 'sin COEP'}`);
 const tEntra = Date.now();
@@ -131,11 +133,19 @@ if (E.es2) for (const v of Object.keys(E)) if (v !== 'es2') console.log(`  ${v} 
 // un solo murguista: su volumen y después su voz (con la última voz de toda la murga)
 await leer(`[...document.querySelectorAll('#listaCantantes .tarjeta')].find(x=>/Primo 2/.test(x.innerText))?.click()`);
 await esperar(500);
-const tVol = await cantaDeNuevo(`(()=>{const r=[...document.querySelectorAll('#icParams input[type=range]')].find(r=>/volumen/i.test(r.title));r.value=-4;r.dispatchEvent(new Event('change',{bubbles:true}))})()`);
-console.log(`el volumen de un murguista: volvió a sonar en ${tVol} s (incluye 0,4 s de espera) — ${await leer(`document.getElementById('status').textContent`)}`);
+// su volumen va en vivo (una pista por cantante): no vuelve a cantar nada, y la mezcla de ese cantante cambia
+const antesVol = await leer(`(()=>{const S=window.murga.S;return (S.gen)+'|'+(S.cantos||0)})()`);
+await leer(`(()=>{const r=[...document.querySelectorAll('#icParams input[type=range]')].find(r=>/volumen/i.test(r.title));r.value=-4;r.dispatchEvent(new Event('change',{bubbles:true}))})()`);
+await esperar(1500);
+const despVol = await leer(`(()=>{const S=window.murga.S;return (S.gen)+'|'+(S.cantos||0)+'|'+!!S.cantando+'|db '+(S.ajustes.primos1||{}).db})()`);
+ok(despVol.startsWith(antesVol + '|false|db -4'), `el volumen de un murguista, en vivo, sin volver a cantar (${antesVol} → ${despVol})`);
 const tVoz = await cantaDeNuevo(`(()=>{const s=document.querySelector('#icParams select');s.value='es1';s.dispatchEvent(new Event('change',{bubbles:true}))})()`);
 console.log(`la voz de un murguista (a es1): volvió a sonar en ${tVoz} s`);
-ok(tVol != null && tVoz != null, 'cambiar un murguista vuelve a cantar');
+ok(tVoz != null, 'cambiar la voz de un murguista vuelve a cantar (sólo lo de él)');
+// las filas de los cantantes: desplegar los primos
+await leer(`document.querySelector('.mt-pista[data-k=primos] .mt-desp')?.click()`); await esperar(800);
+const filas = await leer(`(()=>{const f=[...document.querySelectorAll('.mt-cantor[data-k=primos]')];return {n:f.length,bloques:f.flatMap(x=>[...x.querySelectorAll('.mt-voz')].map(b=>b.dataset.estado)).reduce((a,e)=>(a[e]=(a[e]||0)+1,a),{})}})()`);
+ok(filas.n === 5 && (filas.bloques.cantada || 0) > 0, `las filas de los primos: ${filas.n} cantantes, bloques ${JSON.stringify(filas.bloques)}`);
 const vista = await leer(`(()=>{const s=document.querySelector('#icParams select');return {voz:s?.value,params:[...document.querySelectorAll('#icParams .param span')].map(x=>x.textContent).join(', ')}})()`);
 console.log(`el inspector: ${JSON.stringify(vista)}`);
 // un murguista con muestras: sólo afinación, volumen y paneo

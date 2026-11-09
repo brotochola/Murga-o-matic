@@ -11,6 +11,28 @@ const ALTO = { tercia: 44, sobreprimos: 60, primos: 72, segundos: 64, bajos: 56 
 const COLOR_TIPO = { clarinada: '--accent', coro: '--primos', pleno: '--sobreprimos', duo: '--tercia', llamada: '--segundos', cierre: '--muted' };
 const ZOOMS = [0, 32, 64, 128, 240];   // px por compás; 0 = que entre toda la pieza
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+// Las filas de los cantantes (una cuerda desplegada con ▸): en cada sección, un bloque que dice si su voz ya está
+// cantada (♪), si quedó vieja (cambió algo desde que cantó) o si falta; tocándolo se canta esa sección. Con M y S, se
+// lo calla o se lo escucha solo, en vivo. Su estilo va con el multipista.
+const VOZ_TXT = { cantada: 'cantada', vieja: 'cambió desde que cantó: tocá para cantarla de nuevo', falta: 'sin cantar: tocá para cantarla' };
+const VOZ_MARCA = { cantada: '♪', vieja: '↻ vieja', falta: '+ cantar' };
+if (typeof document !== 'undefined' && !document.getElementById('mt-cantor-css')) {
+  const st = document.createElement('style'); st.id = 'mt-cantor-css';
+  st.textContent = `.mt-desp{border:0;background:transparent;color:var(--muted);cursor:pointer;padding:0;font-size:11px;width:14px;flex:none;line-height:1}
+.mt-desp:hover{color:var(--ink)}
+.mt-cantor .mt-c{height:22px}
+.mt-cantor .mt-h{padding-left:24px;font-size:12px;gap:4px}
+.mt-cantor .mt-h i{width:3px;opacity:.55}
+.mt-cantor .mt-h b{font-weight:500;cursor:pointer;flex:0 1 auto}
+.mt-cantor .mt-h small{color:var(--muted);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 auto;min-width:0}
+.mt-cantor.muda .mt-c{opacity:.4}
+.mt-voz{position:absolute;top:3px;bottom:3px;border-radius:4px;font:10px/14px var(--body);padding:0 4px;overflow:hidden;white-space:nowrap;text-align:left;cursor:pointer;color:var(--ink)}
+.mt-voz.cantada{background:color-mix(in srgb,var(--ok) 28%,var(--panel));border:1px solid color-mix(in srgb,var(--ok) 60%,var(--line))}
+.mt-voz.vieja{background:color-mix(in srgb,var(--accent) 22%,var(--panel));border:1px solid var(--accent)}
+.mt-voz.falta{background:transparent;border:1px dashed var(--line);color:var(--muted)}
+.mt-voz:hover{filter:brightness(1.08)}`;
+  document.head.append(st);
+}
 
 export function crearMultipista(raiz, cb = {}) {
   const E = { D: null, bw: 64, zoom: 2, mudas: {}, solos: {}, vols: {}, sel: null, selNota: null, selSec: null, t: 0, seguir: true, sonando: false, arrastre: null, lienzos: [] };
@@ -80,9 +102,12 @@ export function crearMultipista(raiz, cb = {}) {
     for (const k of ARRIBA_ABAJO) {
       const notas = D.notas.filter(n => n.cuerda === k); if (!notas.length) continue;
       const nombre = CUERDAS.find(c => c.k === k)?.nombre || k;
-      const f = fila('mt-pista' + (callada(k) ? ' muda' : ''), `<i style="background:var(--${k})"></i><b>${nombre}</b><span class="mt-ms"><button class="mt-m" aria-pressed="${!!E.mudas[k]}" title="Silenciar">M</button><button class="mt-s" aria-pressed="${!!E.solos[k]}" title="Sólo esta">S</button></span><input type="range" min="0" max="1.5" step="0.05" value="${E.vols[k] ?? 1}" aria-label="Volumen de ${nombre}">`);
+      const abierta = !!D.porCantante && (D.desplegadas || []).includes(k);
+      const desp = D.porCantante ? `<button class="mt-desp" aria-expanded="${abierta}" title="${abierta ? 'Plegar' : 'Desplegar'} los cantantes de ${nombre.toLowerCase()}: qué cantó cada uno en cada sección">${abierta ? '▾' : '▸'}</button>` : '';
+      const f = fila('mt-pista' + (callada(k) ? ' muda' : ''), `<i style="background:var(--${k})"></i>${desp}<b>${nombre}</b><span class="mt-ms"><button class="mt-m" aria-pressed="${!!E.mudas[k]}" title="Silenciar">M</button><button class="mt-s" aria-pressed="${!!E.solos[k]}" title="Sólo esta">S</button></span><input type="range" min="0" max="1.5" step="0.05" value="${E.vols[k] ?? 1}" aria-label="Volumen de ${nombre}">`);
       f.dataset.k = k;
       f.querySelector('.mt-m').onclick = () => cb.alMudo?.(k); f.querySelector('.mt-s').onclick = () => cb.alSolo?.(k);
+      f.querySelector('.mt-desp')?.addEventListener('click', ev => { ev.stopPropagation(); cb.alDesplegar?.(k); });
       const vol = f.querySelector('input'); vol.oninput = () => cb.alVolumen?.(k, +vol.value); vol.onchange = () => cb.alVolumenFin?.(k);
       let lo = 99, hi = 0; for (const n of notas) { lo = Math.min(lo, n.p); hi = Math.max(hi, n.p); }
       const rango = { lo: lo - 1, hi: hi + 1 }, alto = Math.max(ALTO[k], Math.min(132, (rango.hi - rango.lo + 1) * (mt.clientWidth < 520 ? 3.5 : 5)));   // al menos 5 px por semitono (3,5 en el teléfono)
@@ -92,6 +117,15 @@ export function crearMultipista(raiz, cb = {}) {
         const cv = document.createElement('canvas'); cv.className = 'mt-lienzo';
         cv.style.left = X(s.q0) + 'px'; cv.style.width = Math.max(1, X(s.q1) - X(s.q0)) + 'px';
         c.append(cv); E.lienzos.push({ cv, k, s, rango, h: alto, notas: notas.filter(n => n.q < s.q1 && n.q + n.d > s.q0) });
+      }
+      for (const ct of (abierta && D.cantantes?.[k]) || []) {
+        let bl = '';
+        for (const p of ct.partes) { const w = Math.max(4, X(p.q1) - X(p.q0) - 2); bl += `<button class="mt-voz ${p.estado}" data-sec="${esc(p.seccion)}" data-estado="${p.estado}" style="left:${X(p.q0) + 1}px;width:${w}px" title="${esc(ct.nombre)} en «${esc(p.seccion)}»: ${VOZ_TXT[p.estado]}">${w > 46 ? VOZ_MARCA[p.estado] : ''}</button>`; }
+        const fc = fila('mt-cantor' + (ct.mudo ? ' muda' : ''), `<i style="background:var(--${k})"></i><b title="Ver y cambiar a ${esc(ct.nombre)}">${esc(ct.nombre)}</b><small title="${esc(ct.voz)}">${esc(ct.voz)}</small><span class="mt-ms"><button class="mt-m" aria-pressed="${ct.mudo}" title="Callarlo">M</button><button class="mt-s" aria-pressed="${ct.solo}" title="Escucharlo solo">S</button></span>`, bl);
+        fc.dataset.k = k; fc.dataset.clave = ct.clave;
+        fc.querySelector('.mt-h b').onclick = () => cb.alCantor?.(ct.clave);
+        fc.querySelector('.mt-m').onclick = () => cb.alMudoCantor?.(ct.clave); fc.querySelector('.mt-s').onclick = () => cb.alSoloCantor?.(ct.clave);
+        fc.querySelectorAll('.mt-voz').forEach(b => b.onclick = ev => { ev.stopPropagation(); if (b.dataset.estado === 'cantada') cb.alElegirSeccion?.(b.dataset.sec); else cb.alCantor?.(ct.clave, b.dataset.sec); });
       }
     }
     // la batería: el loop de cada compás

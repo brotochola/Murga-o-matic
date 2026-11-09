@@ -303,8 +303,8 @@ function listaDeCantores(pieza,solo){
   let todos=cantores(pieza,L.sil.porQ,{semilla:S.semCoro,formacion:S.formacion});
   if(solo)todos=[todos.find(x=>x.cuerda==="primos")||todos[0]];
   todos=todos.map((c,i)=>({...c,clave:c.cuerda+(c.c||0),lugar:i}));
-  // lo que se cambió a mano en «Los cantantes» (y quién canta solo o está callado)
-  const lista=todos.filter(c=>!(S.ajustes[c.clave]||{}).mudo&&(!S.soloCantor||solo||c.clave===S.soloCantor));
+  // todos: los callados y «escucharlo solo» se resuelven al tocar (mezclaDe) y al cantar (quiereCantar)
+  const lista=todos;
   // «Sólo un solista» canta con la voz del primer primo del plantel (MIKE: la que mejor se entiende, docs/solistas_reales.md), o con es2
   for(const c of lista){const aj=S.ajustes[c.clave]||{};
     const o={...cantorDifonos(c.cuerda,aj.semilla??c.semilla,{c:solo?0:c.c||0}),voz:solo?(plantel.vozDeLugar("primos0")??"es2"):(plantel.vozDeLugar(c.clave)??vozDelCantor(c.c||0)),...elegidos(aj)};o.adornos*=ADORNOS_COR[S.adornos]??1;o.grito*=GRITO_COR[S.grito]??1;
@@ -315,7 +315,7 @@ function listaDeCantores(pieza,solo){
     else if(o.voz===VOZ_FORMANTES){c.motor="formantes";c.opc={sr:SR,tipo:c.tipo,semilla:aj.semilla??c.semilla,retraso:c.retraso||0,adornos:o.adornos,desafinacion:o.transporte||0,escalaFormantes:1/(o.tracto||1),memo:true}}
     else if(plantel.esDeBanco(o.voz)){const vb=plantel.opcionesBanco(o.voz,c.cuerda,c.opc,elegidos(aj),c.c||0);
       c.respaldo={...c.opc,voz:vozDelCantor(c.c||0)};if(vb){c.motor="banco";c.opc=vb}else c.opc=c.respaldo}
-    c.mezcla=[(solo?1:c.ganancia)*Math.pow(10,(aj.db||0)/20)*(NIVEL_MOTOR[c.motor]??1),aj.pan??(solo?0:c.pan)]}
+    c.base=[solo?1:c.ganancia,solo?0:c.pan,NIVEL_MOTOR[c.motor]??1]}
   return lista;
 }
 // las notas de un cantor que empiezan en una sección
@@ -324,20 +324,34 @@ const notasEn=(c,s)=>c.notas.filter(n=>n.t0>=s.t0-1e-6&&n.t0<s.t1-1e-6);
 // hasta tres después (lo que queda sonando); se suman con los de las secciones vecinas
 const extensionDe=s=>{const a=Math.max(0,Math.floor((s.t0-1)*SR)),b=Math.min(Math.ceil(S.P.total*SR),Math.ceil((s.t1+3)*SR));return[a,Math.max(a+1,b)]};
 
-// Las voces se cantan por sección: S.clips[nombre] = { cuerdas: { bajos: { b (AudioBuffer), inicio (s), firma } … },
-// pico }. Al tocar, cada pedazo suena en su lugar (grafo) y entra en vivo si se termina de cantar mientras suena
-// (clipEnVivo). Una sección vuelve a cantar sólo las cuerdas que cambiaron (la firma: sus notas, sílabas, voces,
-// volúmenes y paneos); los cantantes que no cambiaron salen de la memoria de su obrero. Todas las voces al mismo
-// pico: S.pvClips, el pico de la sección más fuerte (las cuerdas sumadas).
+// Las voces se cantan por sección y quedan por cantante: S.clips[sección] = { cantores: { bajos0: { b (AudioBuffer
+// mono, a la frecuencia de su voz), inicio (s), firma, cuerda, base: [ganancia, paneo, nivel del motor] } … }, pico }.
+// Al tocar, cada cantante tiene su volumen y su paneo en vivo (grafo: cantante → su cuerda → las voces), así que
+// cambiarle el volumen o el paneo, callarlo o escucharlo solo no vuelve a cantar nada (aplicarCantantes). Una sección
+// vuelve a cantar sólo los cantantes que cambiaron (la firma: sus notas, sílabas, voz y valores); los demás salen de
+// la memoria de su obrero o de lo guardado en el navegador (cantor/guardadas.js). Un pedazo que termina mientras
+// suena entra en vivo (clipEnVivo). Todas las voces al mismo pico: S.pvClips, el de la sección más fuerte.
+
+// la firma de lo que canta un cantante en una sección (sin su volumen ni su paneo, que van en vivo)
+const firmaDe=(c,notas,s)=>{const[a,b]=extensionDe(s);return huella(JSON.stringify([a,b,c.motor,c.opc,c.motor==="muestras"?S.P.brillo:0,notas]))};
+// quién canta ahora: los callados no, y con «escucharlo solo», sólo ése (los demás quedan para cuando suenen)
+const quiereCantar=c=>!(S.ajustes[c.clave]||{}).mudo&&(!S.soloCantor||S.voces==="solista"||c.clave===S.soloCantor);
+// el volumen y el paneo de un cantante ahora, sobre lo que traía al cantar (base: su ganancia en la cuerda, su lugar,
+// el nivel de su motor)
+function mezclaDe(clave,[g,pan0,nivel]){const aj=S.ajustes[clave]||{};
+  const fuera=aj.mudo||(S.soloCantor&&S.soloCantor!==clave&&S.voces!=="solista");
+  return[fuera?0:g*Math.pow(10,(aj.db||0)/20)*nivel,Math.max(-1,Math.min(1,aj.pan??pan0))]}
 async function cantarUnaSeccion(s,gen,paso){
   const pieza=S.pieza,P=S.P,lista=listaDeCantores(pieza,S.voces==="solista"),[a,b]=extensionDe(s),n=b-a;
-  const clip=S.clips.get(s.nombre)||{cuerdas:{},pico:0},hacer=[];
-  for(const k of ORDEN){const js=lista.filter(c=>c.cuerda===k).map(c=>({...c,notas:notasEn(c,s)})).filter(c=>c.notas.length);
-    const firma=huella(JSON.stringify([a,n,P.brillo,js.map(c=>[c.clave,c.notas,c.motor,c.opc,c.mezcla])]));
-    if(clip.cuerdas[k]?.firma===firma)continue;
-    hacer.push({k,js,firma})}
-  if(!hacer.length)return 0;
-  const todos=hacer.flatMap(h=>h.js),res=new Map();let hechos=0;
+  const clip=S.clips.get(s.nombre)||{cantores:{},pico:0},hacer=[],presentes=new Set();
+  for(const c0 of lista){const notas=notasEn(c0,s);if(!notas.length)continue;presentes.add(c0.clave);
+    const c={...c0,notas,firma:firmaDe(c0,notas,s)},ya=clip.cantores[c.clave];
+    if(ya&&ya.firma===c.firma){ya.base=c.base;continue}
+    if(quiereCantar(c))hacer.push(c)}
+  // los que ya no cantan en esta sección
+  let saco=false;for(const k of Object.keys(clip.cantores))if(!presentes.has(k)){delete clip.cantores[k];saco=true}
+  if(!hacer.length){if(saco)terminarClip(s.nombre,clip);return saco?1:0}
+  const res=new Map();let hechos=0;
   const uno=async(c,w)=>{let r=null;
     if(c.motor==="muestras")r=await cantarMuestras(c.notas,c.opc);
     else if(c.motor==="formantes"){if(w){try{r=await enObrero(w,{notas:c.notas,opc:c.opc})}catch(e){console.warn("canta la página:",e.message)}}
@@ -345,41 +359,45 @@ async function cantarUnaSeccion(s,gen,paso){
     else{const msg={motor:c.motor||"difonos",notas:c.notas,opc:c.opc};
       if(w){try{if(msg.motor==="banco")await plantel.presentar(w,msg.opc.banco,enObrero);r=await enObrero(w,msg)}catch(e){console.warn("canta la página:",e.message)}}
       if(!r)r=await difonosEnHilo(msg.notas,msg.motor==="banco"?c.respaldo:msg.opc)}
-    res.set(c.clave,r);hechos++;if(gen===S.gen)avance(paso(hechos/todos.length),`Cantando «${s.nombre}»: ${hechos} de ${todos.length} cantores…`)};
-  avance(paso(0),`Cantando «${s.nombre}»: 0 de ${todos.length} cantores…`);
+    res.set(c.clave,r);hechos++;if(gen===S.gen)avance(paso(hechos/hacer.length),`Cantando «${s.nombre}»: ${hechos} de ${hacer.length} cantores…`)};
+  avance(paso(0),`Cantando «${s.nombre}»: 0 de ${hacer.length} cantores…`);
   const ws=losObreros();
-  if(ws.length){const colas=ws.map(()=>[]);for(const c of todos)colas[c.lugar%ws.length].push(c);
+  if(ws.length){const colas=ws.map(()=>[]);for(const c of hacer)colas[c.lugar%ws.length].push(c);
     await Promise.all(colas.map(async(q,i)=>{for(const c of q){if(gen!==S.gen)return;await uno(c,ws[i])}}))}
-  else for(const c of todos){if(gen!==S.gen)break;await uno(c,null)}
+  else for(const c of hacer){if(gen!==S.gen)break;await uno(c,null)}
   if(gen!==S.gen||pieza!==S.pieza)return-1;
-  for(const{k,js,firma}of hacer){
-    // los de MBROLA y de banco se suman a mano (sumarAMano); los que llevan un filtro (el color del coro real de los
-    // formantes, el timbre de las muestras), con Web Audio
-    const L=new Float32Array(n),R=new Float32Array(n),filtrados=[];
-    for(const c of js){const r=res.get(c.clave);if(!r)continue;if(r.voz||c.motor==="muestras")filtrados.push(c);else sumarAMano(r,c.mezcla,L,R,a)}
-    if(filtrados.length){
-      const ctx=new OAC(2,n,SR),t0=a/SR;
-      // los filtros de fase lineal atrasan media respuesta: esos cantores arrancan esa media respuesta antes
+  for(const c of hacer){const r=res.get(c.clave);if(!r)continue;let buf,inicio;
+    if(r.voz||c.motor==="muestras"){
+      // los que llevan un filtro (el color del coro real de los formantes, el timbre de las muestras) pasan por Web
+      // Audio, en mono, desde el principio de la sección extendida; los filtros de fase lineal atrasan media
+      // respuesta: arrancan esa media respuesta antes
+      const ctx=new OAC(1,n,SR),t0=a/SR;
       const filtro=ir=>{const f=ctx.createConvolver();f.normalize=false;const bb=ctx.createBuffer(1,ir.length,SR);bb.copyToChannel(ir,0);f.buffer=bb;f.connect(ctx.destination);return f};
-      let fMuestras=null,fFormantes=null;
-      const poner=(x,sr,inicio,c,dest,atraso=0)=>{if(!x||!x.length)return;const bb=ctx.createBuffer(1,x.length,sr);bb.copyToChannel(x,0);
-        const src=ctx.createBufferSource();src.buffer=bb;const g=ctx.createGain();g.gain.value=c.mezcla[0];const p=ctx.createStereoPanner();p.pan.value=c.mezcla[1];
-        src.connect(g).connect(p).connect(dest);const t=inicio-atraso-t0;src.start(Math.max(0,t),Math.max(0,-t))};
-      for(const c of filtrados){const r=res.get(c.clave);
-        if(r.voz){if(!IR_CANTOR)IR_CANTOR=disenar(CURVA,SR,2048);fFormantes??=filtro(IR_CANTOR);
-          poner(r.voz,SR,0,c,fFormantes,IR_CANTOR.length/2/SR);poner(r.ruido,SR,0,c,ctx.destination)}
-        else{fMuestras??=filtro(respuesta(P.brillo));poner(r.x,r.sr,r.inicio,c,fMuestras,IR_N/2/SR)}}
-      const bb=await ctx.startRendering();if(gen!==S.gen)return-1;
-      const bl=bb.getChannelData(0),br=bb.getChannelData(1);for(let i=0;i<n;i++){L[i]+=bl[i];R[i]+=br[i]}}
-    const buf=decodeCtx.createBuffer(2,n,SR);buf.copyToChannel(L,0);buf.copyToChannel(R,1);
-    clip.cuerdas[k]={b:buf,inicio:a/SR,firma};await pausa();if(gen!==S.gen)return-1}
-  // el pico de la sección, con las cuerdas sumadas (todas tienen la misma extensión)
-  const bs=ORDEN.map(k=>clip.cuerdas[k]?.b).filter(Boolean);clip.pico=bs.length?picoDe(bs):0;
-  S.clips.set(s.nombre,clip);S.vozHecha=true;
-  const pv=Math.max(1e-9,...[...S.clips.values()].map(c=>c.pico));S.pvClips=pv;
-  clipEnVivo(s.nombre);
+      const poner=(x,sr,ini,dest,atraso=0)=>{if(!x||!x.length)return;const bb=ctx.createBuffer(1,x.length,sr);bb.copyToChannel(x,0);
+        const src=ctx.createBufferSource();src.buffer=bb;src.connect(dest);const t=ini-atraso-t0;src.start(Math.max(0,t),Math.max(0,-t))};
+      if(r.voz){if(!IR_CANTOR)IR_CANTOR=disenar(CURVA,SR,2048);poner(r.voz,SR,0,filtro(IR_CANTOR),IR_CANTOR.length/2/SR);poner(r.ruido,SR,0,ctx.destination)}
+      else poner(r.x,r.sr,r.inicio,filtro(respuesta(P.brillo)),IR_N/2/SR);
+      buf=await ctx.startRendering();inicio=t0;if(gen!==S.gen)return-1}
+    else{if(!r.x||r.x.length<2)continue;buf=decodeCtx.createBuffer(1,r.x.length,r.sr);buf.copyToChannel(r.x,0);inicio=r.inicio}
+    clip.cantores[c.clave]={b:buf,inicio,firma:c.firma,cuerda:c.cuerda,base:c.base}}
+  terminarClip(s.nombre,clip);
   return hacer.length;
 }
+// el pico de una sección: sus cantantes sumados con el volumen y el paneo de ahora
+function picoDeClip(clip){const cs=Object.entries(clip.cantores);if(!cs.length)return 0;
+  let a=Infinity,b=0;for(const[,c]of cs){a=Math.min(a,c.inicio);b=Math.max(b,c.inicio+c.b.duration)}
+  const n0=Math.max(0,Math.floor(a*SR)),n=Math.ceil(b*SR)-n0+1,L=new Float32Array(n),R=new Float32Array(n);
+  for(const[clave,c]of cs)sumarAMano({x:c.b.getChannelData(0),sr:c.b.sampleRate,inicio:c.inicio},mezclaDe(clave,c.base),L,R,n0);
+  let p=0;for(let i=0;i<n;i++){const x=Math.abs(L[i]),y=Math.abs(R[i]);if(x>p)p=x;if(y>p)p=y}return p}
+function terminarClip(nombre,clip){clip.pico=picoDeClip(clip);S.clips.set(nombre,clip);S.vozHecha=true;
+  S.pvClips=Math.max(1e-9,...[...S.clips.values()].map(c=>c.pico));clipEnVivo(nombre)}
+// el volumen, el paneo, callar o escuchar solo a un cantante: en vivo, sin volver a cantar; el pico, después
+function aplicarCantantes(){const N=S.nodos;
+  if(N?.cant&&S.ac)for(const[clave,x]of Object.entries(N.cant)){const[m,p]=mezclaDe(clave,x.base);x.g.gain.setTargetAtTime(m,S.ac.currentTime,.02);x.p.pan.setTargetAtTime(p,S.ac.currentTime,.02)}
+  S.mp3=null;clearTimeout(aplicarCantantes.t);aplicarCantantes.t=setTimeout(recalcularPicos,300)}
+function recalcularPicos(){if(!S.clips.size)return;for(const c of S.clips.values())c.pico=picoDeClip(c);
+  S.pvClips=Math.max(1e-9,...[...S.clips.values()].map(c=>c.pico));
+  const N=S.nodos;if(N?.norm&&S.ac)for(const k of ORDEN)N.norm[k].gain.setTargetAtTime(1/S.pvClips,S.ac.currentTime,.05)}
 // La cola de secciones para cantar, en el orden de la pieza; «primero» las pone adelante (la que se pidió a mano).
 // Un solo trabajo a la vez; lo que se pide mientras canta se suma a la cola. generar() y «Parar» la vacían (S.gen).
 const colaSecciones=[];let cantandoSecciones=null,seccionEnCurso=null;
@@ -411,13 +429,25 @@ const seccionesConVoz=()=>S.pieza?S.pieza.secs.filter(s=>s.tipo!=="llamada"&&ORD
 function clipEnVivo(nombre){const N=S.nodos;if(!N||!S.tocando||!N.clipSrcs)return;
   for(const x of N.clipSrcs.get(nombre)||[])try{x.stop()}catch(e){}
   for(const k of ORDEN)N.norm[k].gain.setTargetAtTime(1/(S.pvClips||1),S.ac.currentTime,.05);
-  ponerClip(S.ac,nombre,S.clips.get(nombre),N.norm,S.ac.currentTime+.05,N.clipSrcs,S.inicio)}
-// los pedazos de una sección, en su lugar: `cero` es el momento (del contexto) en que empieza la pieza
-function ponerClip(ctx,nombre,clip,norm,desde,clipSrcs,cero){const srcs=[];
-  for(const k of ORDEN){const c=clip?.cuerdas[k];if(!c)continue;const fin=cero+c.inicio+c.b.duration;if(fin<=desde)continue;
-    const src=ctx.createBufferSource();src.buffer=c.b;src.connect(norm[k]);const t=cero+c.inicio;
+  ponerClip(S.ac,nombre,S.clips.get(nombre),N,S.ac.currentTime+.05,S.inicio)}
+// los pedazos de una sección, cada cantante por su volumen y su paneo (uno por cantante en el grafo: N.cant), en su
+// lugar: `cero` es el momento (del contexto) en que empieza la pieza
+function ponerClip(ctx,nombre,clip,N,desde,cero){const srcs=[];
+  for(const[clave,c]of Object.entries(clip?.cantores||{})){const fin=cero+c.inicio+c.b.duration;if(fin<=desde)continue;
+    const x=N.cant[clave]??=(()=>{const g=ctx.createGain(),p=ctx.createStereoPanner(),[m,pan]=mezclaDe(clave,c.base);g.gain.value=m;p.pan.value=pan;g.connect(p).connect(N.norm[c.cuerda]);return{g,p,base:c.base}})();
+    x.base=c.base;
+    const src=ctx.createBufferSource();src.buffer=c.b;src.connect(x.g);const t=cero+c.inicio;
     if(t>=desde)src.start(t);else src.start(desde,desde-t);srcs.push(src)}
-  clipSrcs.set(nombre,srcs)}
+  N.clipSrcs.set(nombre,srcs)}
+// Las filas de cada cantante en el multipista (cuando se despliega su cuerda): en cada sección, si su voz está
+// cantada, si quedó vieja (cambió algo desde que cantó) o si falta
+function filasCantantes(){if(!difonos()||!S.pieza||!S.P||!S.desplegadas.size)return null;
+  const lista=listaDeCantores(S.pieza,S.voces==="solista"),quien=Object.fromEntries(losCantantes().map(x=>[x.clave,x])),secs=seccionesConVoz(),filas={};
+  for(const c of lista){if(!S.desplegadas.has(c.cuerda))continue;const x=quien[c.clave],aj=S.ajustes[c.clave]||{};
+    const partes=[];for(const s of secs){const notas=notasEn(c,s);if(!notas.length)continue;const ya=S.clips.get(s.nombre)?.cantores[c.clave];
+      partes.push({seccion:s.nombre,q0:s.inicio,q1:s.inicio+s.largo,estado:!ya?"falta":ya.firma===firmaDe(c,notas,s)?"cantada":"vieja"})}
+    (filas[c.cuerda]||=[]).push({clave:c.clave,nombre:x?.nombre||c.clave,voz:nombreVoz(aj.voz??x?.base.voz??""),mudo:!!aj.mudo,solo:S.soloCantor===c.clave,partes})}
+  return filas}
 
 // ============================================================ los cantantes de difonos, uno por uno
 const NOMBRE_CANTOR={bajos:"Bajo",segundos:"Segundo",primos:"Primo",sobreprimos:"Sobreprimo",tercia:"Tercia"};
@@ -468,7 +498,11 @@ const NO_CANTAN=new Set(["nombre","cara"]);
 let temporizadorCanto=null;
 // (espera un momento por si cambian otra cosa enseguida: así canta una vez)
 function programarCanto(){clearTimeout(temporizadorCanto);temporizadorCanto=setTimeout(()=>{if(S.pieza)cantarDeNuevo()},400)}
-function cambiarCantante(clave,k,v){S.ajustes={...S.ajustes,[clave]:{...(S.ajustes[clave]||{}),[k]:v}};guardarAjustes();dibujarCantantes();if(!NO_CANTAN.has(k))programarCanto()}
+// (cada uno con su voz: el volumen, el paneo y callarlo van en vivo, sin volver a cantar; si al dejar de callarlo le
+// falta cantar algo, canta eso)
+function cambiarCantante(clave,k,v){S.ajustes={...S.ajustes,[clave]:{...(S.ajustes[clave]||{}),[k]:v}};guardarAjustes();dibujarCantantes();
+  if(difonos()&&(k==="db"||k==="pan"||k==="mudo")){aplicarCantantes();actualizarLuego();if(k!=="mudo")return}
+  if(!NO_CANTAN.has(k))programarCanto()}
 // Las voces que puede tener un murguista, para un <select>: los bancos del plantel, MBROLA y las dos sin banco
 function opcionesDeVoz(vv){const op=(v,t,mas="")=>`<option value="${esc(v)}"${v===vv?" selected":""}${mas}>${esc(t)}</option>`;
   return`<optgroup label="Bancos de voz cantada (el plantel)">${plantel.vocesDeBanco().map(v=>op(v.valor,v.nombre+(v.disponible?"":" (no está)"),`${v.disponible?"":" disabled"} title="${esc(v.disponible?v.nota:v.falta)}"`)).join("")}</optgroup>`+
@@ -540,7 +574,7 @@ function dibujarCantantes(){
     caja.append(d)}
   if(cantanteAbierto)dibujarInspCantante()}
 // «Escucharlo solo» es pedir escucharlo: canta aunque las voces todavía no se hayan cantado
-function alternarSolo(clave){S.soloCantor=S.soloCantor===clave?null:clave;dibujarCantantes();
+function alternarSolo(clave){S.soloCantor=S.soloCantor===clave?null:clave;dibujarCantantes();if(difonos()){aplicarCantantes();actualizarLuego()}
   if(difonos()){const ya=[...S.clips.keys()];pedirSecciones(ya.length?ya:[seccionElegida()?.nombre].filter(Boolean),{primero:true})}else if(sint())cantarVoces(true)}
 // un murguista a un archivo, y de un archivo a un lugar del coro
 function exportarCantante(){const x=losCantantes().find(y=>y.clave===cantanteAbierto);if(!x)return;const aj=S.ajustes[x.clave]||{};
@@ -563,7 +597,7 @@ async function importarCantante(archivo){if(!archivo||!cantanteAbierto)return;
 const ORDEN=["bajos","segundos","primos","sobreprimos","tercia"];
 const LLAMADAS=Object.fromEntries(DATOS.ritmos.map(r=>{const a=DATOS.acompana[r.id];if(!a||!a[0])return[r.id,0];const c4=r.compas*4/r.tpc;return[r.id,Math.ceil((DATOS.frases[a[0]].ultimo+.05)/c4)]}));
 const S={version:2,formacion:"union",adornos:"algunos",grito:"si",sala:.5,recita:0,forma:"retirada",estilo:"todas",tonica:9,modo:"menor",ritmo:0,tempo:0,largo:"normal",seed:1,brillo:1,clarinada:true,cancionFinal:true,modula:true,tercia:0,mix:{bajos:1,segundos:1,primos:1,sobreprimos:1,tercia:1,bateria:.42},mute:{},solo:{},secElegida:null,
-  voces:"muestras",semCoro:1,lugar:"teatro",acordes:{},tonos:{},clips:new Map(),pvClips:0,editando:null,ajustes:{},soloCantor:null,pieza:null,stems:null,P:null,ac:null,nodos:null,inicio:0,offset:0,tocando:false,gen:0,mp3:null,
+  voces:"muestras",semCoro:1,lugar:"teatro",acordes:{},tonos:{},clips:new Map(),pvClips:0,desplegadas:new Set(),editando:null,ajustes:{},soloCantor:null,pieza:null,stems:null,P:null,ac:null,nodos:null,inicio:0,offset:0,tocando:false,gen:0,mp3:null,
   letra:{partes:[],textos:[],diags:null,temas:null,editados:new Set(),sel:{i:0,k:0},sil:null,marcas:[],semLetra:1,pendiente:false,cantada:null}};
 const $=id=>document.getElementById(id);
 try{S.ajustes=JSON.parse(localStorage.getItem("murga.cantantes")||"{}")||{}}catch(e){}
@@ -672,7 +706,7 @@ async function cantarVoces(incremental=true){
 // Algo cambió en lo que cantan (un cantante, un verso, una nota, cómo gritan…): si las voces ya estaban cantadas (o
 // cantando), se vuelve a cantar sólo eso; si no, quedan para el botón
 function cantarDeNuevo(){if(!S.pieza)return;
-  if(difonos()){if(S.clips.size||S.cantando)pedirSecciones([...S.clips.keys(),...colaSecciones,...(seccionEnCurso?[seccionEnCurso]:[])]);else pasos();return}
+  if(difonos()){aplicarCantantes();if(S.clips.size||S.cantando)pedirSecciones([...S.clips.keys(),...colaSecciones,...(seccionEnCurso?[seccionEnCurso]:[])]);else pasos();return}
   if(S.vozHecha||S.cantando)return cantarVoces(true);pasos()}
 function pararVoces(){if(!S.cantando)return;++S.gen;colaSecciones.length=0;S.cantando=false;avance(null);resumen();pasos()}
 // cantar la sección elegida (primero, aunque estén cantando otras)
@@ -722,8 +756,8 @@ function grafo(ctx,dest,offset,when){
     const s=ctx.createBufferSource();s.buffer=S.stems[k];s.connect(g);s.start(when,offset);srcs.push(s)}
   // las voces cantadas por sección (S.clips): cada pedazo en su lugar, todas al mismo pico
   const norm={};for(const k of ORDEN){norm[k]=ctx.createGain();norm[k].gain.value=1/(S.pvClips||1);norm[k].connect(gains[k])}
-  const clipSrcs=new Map();for(const[nombre,clip]of S.clips)ponerClip(ctx,nombre,clip,norm,when,clipSrcs,when-offset);
-  return{gains,srcs,send,sendBat,norm,clipSrcs};
+  const N={norm,cant:{},clipSrcs:new Map()};for(const[nombre,clip]of S.clips)ponerClip(ctx,nombre,clip,N,when,when-offset);
+  return{gains,srcs,send,sendBat,...N};
 }
 function desbloquear(){
   try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}       // iOS: que suene aunque el teléfono esté en silencio
@@ -762,7 +796,13 @@ const multipista=crearMultipista($("multipista"),{
   alVolumenFin:()=>{S.mp3=null;guardarLuego()},
   alBateria:(q,el)=>popBateria(q,el),
   alElegirNota:n=>abrirNota(n),
-  alMoverNota:(n,d)=>{abrirNota(n,false);cambiarNota({op:"p",v:d});popNota()}});
+  alMoverNota:(n,d)=>{abrirNota(n,false);cambiarNota({op:"p",v:d});popNota()},
+  // una cuerda desplegada: una fila por cantante, con lo que ya cantó en cada sección
+  alDesplegar:k=>{if(S.desplegadas.has(k))S.desplegadas.delete(k);else S.desplegadas.add(k);try{localStorage.setItem("murga.desplegadas",[...S.desplegadas].join(","))}catch(e){}actualizarVistas()},
+  alCantor:(clave,seccion)=>{if(seccion)pedirSecciones([seccion],{primero:true});else abrirCantante(clave)},
+  alMudoCantor:clave=>cambiarCantante(clave,"mudo",!(S.ajustes[clave]||{}).mudo),
+  alSoloCantor:clave=>alternarSolo(clave)});
+try{for(const k of(localStorage.getItem("murga.desplegadas")||"").split(","))if(ORDEN.includes(k))S.desplegadas.add(k)}catch(e){}
 {let z=(()=>{try{return localStorage.getItem("murga.zoom")}catch(e){return null}})();if(z==null&&matchMedia("(max-width:620px)").matches)z="1";   // en el teléfono, de entrada más compases
  if(z!=null&&+z>=0&&+z<=4){$("zoom").value=z;multipista.zoom(+z)}}
 $("zoom").onchange=e=>{multipista.zoom(+e.target.value);try{localStorage.setItem("murga.zoom",e.target.value)}catch(x){}};
@@ -802,7 +842,7 @@ function datosMultipista(){
   for(const s of secs){let ant=null;for(let q=s.inicio;q<s.inicio+s.largo;q+=COMPAS){
     if(s.tipo==="llamada"||s.golpe){bateria.push({q,id:0,fijo:true,nombre:s.golpe?"Un golpe de batería":"La llamada: la batería llama al ritmo que sigue",corto:s.golpe?"golpe":"llamada",igual:ant==="f"});ant="f";continue}
     const id=loopDeCompas(pieza,s,q);bateria.push({q,id,propio:q in(pieza.bateria||{}),nombre:nombreRitmo(id),corto:cortoRitmo(id),igual:ant===id});ant=id}}
-  return{T:P.T,totalQ:tq,compases:Math.ceil(tq/16),notas,versos,silabas,bateria,
+  return{T:P.T,totalQ:tq,porCantante:difonos(),cantantes:filasCantantes(),desplegadas:[...S.desplegadas],compases:Math.ceil(tq/16),notas,versos,silabas,bateria,
     secciones:secs.map(s=>({nombre:s.nombre,tipo:s.tipo,cantada:S.clips.has(s.nombre),q0:s.inicio,q1:s.inicio+s.largo,bateria:s.bateria||s.tipo==="llamada",textura:TEXTO_TIPO[s.tipo]||"coro",editable:editableAc(s),
       acordes:(s.acordes||[]).map((g,j)=>({grado:g,nombre:nombreAcorde(g,s.tonica,s.modo),cambiado:j in(S.acordes[s.nombre]||{})}))}))};
 }
