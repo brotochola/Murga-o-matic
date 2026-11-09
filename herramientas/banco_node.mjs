@@ -7,8 +7,18 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, dirname, resolve, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inflateRawSync } from 'node:zlib';
+import { execFileSync } from 'node:child_process';
 import { crearBanco } from '../motor/cantor/banco.js';
 import { leerZip, extraer } from '../motor/cantor/zip.js';
+import { esOgg, cabezaDeOgg, remuestrear, wavFloat } from '../motor/cantor/opus.js';
+
+// un .wav que trae un Ogg Opus (los bancos de la versión liviana, motor/cantor/opus.js), decodificado con ffmpeg (a
+// 48 kHz, sin el pre-skip) y llevado a la frecuencia del original con el mismo remuestreo que la página
+export function oggAWavNode(b) {
+  const o = execFileSync('ffmpeg', ['-loglevel', 'error', '-c:a', 'libopus', '-i', 'pipe:0', '-f', 'f32le', '-ac', '1', 'pipe:1'], { input: Buffer.from(b.buffer, b.byteOffset, b.byteLength), maxBuffer: 1 << 30 });
+  const x = new Float32Array(o.buffer.slice(o.byteOffset, o.byteOffset + o.length)), { tasa } = cabezaDeOgg(b);
+  return wavFloat(remuestrear(x, 48000, tasa), tasa);
+}
 
 export const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const BANCOS = join(RAIZ, 'bancos');
@@ -50,5 +60,5 @@ export function archivosDelBanco(ruta) {
     for (const e of lista) if (SIRVE.test(e.nombre)) mapa.set(e.nombre, () => extraer(e, b => inflateRawSync(b)));
   }
   mapa = bajar(mapa);
-  return { rutas: [...mapa.keys()], leer: r => { const f = mapa.get(r); try { return f ? f() : null; } catch { return null; } } };
+  return { rutas: [...mapa.keys()], leer: r => { const f = mapa.get(r); try { const b = f ? f() : null; return /\.wav$/i.test(r) && esOgg(b) ? oggAWavNode(b) : b; } catch { return null; } } };
 }

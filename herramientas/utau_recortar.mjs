@@ -6,14 +6,18 @@
 // del plantel en cada lugar, en todas las alturas a las que llega (sus notas, con el «Esfuerzo» de −5 a +7 y la
 // afinación). Los oto.ini quedan enteros, con los tiempos corridos: así las sílabas se reparten igual que con el banco
 // entero, y una que no quedó se busca en otra altura (banco.js). El nivel de cada .wav va anotado en murga_niveles.txt
-// (el de un .wav recortado daría otro).
+// (el de un .wav recortado daría otro). Después, cada .wav va en Opus (96 kbps): el archivo se sigue llamando .wav
+// (el oto.ini no cambia) y la página lo decodifica con WebCodecs (motor/cantor/opus.js).
 //
-// La prueba, banco por banco: el recortado tiene las mismas entradas, reclist y alturas; las mismas murgas le piden
-// los mismos pedazos; y unas frases cantadas con los dos dan lo mismo.
+// La prueba, banco por banco: el recortado (con sus .wav) tiene las mismas entradas, reclist y alturas; las mismas
+// murgas le piden los mismos pedazos; y unas frases cantadas con los dos dan lo mismo. Con Opus: cuánto cambian esas
+// frases (el espectro por bandas, en dB), y las frases con .wav y con Opus en murga_trabajo/utau/opus_ab/, para
+// escuchar.
 //
-//   node herramientas/utau_recortar.mjs [--bancos carpeta] [--salida carpeta] [--piezas 60] [banco.zip ...]
-//   (por defecto, de bancos/ a liviana/bancos/; los bancos de bancos/ no se tocan)
-import { readFileSync, mkdirSync, statSync, existsSync } from 'node:fs';
+//   node herramientas/utau_recortar.mjs [--bancos carpeta] [--salida carpeta] [--piezas 60] [--kbps 96] [--wav] [banco.zip ...]
+//   (por defecto, de bancos/ a ../Murga-o-matic-offline/bancos/; los de bancos/ no se tocan. --wav: sin Opus)
+import { readFileSync, writeFileSync, mkdirSync, statSync, existsSync, renameSync, rmSync } from 'node:fs';
+import { spawn, execFileSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { archivosDelBanco, RAIZ } from './banco_node.mjs';
 import { escribirZip } from './zip_escribir.mjs';
@@ -26,10 +30,13 @@ import { CLAVES } from '../motor/cantor/lexico.js';
 import { MODELO } from '../motor/modelo.js';
 
 const args = process.argv.slice(2), arg = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : d; };
-const DE = resolve(arg('bancos', join(RAIZ, 'bancos'))), A = resolve(arg('salida', join(RAIZ, 'liviana', 'bancos')));
+const DE = resolve(arg('bancos', join(RAIZ, 'bancos'))), A = resolve(arg('salida', join(RAIZ, '..', 'Murga-o-matic-offline', 'bancos')));
 const N = +arg('piezas', 60);
+const SOLO_WAV = args.includes('--wav'), KBPS = arg('kbps', '96') + 'k';
+const AB = resolve(arg('ab', join(RAIZ, 'murga_trabajo', 'utau', 'opus_ab')));   // frases con .wav y con Opus, para escuchar
 const PL = JSON.parse(readFileSync(join(RAIZ, 'bancos', 'plantel.json'), 'utf8'));
-const pedidos = args.filter((a, i) => !a.startsWith('--') && !args[i - 1]?.startsWith('--'));
+const SIN_VALOR = new Set(['--wav']);
+const pedidos = args.filter((a, i) => !a.startsWith('--') && !(args[i - 1]?.startsWith('--') && !SIN_VALOR.has(args[i - 1])));
 const ALTO = [-6, 8];        // lo que se corre la nota: el «Esfuerzo» (−5 a +7, motor/plantel.js) y la afinación (±½)
 const MARGEN = 60 + 40;      // ms a cada lado: lo que analiza banco.js alrededor de un pedazo (PAD) y un poco más
 const reloj = Date.now(), seg = () => ((Date.now() - reloj) / 1000).toFixed(0) + ' s';
@@ -176,10 +183,10 @@ async function recortar(archivo) {
   }
   textos.push({ nombre: NIVELES, datos: new TextEncoder().encode(niveles.join('\n') + '\n') });
   mkdirSync(A, { recursive: true });
-  const bytes = escribirZip(salida, [...textos, ...wavs]);
+  const conWav = salida + '.wav.tmp', bytesWav = escribirZip(conWav, [...textos, ...wavs]);
 
-  // ── la prueba ──
-  const n = abrir(salida), nb = n.b, problemas = [];
+  // ── la prueba del recorte (con los .wav) ──
+  const n = abrir(conWav), nb = n.b, problemas = [];
   if (nb.reclist !== b.reclist) problemas.push(`reclist ${nb.reclist} en vez de ${b.reclist}`);
   if (nb.entradas.length !== b.entradas.length) problemas.push(`${nb.entradas.length} entradas en vez de ${b.entradas.length}`);
   await medirAlturas(nb, world);
@@ -213,13 +220,125 @@ async function recortar(archivo) {
     peor = Math.max(peor, d / pico);
   }
   if (peor > 1e-4) problemas.push(`las frases cantadas difieren (${(peor * 100).toFixed(3)} % del pico)`);
-  // ¿alcanzaron las piezas? las sílabas nuevas del último cuarto
-  const satur = porVoz.map(x => { const q = Math.floor(piezas.length * .75); return x.curva[piezas.length - 1] - x.curva[q - 1]; });
+
+  // ── los .wav en Opus (el nombre queda: adentro va un Ogg; motor/cantor/opus.js) ──
+  let bytes = bytesWav, opus = '';
+  if (SOLO_WAV || problemas.length) renameSync(conWav, salida);
+  else {
+    // (los muy cortos, de menos de un cuadro de Opus, quedan en .wav)
+    const enc = await enParalelo(wavs, 8, async w => (w.datos.length > 44 + 4000 ? { nombre: w.nombre, datos: await aOpus(w.datos) } : w));
+    bytes = escribirZip(salida, [...textos, ...enc]);
+    // cuánto cambia lo cantado: las mismas frases con los .wav recortados y con los Opus (el espectro por bandas)
+    const ob = abrir(salida).b;
+    await medirAlturas(ob, world);
+    if (alt(ob) !== alt(b)) problemas.push(`con Opus, alturas ${alt(ob)} en vez de ${alt(b)}`);
+    const difs = [];
+    mkdirSync(AB, { recursive: true });
+    for (const v of voces) {
+      const MURGA = Object.fromEntries(LUGARES.map(l => [l.clave, v.nombre]));
+      const t = repartir(piezas[0].M.lista, PL.voces, MURGA).find(x => x.motor === 'banco');
+      const notas = t.c.notas.filter(x => x.t0 < t.c.notas[0].t0 + 12);
+      const r1 = cantarBanco(nb, world, notas, { ...t.opc, cache: new Map() }), r2 = cantarBanco(ob, world, notas, { ...t.opc, cache: new Map() });
+      difs.push(distanciaEspectral(aFrecuencia(r1, r2.sr), r2));   // a la misma frecuencia (si no, la medida no da cero)
+      writeFileSync(join(AB, `${v.nombre} - wav.wav`), wavMono(r1.x, r1.sr)); writeFileSync(join(AB, `${v.nombre} - opus.wav`), wavMono(r2.x, r2.sr));
+    }
+    rmSync(conWav);
+    opus = ` · en Opus ${KBPS}bps: ${MB(bytesWav)} → ${MB(bytes)}, lo cantado cambia ${difs.map(d => d.toFixed(2)).join('/')} dB`;
+  }
   const totalWavs = rutas.filter(r => /\.wav$/i.test(r)).length;
   console.log(`${archivo.padEnd(26)} ${MB(statSync(ruta).size).padStart(9)} → ${MB(bytes).padStart(9)}  · ${quedan.size}/${totalWavs} .wav, ${MB(antes)} → ${MB(despues)} sin comprimir`
-    + ` · sílabas ${porVoz.map(x => x.alias.size).join('/')} (nuevas en el último cuarto: ${satur.join('/')})`
-    + ` · frases: ${(peor * 100).toFixed(4)} % · ${problemas.length ? 'PROBLEMAS: ' + problemas.join('; ') : 'bien'} · ${seg()}`);
+    + ` · sílabas ${porVoz.map(x => x.alias.size).join('/')} · recortado: ${(peor * 100).toFixed(4)} %${opus}`
+    + ` · ${problemas.length ? 'PROBLEMAS: ' + problemas.join('; ') : 'bien'} · ${seg()}`);
   return { antes: statSync(ruta).size, despues: bytes, problemas };
+}
+
+// ── Opus y la comparación ──────────────────────────────────────────────
+// el .wav en Ogg Opus, con la frecuencia del original anotada en el OpusHead (ffmpeg anota los 48 kHz a los que
+// remuestrea; la página vuelve a la del original al decodificar, motor/cantor/opus.js)
+function aOpus(wav) {
+  const sr = partesWav(wav).sr;
+  return new Promise((ok, mal) => {
+    const p = spawn('ffmpeg', ['-loglevel', 'error', '-f', 'wav', '-i', 'pipe:0', '-map_metadata', '-1', '-c:a', 'libopus', '-b:a', KBPS, '-vbr', 'on', '-application', 'audio', '-f', 'ogg', 'pipe:1']);
+    const out = []; let err = '';
+    p.stdout.on('data', d => out.push(d)); p.stderr.on('data', d => { err += d; });
+    p.on('error', mal);
+    p.on('close', c => { if (c) { mal(new Error('ffmpeg: ' + err)); return; } try { ok(conTasa(new Uint8Array(Buffer.concat(out)), sr)); } catch (e) { mal(e); } });
+    p.stdin.end(Buffer.from(wav.buffer, wav.byteOffset, wav.byteLength));
+  });
+}
+// la primera página del Ogg (la del OpusHead, sola) con otra frecuencia del original, y su CRC de nuevo
+const CRC_OGG = Uint32Array.from({ length: 256 }, (_, i) => { let r = i << 24; for (let j = 0; j < 8; j++) r = r & 0x80000000 ? (r << 1) ^ 0x04c11db7 : r << 1; return r >>> 0; });
+function conTasa(ogg, sr) {
+  const v = new DataView(ogg.buffer, ogg.byteOffset, ogg.byteLength), nseg = ogg[26], cab = 27 + nseg, largo = cab + ogg.subarray(27, cab).reduce((a, x) => a + x, 0);
+  if (String.fromCharCode(...ogg.subarray(cab, cab + 8)) !== 'OpusHead') throw new Error('la primera página no es el OpusHead');
+  v.setUint32(cab + 12, sr, true); v.setUint32(22, 0, true);
+  let c = 0; for (let i = 0; i < largo; i++) c = ((c << 8) ^ CRC_OGG[((c >>> 24) ^ ogg[i]) & 255]) >>> 0;
+  v.setUint32(22, c, true);
+  return ogg;
+}
+// lo cantado, llevado a otra frecuencia de muestreo (con ffmpeg)
+function aFrecuencia(r, sr) {
+  if (r.sr === sr) return r;
+  const o = execFileSync('ffmpeg', ['-loglevel', 'error', '-f', 'f32le', '-ar', String(r.sr), '-ac', '1', '-i', 'pipe:0', '-ar', String(sr), '-f', 'f32le', 'pipe:1'], { input: Buffer.from(r.x.buffer, r.x.byteOffset, r.x.byteLength), maxBuffer: 1 << 30 });
+  return { x: new Float32Array(o.buffer.slice(o.byteOffset, o.byteOffset + o.length)), sr };
+}
+async function enParalelo(cosas, n, f) {
+  const r = new Array(cosas.length); let i = 0;
+  await Promise.all(Array.from({ length: n }, async () => { while (i < cosas.length) { const k = i++; r[k] = await f(cosas[k]); } }));
+  return r;
+}
+function fft(re, im) {
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++) { let b = n >> 1; for (; j & b; b >>= 1) j ^= b; j ^= b; if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; } }
+  for (let L = 2; L <= n; L <<= 1) {
+    const ang = -2 * Math.PI / L, h = L >> 1;
+    for (let i = 0; i < n; i += L) for (let k = 0; k < h; k++) {
+      const c = Math.cos(ang * k), s = Math.sin(ang * k), p = i + k, q = p + h;
+      const xr = re[q] * c - im[q] * s, xi = re[q] * s + im[q] * c;
+      re[q] = re[p] - xr; im[q] = im[p] - xi; re[p] += xr; im[p] += xi;
+    }
+  }
+}
+// la energía en bandas de un tercio de octava (200 Hz a 16 kHz: cada una con varios puntos del espectro, a 44,1 y a
+// 48 kHz), por muestra del cuadro (cuadros de 40 ms cada 20 ms), en dB
+function bandas(x, sr) {
+  const N = 4096, paso = Math.round(sr * .02), L = Math.round(sr * .04), lim = [];
+  for (let f = 200; f < 16000; f *= 2 ** (1 / 3)) lim.push(f);
+  const banda = new Int16Array(N / 2).fill(-1);
+  for (let k = 1; k < N / 2; k++) { const j = lim.findIndex(l => l > k * sr / N) - 1; if (j >= 0 && j < lim.length - 1) banda[k] = j; }
+  const out = [];
+  for (let a = 0; a + L <= x.length; a += paso) {
+    const re = new Float64Array(N), im = new Float64Array(N);
+    for (let i = 0; i < L; i++) re[i] = x[a + i] * (.5 - .5 * Math.cos(2 * Math.PI * i / L));
+    fft(re, im);
+    const e = new Float64Array(lim.length - 1);
+    for (let k = 1; k < N / 2; k++) if (banda[k] >= 0) e[banda[k]] += (re[k] * re[k] + im[k] * im[k]) / L;
+    out.push(Array.from(e, v => 10 * Math.log10(v + 1e-12)));
+  }
+  return out;
+}
+// el promedio, en los cuadros que suenan, de la diferencia (eficaz, entre bandas) en dB
+function distanciaEspectral(r1, r2) {
+  const A = bandas(r1.x, r1.sr), B = bandas(r2.x, r2.sr), n = Math.min(A.length, B.length);
+  const nivel = A.map(f => Math.max(...f)), tope = Math.max(...nivel);
+  let s = 0, c = 0;
+  for (let i = 0; i < n; i++) {
+    if (nivel[i] < tope - 40) continue;
+    let d = 0, m = 0;
+    for (let j = 0; j < A[i].length; j++) if (A[i][j] > nivel[i] - 50) { d += (A[i][j] - B[i][j]) ** 2; m++; }
+    if (m) { s += Math.sqrt(d / m); c++; }
+  }
+  return c ? s / c : 0;
+}
+function wavMono(x, sr) {
+  const b = Buffer.alloc(44 + x.length * 2);
+  b.write('RIFF', 0); b.writeUInt32LE(36 + x.length * 2, 4); b.write('WAVE', 8); b.write('fmt ', 12); b.writeUInt32LE(16, 16);
+  b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22); b.writeUInt32LE(sr, 24); b.writeUInt32LE(sr * 2, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34);
+  b.write('data', 36); b.writeUInt32LE(x.length * 2, 40);
+  let pico = 1e-9; for (const v of x) pico = Math.max(pico, Math.abs(v));
+  const k = pico > .99 ? .99 / pico : 1;
+  for (let i = 0; i < x.length; i++) b.writeInt16LE(Math.round(Math.max(-1, Math.min(1, x[i] * k)) * 32767), 44 + i * 2);
+  return b;
 }
 
 const cuales = pedidos.length ? pedidos : [...new Set(PL.voces.filter(v => v.banco).map(v => v.banco))].filter(a => existsSync(join(DE, a)));
