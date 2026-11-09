@@ -43,10 +43,10 @@
 html,body{background:var(--bg);color:var(--ink)}
 body{font:15px/1.5 var(--body);margin:0}
 .app{max-width:1800px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 32px}
-/* banda de retazos: rombos del traje murguero */
-.retazos{height:14px;background:
-  conic-gradient(from 45deg at 50% 50%,var(--bajos) 0 25%,var(--accent) 0 50%,var(--sobreprimos) 0 75%,var(--tercia) 0) 0 0/28px 28px;
-  opacity:.9}
+/* banda de retazos: los colores del traje murguero, finita, arriba de todo (no ocupa lugar: va sobre el borde de la barra) */
+.app{position:relative}
+.app::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;z-index:30;pointer-events:none;
+  background:repeating-linear-gradient(90deg,var(--bajos) 0 28px,var(--accent) 28px 56px,var(--sobreprimos) 56px 84px,var(--tercia) 84px 112px);opacity:.9}
 h1{font-family:var(--display);font-weight:400;font-size:clamp(24px,3vw,30px);line-height:1;margin:0;letter-spacing:-.01em;white-space:nowrap}
 h1 span{color:var(--accent)}
 .tag{color:var(--muted);margin:0;max-width:70ch}
@@ -75,7 +75,7 @@ progress{accent-color:var(--accent)}
 .etapa.hecho .num::after{content:"✓"}.etapa.hecho .num span{display:none}
 .etapa.trabajando .num{background:var(--accent-soft);color:var(--ink);animation:latido 1.2s ease-in-out infinite}
 .etapa.pendiente{border-color:var(--accent);background:var(--accent-soft)}
-.etapa.nada{opacity:.6}
+.etapa.nada{background:transparent;border-style:dashed}
 @keyframes latido{50%{opacity:.45}}
 @media (prefers-reduced-motion:reduce){.etapa.trabajando .num{animation:none}}
 .status.err{color:var(--mal)}
@@ -98,7 +98,7 @@ progress{accent-color:var(--accent)}
 .barra-mas{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;flex:1 1 auto}
 .paneles-btn{display:flex;flex-wrap:wrap;gap:4px;margin-left:auto}
 .paneles-btn .btn{padding:6px 9px;font-size:13px}
-.paneles-btn .btn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.paneles-btn .btn[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
 .ctl{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
 .ctl select{width:auto;padding:5px 8px}
 .chk.tg{margin:0}
@@ -121,8 +121,6 @@ progress{accent-color:var(--accent)}
 .panel-sup>.cabeza h2{font-family:var(--display);font-weight:400;font-size:17px;margin:0}
 .panel-sup>.cabeza h2:focus{outline:none}
 .cerrar-panel{padding:3px 10px;font-size:18px;line-height:1}
-.panel-sup.pieza{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0 28px;align-content:start}
-.panel-sup.pieza>.cabeza:first-child{grid-column:1/-1}
 .panel-sup.mezcla{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 24px;align-content:start}
 .panel-sup.mezcla>.cabeza:first-child,.panel-sup.mezcla>p,.panel-sup.mezcla>h2{grid-column:1/-1}
 .cant-dos{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
@@ -149,19 +147,19 @@ progress{accent-color:var(--accent)}
 .mt-h input[type=range]{width:50px;flex:0 0 50px}
 @media (max-width:620px){.mt-h input[type=range]{display:none}}
 .mt-ms{display:flex;gap:2px;flex:none}
-.mt-ms button{border:1px solid var(--line);background:var(--bg);color:var(--muted);border-radius:4px;font:600 10px/1 var(--body);width:20px;height:18px;padding:0;cursor:pointer}
+.mt-ms button{border:1px solid var(--line);background:var(--bg);color:var(--muted);border-radius:4px;font:600 11px/1 var(--body);width:22px;height:20px;padding:0;cursor:pointer}
 .mt-ms button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .mt-c{position:relative;flex:none}
 .mt-regla .mt-c{height:22px;cursor:pointer}
-.mt-n{position:absolute;top:0;bottom:0;border-left:1px solid var(--line);font:10px/22px var(--mono);color:var(--muted);padding-left:3px;overflow:hidden;white-space:nowrap}
+.mt-n{position:absolute;top:0;bottom:0;border-left:1px solid var(--line);font:11px/22px var(--mono);color:var(--muted);padding-left:3px;overflow:hidden;white-space:nowrap}
 .mt-n.chico{border-left-color:color-mix(in srgb,var(--line) 50%,transparent)}
 .mt-secs .mt-c{height:28px}
 .mt-sec{position:absolute;top:3px;bottom:3px;border:1px solid color-mix(in srgb,var(--c) 55%,var(--line));border-radius:6px;background:color-mix(in srgb,var(--c) 22%,var(--panel));padding:0 6px;font:600 12px/20px var(--body);color:var(--ink);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:left;cursor:pointer}
 .mt-sec.capela{background-image:repeating-linear-gradient(135deg,transparent 0 6px,color-mix(in srgb,var(--c) 18%,transparent) 6px 12px)}
 .mt-sec.cantada::before{content:"♪ ";color:var(--accent);font-weight:700}
-.mt-sec.elegida{box-shadow:0 0 0 2px var(--accent);border-color:var(--accent)}
+.mt-sec.elegida{box-shadow:0 0 0 2px var(--ink);border-color:var(--ink)}
 .mt-acs .mt-c{height:24px}
-.mt-ac{position:absolute;top:2px;bottom:2px;border:0;border-left:1px solid var(--line);background:transparent;font:600 11px/20px var(--body);color:var(--ink);padding:0 3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:left;cursor:pointer}
+.mt-ac{position:absolute;top:2px;bottom:2px;border:0;border-left:1px solid var(--line);background:transparent;font:600 12px/20px var(--body);color:var(--ink);padding:0 3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:left;cursor:pointer}
 .mt-ac:hover,.mt-bat:hover,.mt-verso:hover{background:var(--well)}
 .mt-ac.cambiado{color:var(--accent);text-decoration:underline}
 .mt-letra .mt-c{height:24px}
@@ -170,12 +168,12 @@ progress{accent-color:var(--accent)}
 .mt-sil{font-size:12px;border-left:1px solid color-mix(in srgb,var(--line) 60%,transparent);bottom:auto;height:15px;line-height:15px}
 .mt-letra.silabas .mt-c{height:33px}
 .mt-sil.acento{font-weight:700}
-.mt-verso.elegido,.mt-sil.elegido{background:var(--accent-soft)}
+.mt-verso.elegido,.mt-sil.elegido{background:var(--well)}
 .mt-pista .mt-c{height:var(--alto,60px)}
 .mt-pista.muda .mt-c,.mt-bateria.muda .mt-c{opacity:.45}
 .mt-lienzo{position:absolute;top:0;display:block;touch-action:pan-x}
 .mt-bateria .mt-c{height:26px}
-.mt-bat{position:absolute;top:3px;bottom:3px;border:1px solid var(--line);border-radius:4px;background:color-mix(in srgb,var(--bateria) 18%,var(--panel));font:11px/18px var(--body);color:var(--ink);padding:0 4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:left;cursor:pointer}
+.mt-bat{position:absolute;top:3px;bottom:3px;border:1px solid var(--line);border-radius:4px;background:color-mix(in srgb,var(--bateria) 18%,var(--panel));font:12px/18px var(--body);color:var(--ink);padding:0 4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:left;cursor:pointer}
 .mt-bat.sin{background:transparent;border-style:dashed;color:var(--muted)}
 .mt-bat.cambiado{border-color:var(--accent)}
 .mt-cabezal{position:absolute;top:0;bottom:0;left:0;width:2px;background:var(--accent);pointer-events:none;z-index:2}
@@ -194,12 +192,12 @@ progress{accent-color:var(--accent)}
 .dev-proceso h2{font-family:var(--display);font-weight:400;font-size:16px;margin:0 0 6px}
 .cards-ac{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:6px}
 .card-ac{border:1px solid var(--line);border-radius:8px;padding:4px 6px 6px;background:var(--panel)}
-.card-ac .nb{font:10px var(--mono);color:var(--muted)}
+.card-ac .nb{font:11px var(--mono);color:var(--muted)}
 .card-ac .dos{display:grid;grid-template-columns:1fr 1fr;gap:4px}
 .card-ac select{font:600 13px var(--body);padding:5px 2px;background:var(--panel);border:1px solid var(--line);border-radius:6px;min-width:0}
 .card-ac select.cambiado{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .lista-bat{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
-.lista-bat label{display:grid;gap:2px;font:10px var(--mono);color:var(--muted)}
+.lista-bat label{display:grid;gap:2px;font:11px var(--mono);color:var(--muted)}
 .lista-bat select{font:13px var(--body);padding:5px 6px}
 .lista-bat select.cambiado{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .sec-versos{display:grid;gap:4px}
@@ -219,7 +217,7 @@ progress{accent-color:var(--accent)}
 .lista-ac{font:600 15px var(--body);margin:0 0 6px;word-spacing:.1em}
 .todo-bat{margin-bottom:6px;flex-wrap:wrap}
 .todo-bat select{max-width:100%}
-.sec-versos label.elegido{box-shadow:inset 3px 0 0 var(--accent)}
+.sec-versos label.elegido{box-shadow:inset 3px 0 0 var(--ink)}
 .sec-versos label.sonando{background:var(--accent-soft);border-radius:6px}
 .mt-ac.igual{border-left-color:transparent;background:transparent}
 .mt-ac.igual:hover{background:color-mix(in srgb,var(--well) 70%,transparent)}
@@ -236,7 +234,7 @@ progress{accent-color:var(--accent)}
 .popover.rejilla button.otro{margin-top:4px;border-radius:6px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
 .panel h2{font-family:var(--display);font-weight:400;font-size:18px;margin:0 0 12px;letter-spacing:.01em}
-.field{display:grid;gap:5px;margin-bottom:14px}
+.field{position:relative;display:grid;gap:5px;margin-bottom:14px}
 .lbl{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--well);border-radius:10px;padding:3px;gap:3px}
 .seg button{border:0;background:transparent;border-radius:8px;padding:7px 6px;cursor:pointer;font-weight:600;color:var(--muted);line-height:1.25}
@@ -248,6 +246,19 @@ select{width:100%;background:var(--well);border:1px solid transparent;border-rad
 .seed input{width:100%;background:var(--well);border:1px solid transparent;border-radius:10px;padding:8px 10px;font-family:var(--mono)}
 input[type=range]{width:100%;accent-color:var(--accent)}
 .hint{font-size:13px;color:var(--muted);margin:2px 0 0}
+/* ayuda a pedido: un «?» arriba a la derecha del campo; abierto, el texto aparece abajo del control */
+.ayuda>summary{position:absolute;top:-2px;right:0;width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:var(--panel);display:grid;place-items:center;font:600 12px var(--body);color:var(--muted);cursor:pointer;list-style:none}
+.ayuda>summary::-webkit-details-marker{display:none}
+.ayuda>summary:hover,.ayuda[open]>summary{color:var(--ink);border-color:var(--muted)}
+.ayuda>summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ayuda>.hint{margin-top:2px}
+/* «Más ajustes»: lo que no se toca todos los días, plegado */
+.mas-ajustes{border-top:1px solid var(--line);margin-top:6px;padding-top:4px}
+.mas-ajustes>summary{display:flex;align-items:center;gap:8px;padding:8px 0 12px;font-weight:600;cursor:pointer;list-style:none}
+.mas-ajustes>summary::-webkit-details-marker{display:none}
+.mas-ajustes>summary::before{content:"▸";color:var(--muted);transition:transform .15s}
+.mas-ajustes[open]>summary::before{transform:rotate(90deg)}
+.mas-ajustes>summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 table{border-collapse:collapse;width:100%;font-size:14px}
 th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.05em;text-transform:uppercase}
@@ -286,7 +297,7 @@ a{color:var(--sobreprimos)}
 .tarjeta:hover{border-color:var(--muted)}
 .tarjeta:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .tarjeta.cambiado{border-color:var(--accent)}
-.tarjeta.abierta{box-shadow:inset 0 0 0 2px var(--accent)}
+.tarjeta.abierta{box-shadow:inset 0 0 0 2px var(--ink)}
 .tarjeta.callado{opacity:.55}
 .tarjeta img{width:44px;height:44px;border-radius:50%;background:var(--well)}
 .tarjeta b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -363,7 +374,7 @@ dialog .cabeza h2{font-family:var(--display);font-weight:400;font-size:18px;marg
 .verso input{font-size:16px;font-weight:500;background:transparent;border:0;border-bottom:1px dashed var(--line);border-radius:0;padding:5px 2px;width:100%;min-width:0}
 .verso input:focus{border-bottom-color:var(--accent);outline:none;background:var(--well)}
 .verso.sonando{background:var(--accent-soft)}
-.verso.elegido{box-shadow:inset 3px 0 0 var(--accent)}
+.verso.elegido{box-shadow:inset 3px 0 0 var(--ink)}
 .cuenta{font:12px var(--mono);text-align:center;border-radius:999px;padding:2px 6px;border:1px solid var(--line);color:var(--muted)}
 .cuenta[data-estado="ok"]{color:var(--ok);border-color:var(--ok)}
 .cuenta[data-estado="cerca"]{color:var(--cerca);border-color:var(--cerca)}
@@ -419,7 +430,8 @@ p.elegido{font-size:16px;font-weight:600}
 .sec-cabeza{display:flex;align-items:center;gap:8px;flex:none;margin-bottom:0}
 .sec-quien{flex:1 1 0;min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:0 12px}
 .sec-quien .sec-titulo{flex:0 1 auto;min-width:0}
-@container (max-width:559px){.sec-caja.compacta .sec-titulo>.btn,.sec-caja.compacta .tono-sec,.sec-caja.compacta .sub{display:none}}
+@container (max-width:799px){.sec-caja.compacta .sub{display:none}}
+@container (max-width:559px){.sec-caja.compacta .sec-titulo>.btn,.sec-caja.compacta .tono-sec{display:none}}
 .sec-quien .sub{flex:1 1 220px;min-width:0;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sec-cuerpo{margin-top:10px}
 .sec-caja.compacta .sec-cuerpo{display:none}
@@ -456,7 +468,7 @@ p.elegido{font-size:16px;font-weight:600}
 <body>
 
 <div class="app">
-  <div class="barra">
+  <header class="barra">
     <span class="logo"><img src="iconos/icono.svg" alt="" width="24" height="24"><span>murga<i>·</i>o<i>·</i>matic</span></span>
     <div class="la-murga"><input id="nombreMurga" maxlength="60" placeholder="Murga sin nombre" aria-label="Nombre de esta murga" autocomplete="off"><span class="guardado" id="guardado" role="status"></span></div>
     <button class="btn ghost" id="misMurgas">Mis murgas</button>
@@ -476,13 +488,13 @@ p.elegido{font-size:16px;font-weight:600}
       </span>
       <button class="btn ghost icono" id="temaColor" title="Tema oscuro o claro" aria-label="Cambiar el tema"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.75a6.25 6.25 0 0 1 0 12.5z" fill="currentColor"/></svg></button>
     </div>
-  </div>
-  <div class="etapas" aria-label="Los pasos: la música, la letra y las voces">
+  </header>
+  <div class="etapas" role="group" aria-label="Los pasos: la música, la letra y las voces">
     <div class="etapa trabajando" id="pasoMusica"><span class="num"><span>1</span></span><div><b>Música</b><small id="pasoMusicaTxt">componiendo…</small></div><span class="btns"><button class="btn" id="otraMusica" disabled title="Otra pieza: otra melodía y otra armonía, con lo que está elegido en «La pieza». Las voces quedan sin cantar.">Otra música</button></span></div>
     <div class="etapa" id="pasoLetra"><span class="num"><span>2</span></span><div><b>Letra</b><small id="pasoLetraTxt">…</small></div><span class="btns"><button class="btn" id="otraLetra2" disabled title="Otra letra para la misma música (el tema y los versos que escribiste a mano, en «Letra»)">Otra letra</button><button class="btn ghost" id="lailareo2" disabled title="Que canten «la la la» en vez de la letra">Lailareo</button></span></div>
     <div class="etapa" id="pasoVoces"><span class="num"><span>3</span></span><div><b>Voces</b><small id="pasoVocesTxt">…</small></div><span class="btns"><button class="btn" id="cantarSeccion" disabled hidden>Cantar la sección</button><button class="btn fuerte" id="cantarVoces" disabled data-que="cantar">Cantar las voces</button></span></div>
   </div>
-  <div class="cuerpo" id="cuerpo">
+  <main class="cuerpo" id="cuerpo">
     <div class="principal">
       <section class="mt-caja" aria-label="La pieza como multipista">
         <div class="mt-barra">
@@ -554,7 +566,7 @@ p.elegido{font-size:16px;font-weight:600}
       </div>
       <div class="field"><label class="lbl" for="estilo">A lo de quién</label>
         <select id="estilo"></select>
-        <p class="hint">Aprendido de sus presentaciones y retiradas, transcriptas a MIDI.</p>
+        <details class="ayuda"><summary title="Qué es esto" aria-label="Qué es esto">?</summary><p class="hint">Aprendido de sus presentaciones y retiradas, transcriptas a MIDI.</p></details>
       </div>
       <div class="field"><span class="lbl">Tono</span>
         <div class="row2">
@@ -562,14 +574,19 @@ p.elegido{font-size:16px;font-weight:600}
           <select id="modo" aria-label="Modo"><option value="menor">menor</option><option value="mayor">mayor</option></select>
         </div>
       </div>
-      <div class="field"><label class="lbl" for="ritmo">Ritmo de la batería</label>
-        <select id="ritmo"></select>
-      </div>
       <div class="field"><span class="lbl">Tempo y largo</span>
         <div class="row2">
           <input id="tempo" type="number" min="60" max="170" placeholder="Tempo del corpus" inputmode="numeric" aria-label="Tempo en BPM" style="width:100%;background:var(--well);border:1px solid transparent;border-radius:10px;padding:8px 10px">
           <select id="largo" aria-label="Largo"><option value="corta">Corta</option><option value="normal" selected>Normal</option><option value="larga">Larga</option></select>
         </div>
+      </div>
+      <div class="field"><label class="lbl" for="semilla">Semilla</label>
+        <div class="seed"><input id="semilla" type="number" min="1" max="99999" value="1" inputmode="numeric"><button class="btn" id="otra">Otra</button></div>
+        <details class="ayuda"><summary title="Qué es esto" aria-label="Qué es esto">?</summary><p class="hint">Cada número da otra melodía y otra armonía.</p></details>
+      </div>
+      <details class="mas-ajustes" id="masAjustes"><summary>Más ajustes</summary>
+      <div class="field"><label class="lbl" for="ritmo">Ritmo de la batería</label>
+        <select id="ritmo"></select>
       </div>
       <div class="field"><span class="lbl">Partes</span>
         <label class="chk"><input type="checkbox" id="clarinada" checked> Clarinada a capela</label>
@@ -585,26 +602,22 @@ p.elegido{font-size:16px;font-weight:600}
       </div>
       <div class="field" id="campoGrito" hidden><label class="lbl" for="grito">Cuánto gritan</label>
         <select id="grito"><option value="no">No gritan: voz de habla, como antes</option><option value="si" selected>Gritan, como en el tablado</option><option value="mucho">Gritan mucho</option></select>
-        <p class="hint">Gritando abren más la boca (las vocales suenan abiertas), aprietan la voz y cantan parejo, sin bajar en las consonantes; más en las notas fuertes y en las agudas. Cada cantor grita a su manera; en «Los cantantes» se cambia uno por uno.</p>
+        <details class="ayuda"><summary title="Qué es esto" aria-label="Qué es esto">?</summary><p class="hint">Gritando abren más la boca (las vocales suenan abiertas), aprietan la voz y cantan parejo, sin bajar en las consonantes; más en las notas fuertes y en las agudas. Cada cantor grita a su manera; en «Los cantantes» se cambia uno por uno.</p></details>
       </div>
       <div class="field" id="campoAdornos" hidden><label class="lbl" for="adornos">Adornos en clarinadas y finales</label>
         <select id="adornos"><option value="ninguno">Ninguno: sonido limpio</option><option value="algunos" selected>Algunos cantores adornan</option><option value="muchos">Muchos adornos</option></select>
-        <p class="hint">En las notas largas, algunos cantores hacen vibratos, trinos, vueltas o se pasan a otra voz del acorde, cada uno a su manera (como cuenta <i>Sin Disfraz</i>).</p>
-      </div>
-      <div class="field"><label class="lbl" for="semilla">Semilla</label>
-        <div class="seed"><input id="semilla" type="number" min="1" max="99999" value="1" inputmode="numeric"><button class="btn" id="otra">Otra</button></div>
-        <p class="hint">Cada número da otra melodía y otra armonía.</p>
+        <details class="ayuda"><summary title="Qué es esto" aria-label="Qué es esto">?</summary><p class="hint">En las notas largas, algunos cantores hacen vibratos, trinos, vueltas o se pasan a otra voz del acorde, cada uno a su manera (como cuenta <i>Sin Disfraz</i>).</p></details>
       </div>
       <div class="field"><label class="lbl" for="version">Compositor</label>
         <select id="version"><option value="2" selected>Versión 2: menos repetición, voces más llenas, retiradas más largas</option><option value="1">Versión 1: la del 7 de noviembre</option></select>
-        <p class="hint">La versión 2 sigue lo que mide el corpus: las estrofas no se repiten enteras, y el coro no se queda en unísono cuando la melodía cambia una nota.</p>
+        <details class="ayuda"><summary title="Qué es esto" aria-label="Qué es esto">?</summary><p class="hint">La versión 2 sigue lo que mide el corpus: las estrofas no se repiten enteras, y el coro no se queda en unísono cuando la melodía cambia una nota.</p></details>
       </div>
       <div class="field" id="campoBrillo"><label class="lbl" for="brillo">Timbre de las muestras</label>
         <input id="brillo" type="range" min="0" max="1.5" step="0.1" value="1">
         <div class="hint" style="display:flex;justify-content:space-between"><span>muestra pura</span><span>murga medida</span><span>más filoso</span></div>
       </div>
+      </details>
 
-      
     </section>
     <section class="panel-sup mezcla" id="pMezcla" aria-labelledby="t-pMezcla">
       <div class="cabeza"><h2 id="t-pMezcla" tabindex="-1">Mezcla</h2><button class="btn ghost cerrar-panel" aria-label="Cerrar">×</button></div>
@@ -614,7 +627,7 @@ p.elegido{font-size:16px;font-weight:600}
           <button data-v="union" aria-pressed="true">Como La Unión</button>
           <button data-v="teja" aria-pressed="false">Como La Teja</button>
         </div>
-        <p class="hint">En las murgas de La Unión, mirando desde el público, los segundos van a la izquierda, los sobreprimos en el medio y los primos a la derecha; en las de La Teja, al revés (<i>Sin Disfraz</i>).</p>
+        <details class="ayuda"><summary title="Qué es esto" aria-label="Qué es esto">?</summary><p class="hint">En las murgas de La Unión, mirando desde el público, los segundos van a la izquierda, los sobreprimos en el medio y los primos a la derecha; en las de La Teja, al revés (<i>Sin Disfraz</i>).</p></details>
       </div>
       <div class="field"><label class="lbl" for="lugar">Dónde cantan</label>
         <select id="lugar"></select>
@@ -750,7 +763,7 @@ p.elegido{font-size:16px;font-weight:600}
 
     </section>
     </aside>
-  </div>
+  </main>
 </div>
 <div class="aviso toast" id="avisoVersion" role="status" hidden><span>Hay una versión nueva de la página.</span><button class="btn fuerte" id="recargar">Recargar</button></div>
 <div class="popover" id="popover" role="dialog" hidden></div>
