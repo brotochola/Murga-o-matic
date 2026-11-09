@@ -1,0 +1,247 @@
+........................
+difonos_es2: 24 frases → medidas_difonos_es2.json
+{
+ "pasajes": 24,
+ "segundos": 137.5,
+ "altura": {
+  "n": 24,
+  "mediana": 62,
+  "q1": 61.1,
+  "q3": 62.1
+ },
+ "vibrato": {
+  "notasLargas": 51,
+  "conVibrato": 37.3,
+  "velocidadHz": {
+   "n": 19,
+   "mediana": 5.7,
+   "q1": 5.6,
+   "q3": 5.8
+  },
+  "amplitudCents": {
+   "n": 19,
+   "mediana": 13.3,
+   "q1": 12.3,
+   "q3": 15.2
+  },
+  "entraMs": {
+   "n": 19,
+   "mediana": 442.5,
+   "q1": 383.8,
+   "q3": 487.5
+  },
+  "amplitudTodasLasLargas": {
+   "n": 51,
+   "mediana": 10.4,
+   "q1": 9.2,
+   "q3": 13.7
+  },
+  "regularidad": {
+   "n": 51,
+   "mediana": 52.5,
+   "q1": 18.2,
+   "q3": 68.8
+  }
+ },
+ "pique": {
+  "n": 21,
+  "cents": {
+   "n": 21,
+   "mediana": 27,
+   "q1": 14,
+   "q3": 32.4
+  },
+  "llegaMs": {
+   "n": 21,
+   "mediana": 20,
+   "q1": 10,
+   "q3": 40
+  },
+  "desdeAbajo30": 38.1
+ },
+ "portamento": {
+  "n": 129,
+  "ms": {
+   "n": 129,
+   "mediana": 60,
+   "q1": 55,
+   "q3": 70
+  },
+  "forma": {
+   "n": 129,
+   "mediana": 50,
+   "q1": 45.5,
+   "q3": 53.8
+  },
+  "sobreCents": {
+   "n": 129,
+   "mediana": 1,
+   "q1": 0.6,
+   "q3": 2
+  },
+  "intervaloCents": {
+   "n": 129,
+   "mediana": 202.3,
+   "q1": 196.4,
+   "q3": 296.2
+  }
+ },
+ "cruce": {
+  "n": 73,
+  "falta": {
+   "n": 73,
+   "mediana": 14.9,
+   "q1": -54.3,
+   "q3": 82.8
+  },
+  "yaSeFue": {
+   "n": 73,
+   "mediana": 2.3,
+   "q1": -5.2,
+   "q3": 30.9
+  },
+  "llegaMs": {
+   "n": 73,
+   "mediana": 25,
+   "q1": 15,
+   "q3": 35
+  },
+  "huecoMs": {
+   "n": 73,
+   "mediana": 45,
+   "q1": 30,
+   "q3": 60
+  }
+ },
+ "temblorCents": {
+  "n": 183,
+  "mediana": 3.7,
+  "q1": 2.6,
+  "q3": 5.2
+ },
+ "derivaCents": {
+  "n": 51,
+  "mediana": 3.3,
+  "q1": 1.6,
+  "q3": 5.5
+ },
+ "ataqueMs": {
+  "n": 23,
+  "mediana": 70,
+  "q1": 45,
+  "q3": 122.5
+ },
+ "ataqueSilabaMs": {
+  "n": 263,
+  "mediana": 55,
+  "q1": 30,
+  "q3": 85
+ },
+ "pendienteDbS": {
+  "n": 49,
+  "mediana": -0.3,
+  "q1": -6.2,
+  "q3": 2.6
+ },
+ "contrasteDb": {
+  "n": 24,
+  "mediana": 2.4,
+  "q1": 2,
+  "q3": 2.6
+ },
+ "caida": {
+  "n": 24,
+  "cents": {
+   "n": 24,
+   "mediana": 46.2,
+   "q1": 37.3,
+   "q3": 58.4
+  },
+  "ms": {
+   "n": 24,
+   "mediana": 37.5,
+   "q1": 23.8,
+   "q3": 46.3
+  },
+  "nivelDb": {
+   "n": 24,
+   "mediana": 25.3,
+   "q1": 20,
+   "q3": 26.4
+  },
+  "cae50": 37.5
+ },
+ "vozEnFrase": {
+  "n": 24,
+  "mediana": 96.7,
+  "q1": 95.9,
+  "q3": 97.4
+ },
+ "cortes15dB": {
+  "n": 24,
+  "mediana": 8.2,
+  "q1": 6.8,
+  "q3": 9.6
+ },
+ "notasMs": {
+  "n": 277,
+  "mediana": 305,
+  "q1": 275,
+  "q3": 450
+ },
+ "silabasPorSeg": {
+  "n": 24,
+  "mediana": 2.4,
+  "q1": 2.3,
+  "q3": 2.6
+ },
+ "huecoDb": {
+  "n": 297,
+  "mediana": 13.8,
+  "q1": 7.9,
+  "q3": 31.6
+ },
+ "huecoMs": {
+  "n": 297,
+  "mediana": 55,
+  "q1": 40,
+  "q3": 65
+ },
+ "sordoMs": {
+  "n": 103,
+  "mediana": 40,
+  "q1": 30,
+  "q3": 57.5
+ },
+ "h1h2": {
+  "n": 24,
+  "mediana": 0.1,
+  "q1": -1.9,
+  "q3": 2.1
+ },
+ "brillo": {
+  "n": 24,
+  "mediana": -9.7,
+  "q1": -10.9,
+  "q3": -8.1
+ },
+ "centroide": {
+  "n": 24,
+  "mediana": 638,
+  "q1": 560.3,
+  "q3": 739.5
+ },
+ "aire": {
+  "n": 24,
+  "mediana": -9.7,
+  "q1": -9.9,
+  "q3": -9.5
+ },
+ "enRegistro": {
+  "cuadros": 14373,
+  "h1h2": 0.5,
+  "brillo": -9.4,
+  "centroide": 658.7,
+  "aire": -9.7
+ }
+}

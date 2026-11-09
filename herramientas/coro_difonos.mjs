@@ -5,8 +5,9 @@
 // su voz del plantel, bancos/plantel.json); herramientas/solista_jurado.py los juzga.
 //
 //   node herramientas/coro_difonos.mjs [--motor difonos|formantes|banco] [--voz coro|es2|es1] [--opc desfase=0,retraso=0]
+//     [--plantel otro_plantel.json]   (banco: otro reparto de voces, para comparar)
 import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
-import { join, dirname, resolve } from 'node:path';
+import { join, dirname, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { crearMbrola } from '../motor/cantor/mbrola.js';
 import { cantarDifonos, cantorDifonos, remuestrear, vozDelCantor, DIFERENCIA } from '../motor/cantor/difonos.js';
@@ -28,7 +29,7 @@ const DIF = arg('dif') ? { ...DIFERENCIA, ...Object.fromEntries(arg('dif').split
 const SEMILLA = +arg('semilla', 7);   // otra semilla: otros cantores (para no sacar conclusiones de un solo coro)
 const VOCES_PRUEBA = arg('voces') ? arg('voces').split(',') : null;   // --voces es2,es1: otra rueda de voces, para probar
 const EXTRA = Object.fromEntries((arg('opc', '') || '').split(',').filter(Boolean).map(e => e.split('=')).map(([k, v]) => [k, +v]));
-const SAL = join(TRABAJO, 'solista', 'coro_' + MOTOR + (MOTOR === 'difonos' && VOZ !== 'coro' ? '_' + VOZ : '') + (VOCES_PRUEBA ? '_' + VOCES_PRUEBA.join('') : '') + (arg('dif') ? '_' + arg('dif').replace(/[=,]/g, '') : '') + (SEMILLA !== 7 ? '_s' + SEMILLA : '') + (arg('opc') ? '_' + arg('opc').replace(/[=,]/g, '') : '')); mkdirSync(SAL, { recursive: true });
+const SAL = join(TRABAJO, 'solista', 'coro_' + MOTOR + (MOTOR === 'difonos' && VOZ !== 'coro' ? '_' + VOZ : '') + (VOCES_PRUEBA ? '_' + VOCES_PRUEBA.join('') : '') + (arg('dif') ? '_' + arg('dif').replace(/[=,]/g, '') : '') + (SEMILLA !== 7 ? '_s' + SEMILLA : '') + (arg('opc') ? '_' + arg('opc').replace(/[=,]/g, '') : '') + (arg('plantel') ? '_' + basename(arg('plantel'), '.json') : '')); mkdirSync(SAL, { recursive: true });
 // cada cuerda: cuánto se corre la melodía (grados de la escala y semitonos)
 // (los bajos, con los segundos: la cuerda grave, como en compositor.js; antes iban una octava abajo de la melodía)
 const LINEAS = { bajos: { grados: -2, sube: 0 }, segundos: { grados: -2, sube: 0 }, primos: { grados: 0, sube: 0 }, sobreprimos: { grados: 2, sube: 0 } };
@@ -45,7 +46,7 @@ const mbs = {};
 if (MOTOR === 'difonos') for (const v of VOZ === 'coro' ? ['es2', 'es1', 'es4'] : [VOZ]) mbs[v] = await crearMbrola(readFileSync(join(RAIZ, 'motor/vendor/mbrola/mbrola.wasm')), readFileSync(join(RAIZ, 'motor/vendor/mbrola', v)));
 
 // los bancos: el plantel, WORLD y cada banco abierto una vez
-const PL = MOTOR === 'banco' ? JSON.parse(readFileSync(join(RAIZ, 'bancos', 'plantel.json'), 'utf8')) : null;
+const PL = MOTOR === 'banco' ? JSON.parse(readFileSync(arg('plantel') || join(RAIZ, 'bancos', 'plantel.json'), 'utf8')) : null;
 const mundo = MOTOR === 'banco' ? await crearWorld(readFileSync(join(RAIZ, 'motor/vendor/world/world.wasm'))) : null;
 const abiertos = new Map(), elBanco = b => { if (!abiertos.has(b)) abiertos.set(b, { b: abrirBancoNode(b), cache: new Map() }); return abiertos.get(b); };
 if (MOTOR === 'banco') for (const v of ['es2', 'es1']) mbs[v] = await crearMbrola(readFileSync(join(RAIZ, 'motor/vendor/mbrola/mbrola.wasm')), readFileSync(join(RAIZ, 'motor/vendor/mbrola', v)));

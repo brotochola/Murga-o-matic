@@ -1,0 +1,247 @@
+........................
+banco_ottava: 24 frases → medidas_banco_ottava.json
+{
+ "pasajes": 24,
+ "segundos": 128.8,
+ "altura": {
+  "n": 24,
+  "mediana": 61.9,
+  "q1": 60.7,
+  "q3": 62
+ },
+ "vibrato": {
+  "notasLargas": 49,
+  "conVibrato": 46.9,
+  "velocidadHz": {
+   "n": 23,
+   "mediana": 5.1,
+   "q1": 4.9,
+   "q3": 5.4
+  },
+  "amplitudCents": {
+   "n": 23,
+   "mediana": 14.8,
+   "q1": 12.3,
+   "q3": 15.9
+  },
+  "entraMs": {
+   "n": 22,
+   "mediana": 357.5,
+   "q1": 269.4,
+   "q3": 434.4
+  },
+  "amplitudTodasLasLargas": {
+   "n": 48,
+   "mediana": 14.1,
+   "q1": 10.5,
+   "q3": 15.6
+  },
+  "regularidad": {
+   "n": 49,
+   "mediana": 46.4,
+   "q1": 15.3,
+   "q3": 59.4
+  }
+ },
+ "pique": {
+  "n": 13,
+  "cents": {
+   "n": 13,
+   "mediana": -48.7,
+   "q1": -81.1,
+   "q3": -18.3
+  },
+  "llegaMs": {
+   "n": 13,
+   "mediana": 25,
+   "q1": 20,
+   "q3": 35
+  },
+  "desdeAbajo30": 0
+ },
+ "portamento": {
+  "n": 141,
+  "ms": {
+   "n": 141,
+   "mediana": 45,
+   "q1": 25,
+   "q3": 75
+  },
+  "forma": {
+   "n": 141,
+   "mediana": 50,
+   "q1": 28.6,
+   "q3": 62.5
+  },
+  "sobreCents": {
+   "n": 141,
+   "mediana": 21.7,
+   "q1": 8.5,
+   "q3": 47.2
+  },
+  "intervaloCents": {
+   "n": 141,
+   "mediana": 206.4,
+   "q1": 197,
+   "q3": 293.4
+  }
+ },
+ "cruce": {
+  "n": 44,
+  "falta": {
+   "n": 44,
+   "mediana": 19.4,
+   "q1": -21.1,
+   "q3": 74.9
+  },
+  "yaSeFue": {
+   "n": 43,
+   "mediana": 9.8,
+   "q1": -38.4,
+   "q3": 39.8
+  },
+  "llegaMs": {
+   "n": 44,
+   "mediana": 27.5,
+   "q1": 5,
+   "q3": 40
+  },
+  "huecoMs": {
+   "n": 44,
+   "mediana": 45,
+   "q1": 40,
+   "q3": 65
+  }
+ },
+ "temblorCents": {
+  "n": 164,
+  "mediana": 2.6,
+  "q1": 1.7,
+  "q3": 3.9
+ },
+ "derivaCents": {
+  "n": 49,
+  "mediana": 4.7,
+  "q1": 2.6,
+  "q3": 6.7
+ },
+ "ataqueMs": {
+  "n": 16,
+  "mediana": 75,
+  "q1": 35,
+  "q3": 105
+ },
+ "ataqueSilabaMs": {
+  "n": 290,
+  "mediana": 70,
+  "q1": 45,
+  "q3": 90
+ },
+ "pendienteDbS": {
+  "n": 46,
+  "mediana": 0.9,
+  "q1": -0.6,
+  "q3": 2.8
+ },
+ "contrasteDb": {
+  "n": 24,
+  "mediana": 1.8,
+  "q1": 1.4,
+  "q3": 2
+ },
+ "caida": {
+  "n": 10,
+  "cents": {
+   "n": 10,
+   "mediana": 28,
+   "q1": 15.8,
+   "q3": 31.2
+  },
+  "ms": {
+   "n": 10,
+   "mediana": 17.5,
+   "q1": 3.8,
+   "q3": 50
+  },
+  "nivelDb": {
+   "n": 10,
+   "mediana": 31.8,
+   "q1": 28.8,
+   "q3": 34.4
+  },
+  "cae50": 0
+ },
+ "vozEnFrase": {
+  "n": 24,
+  "mediana": 96.9,
+  "q1": 95.8,
+  "q3": 98.2
+ },
+ "cortes15dB": {
+  "n": 24,
+  "mediana": 7.2,
+  "q1": 5.7,
+  "q3": 8.4
+ },
+ "notasMs": {
+  "n": 270,
+  "mediana": 325,
+  "q1": 280,
+  "q3": 502.5
+ },
+ "silabasPorSeg": {
+  "n": 24,
+  "mediana": 2.7,
+  "q1": 2.5,
+  "q3": 2.8
+ },
+ "huecoDb": {
+  "n": 323,
+  "mediana": 14.4,
+  "q1": 8.1,
+  "q3": 20.9
+ },
+ "huecoMs": {
+  "n": 323,
+  "mediana": 60,
+  "q1": 50,
+  "q3": 100
+ },
+ "sordoMs": {
+  "n": 77,
+  "mediana": 40,
+  "q1": 30,
+  "q3": 70
+ },
+ "h1h2": {
+  "n": 24,
+  "mediana": -6,
+  "q1": -7.2,
+  "q3": -4.1
+ },
+ "brillo": {
+  "n": 24,
+  "mediana": -13.1,
+  "q1": -13.8,
+  "q3": -11.5
+ },
+ "centroide": {
+  "n": 24,
+  "mediana": 701,
+  "q1": 633.2,
+  "q3": 789.1
+ },
+ "aire": {
+  "n": 24,
+  "mediana": -13.8,
+  "q1": -14.1,
+  "q3": -13.6
+ },
+ "enRegistro": {
+  "cuadros": 12825,
+  "h1h2": -5.6,
+  "brillo": -12.9,
+  "centroide": 673.7,
+  "aire": -13.8
+ }
+}
