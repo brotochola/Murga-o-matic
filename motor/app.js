@@ -15,6 +15,7 @@ import { escribirLetraLocal } from './cantor/letrista_local.js';
 import { CURVA } from './cantor/timbre.js';
 import { crearPartitura, mostrarProceso } from './vista.js';
 import { nombreAcorde, textoConAcordes, mostrarPartitura, pdfPartitura, cargarScript, escritas } from './papeles.js';
+import { guardarMurga, leerMurga, borrarMurga, listarMurgas, nuevoId } from './murgas.js';
 
 const DATOS = {"ritmos":[{"id":3,"nombre":"Marcha camión 2/4","tpc":2,"compas":0.8931,"compases":2,"bpm":134.4,"archivo":"loops/03.wav"},{"id":4,"nombre":"Marcha camión 4/4","tpc":4,"compas":2.7963,"compases":2,"bpm":85.8,"archivo":"loops/04.wav"},{"id":6,"nombre":"Base de murga","tpc":4,"compas":2.0109,"compases":2,"bpm":119.3,"archivo":"loops/06.wav"},{"id":8,"nombre":"Candombe","tpc":4,"compas":1.909,"compases":2,"bpm":125.7,"archivo":"loops/08.wav"},{"id":9,"nombre":"Pa'l costado","tpc":4,"compas":2.1441,"compases":2,"bpm":111.9,"archivo":"loops/09.wav"},{"id":10,"nombre":"Plena","tpc":4,"compas":1.729,"compases":2,"bpm":138.8,"archivo":"loops/10.wav"},{"id":11,"nombre":"Bossa nova","tpc":4,"compas":2.856,"compases":2,"bpm":84.0,"archivo":"loops/11.wav"},{"id":13,"nombre":"Conga","tpc":4,"compas":1.7225,"compases":2,"bpm":139.3,"archivo":"loops/13.wav"},{"id":14,"nombre":"Beat","tpc":4,"compas":1.7239,"compases":2,"bpm":139.2,"archivo":"loops/14.wav"},{"id":15,"nombre":"Bolero moderno","tpc":4,"compas":2.55,"compases":2,"bpm":94.1,"archivo":"loops/15.wav"},{"id":17,"nombre":"Son cubano","tpc":4,"compas":1.96,"compases":2,"bpm":122.4,"archivo":"loops/17.wav"},{"id":18,"nombre":"Montuno cubano","tpc":4,"compas":2.4999,"compases":2,"bpm":96.0,"archivo":"loops/18.wav"},{"id":19,"nombre":"Rumba cubana","tpc":4,"compas":2.4175,"compases":2,"bpm":99.3,"archivo":"loops/19.wav"},{"id":20,"nombre":"Miles Davis","tpc":4,"compas":2.6515,"compases":2,"bpm":90.5,"archivo":"loops/20.wav"}],"frases":{"1":{"archivo":"frases/01.wav","ultimo":5.6657,"seg":6.553},"5":{"archivo":"frases/05.wav","ultimo":2.798,"seg":3.999},"7":{"archivo":"frases/07.wav","ultimo":3.6629,"seg":4.196}},"acompana":{"3":[1,null],"4":[1,null],"6":[5,7]}};
 
@@ -280,7 +281,7 @@ const PARAMS=[
   ["pan","Paneo",-1,1,.05,v=>v<-.02?`${Math.round(-v*100)} izq.`:v>.02?`${Math.round(v*100)} der.`:"centro"]];
 const CLAVES_CANTOR=["voz",...PARAMS.map(p=>p[0]).filter(k=>k!=="db"&&k!=="pan")];
 const elegidos=aj=>Object.fromEntries(CLAVES_CANTOR.filter(k=>aj[k]!=null).map(k=>[k,aj[k]]));
-function guardarAjustes(){try{localStorage.setItem("murga.cantantes",JSON.stringify(S.ajustes))}catch(e){}}
+function guardarAjustes(){try{localStorage.setItem("murga.cantantes",JSON.stringify(S.ajustes))}catch(e){}guardarLuego()}
 // Cada lugar del coro (bajos0, primos3…) tiene su murguista: un nombre, una cara (DiceBear, sale del nombre) y sus
 // valores. No cambian con la semilla de la pieza (tienen la suya, S.semCoro): si cambiás la música cantan los mismos.
 // Lo que se cambia a mano, el nombre y la cara se guardan en S.ajustes[lugar]. Al cambiar un valor, en un momento
@@ -369,7 +370,7 @@ const $=id=>document.getElementById(id);
 try{S.ajustes=JSON.parse(localStorage.getItem("murga.cantantes")||"{}")||{}}catch(e){}
 // la formación del coro y los adornos se guardan en este navegador
 try{const c=JSON.parse(localStorage.getItem("murga.coro")||"{}")||{};if(c.formacion==="union"||c.formacion==="teja")S.formacion=c.formacion;if(c.adornos in ADORNOS_COR)S.adornos=c.adornos;if(c.grito in GRITO_COR)S.grito=c.grito;if(c.sala>=0&&c.sala<=1)S.sala=+c.sala;if(Number.isInteger(c.semCoro)&&c.semCoro>0)S.semCoro=c.semCoro}catch(e){}
-function guardarCoro(){try{localStorage.setItem("murga.coro",JSON.stringify({formacion:S.formacion,adornos:S.adornos,grito:S.grito,sala:S.sala,semCoro:S.semCoro}))}catch(e){}}
+function guardarCoro(){try{localStorage.setItem("murga.coro",JSON.stringify({formacion:S.formacion,adornos:S.adornos,grito:S.grito,sala:S.sala,semCoro:S.semCoro}))}catch(e){}guardarLuego()}
 function mostrarCoro(){$("formacion").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===S.formacion));$("adornos").value=S.adornos;$("grito").value=S.grito;$("sala").value=S.sala;$("campoAdornos").hidden=!sint();$("campoGrito").hidden=!difonos()}
 const sint=()=>S.voces!=="muestras";      // con letra: los cantores de formantes, los de difonos o el solista
 const difonos=()=>S.voces==="difonos"||S.voces==="solista";
@@ -403,7 +404,7 @@ async function generar(opc={}){
   const gen=++S.gen;detener(true);S.mp3=null;ocupado("Componiendo…");avance(.02,"Componiendo…");
   try{
     const C=S.version===1?await version1():{componer,MODELO};if(gen!==S.gen)return;
-    const pieza=C.componer(C.MODELO,{forma:S.forma,estilo:S.estilo,tonica:S.tonica,modo:S.modo,semilla:S.seed,largo:S.largo,tempo:S.tempo||null,ritmo:S.ritmo||null,clarinada:S.clarinada,cancionFinal:S.cancionFinal,modula:S.modula,tercia:S.tercia,recita:S.recita,llamadas:LLAMADAS,acordes:S.acordes});
+    const pieza=opc.pieza||C.componer(C.MODELO,{forma:S.forma,estilo:S.estilo,tonica:S.tonica,modo:S.modo,semilla:S.seed,largo:S.largo,tempo:S.tempo||null,ritmo:S.ritmo||null,clarinada:S.clarinada,cancionFinal:S.cancionFinal,modula:S.modula,tercia:S.tercia,recita:S.recita,llamadas:LLAMADAS,acordes:S.acordes});
     const{T,fin}=mapaTiempo(pieza);const total=fin+2.5;
     const P={T,total,seed:S.seed,brillo:S.brillo};
     const percP=renderPercusion(P,pieza.secs);
@@ -413,7 +414,9 @@ async function generar(opc={}){
       // si sólo cambiaron acordes, la letra (y lo que editaste) se queda: las notas por verso son las mismas
       const L=S.letra,antes=opc.mantenerLetra&&L.textos.length?{textos:L.textos,diags:L.diags,temas:L.temas,editados:new Set(L.editados),sel:L.sel,firma:firmaLetra()}:null;
       armarLetra(pieza,T);
-      if(antes&&antes.firma===firmaLetra()){L.textos=antes.textos;L.diags=antes.diags;L.temas=antes.temas;L.editados=antes.editados;L.sel=antes.sel}else escribirLetra(pieza);
+      const g=opc.letra,encaja=t=>Array.isArray(t)&&t.length===L.partes.length&&t.every((v,i)=>Array.isArray(v)&&v.length===L.partes[i].versos.length);
+      if(g&&encaja(g.textos)){L.textos=g.textos.map(v=>v.slice());L.diags=g.diags||null;L.temas=g.temas||null;L.editados=new Set(g.editados||[]);L.sel=g.sel||{i:0,k:0};if(g.semLetra)L.semLetra=g.semLetra;$("tema").value=g.tema||""}
+      else if(antes&&antes.firma===firmaLetra()){L.textos=antes.textos;L.diags=antes.diags;L.temas=antes.temas;L.editados=antes.editados;L.sel=antes.sel}else escribirLetra(pieza);
       voces=await cantarCuerdas(pieza,P,gen);if(!voces)return;
       S.letra.cantada=S.letra.textos.map(t=>t.slice());S.letra.pendiente=false;
     }else{
@@ -426,7 +429,7 @@ async function generar(opc={}){
     normalizarVoces(voces);
     const pp=picoDe([perc]);procesar(perc,1/pp,1.05);
     window.murga={S};S.pieza=pieza;S.P=P;S.stems={...Object.fromEntries(ORDEN.map((k,i)=>[k,voces[i]])),bateria:perc};S.offset=0;
-    dibujarTodo();listo();resumen();
+    dibujarTodo();listo();resumen();guardarLuego();
   }catch(e){if(gen!==S.gen)return;console.error(e);avance(null);estadoTexto(`No se pudieron preparar los sonidos: ${e&&e.message||e}. Recargá la página para reintentar.`,true);$("play").textContent="Tocar"}
 }
 
@@ -439,7 +442,7 @@ async function cantarDeNuevo(){
     normalizarVoces(voces);
     S.stems={...Object.fromEntries(ORDEN.map((k,i)=>[k,voces[i]])),bateria:S.stems.bateria};S.offset=t;
     S.letra.cantada=S.letra.textos.map(x=>x.slice());S.letra.pendiente=false;$("avisoLetra").hidden=true;
-    actualizarVistas();listo();resumen();
+    actualizarVistas();listo();resumen();guardarLuego();
   }catch(e){if(gen!==S.gen)return;console.error(e);avance(null);estadoTexto(`No se pudo cantar: ${e&&e.message||e}`,true);listo()}
 }
 
@@ -593,7 +596,7 @@ function cuenta(li,texto,quiere){const c=li.querySelector(".cuenta");
 function estadoLetra(){const L=S.letra;let ok=0,tot=0,vacios=0;
   L.partes.forEach((p,i)=>p.versos.forEach((v,k)=>{tot++;const t=L.textos[i][k];if(!t.trim())vacios++;else if(medir(t).n===v.silabas)ok++}));
   $("estadoLetra").textContent=!tot?"":vacios===tot?"Sin letra: el coro canta «la la la».":`${ok} de ${tot} versos entran justo en la música${vacios?` · ${vacios} vacíos (se cantan con «la»)`:""}. Podés editar cualquier verso.`}
-function marcarPendiente(){const L=S.letra;L.pendiente=JSON.stringify(L.textos)!==JSON.stringify(L.cantada);$("avisoLetra").hidden=!L.pendiente;S.mp3=null}
+function marcarPendiente(){const L=S.letra;L.pendiente=JSON.stringify(L.textos)!==JSON.stringify(L.cantada);$("avisoLetra").hidden=!L.pendiente;S.mp3=null;guardarLuego()}
 function otraLetra(){if(!S.pieza||!sint())return;S.letra.semLetra++;escribirLetra(S.pieza);libreto();actualizarVistas();cantarDeNuevo()}
 function lailareo(){if(!S.pieza||!sint())return;const s=["la","ra","la","la","ra","lai","la","ra"];const L=S.letra;
   L.textos=L.partes.map(p=>p.versos.map(v=>Array.from({length:v.silabas},(_,j)=>s[j%s.length]).join(" ")));L.diags=null;L.editados.clear();
@@ -642,7 +645,7 @@ const HINT_VOCES={muestras:"Muestras «aah» de coro: suena a coro, sin palabras
   difonos:"Trece cantores armados con pedacitos de voz grabada (difonos de MBROLA, tres voces), con acento rioplatense: se entiende mucho más la letra. La primera vez baja las voces (12 MB).",
   solista:"Un solo cantor de difonos canta la melodía con la letra, sobre la batería: para escuchar bien cómo canta."};
 function mostrarVoces(){const b=difonos()?"difonos":S.voces;$("voces").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===b));$("vocesHint").textContent=HINT_VOCES[S.voces];$("campoBrillo").hidden=sint();$("campoSolista").hidden=!difonos();$("soloSolista").checked=S.voces==="solista";$("campoAdornos").hidden=!sint();$("campoGrito").hidden=!difonos()}
-const elegirVoces=v=>{if(S.voces===v)return;S.voces=v;try{localStorage.setItem("murga.voces",S.voces)}catch(e){}mostrarVoces();generar()};
+const elegirVoces=v=>{if(S.voces===v)return;S.voces=v;try{localStorage.setItem("murga.voces",S.voces)}catch(e){}mostrarVoces();generar({pieza:S.pieza,letra:fotoLetra()})};
 $("voces").querySelectorAll("button").forEach(b=>b.onclick=()=>{if(b.dataset.v==="difonos"&&difonos())return;elegirVoces(b.dataset.v==="difonos"&&$("soloSolista").checked?"solista":b.dataset.v)});
 $("soloSolista").onchange=e=>elegirVoces(e.target.checked?"solista":"difonos");
 mostrarVoces();
@@ -662,7 +665,7 @@ $("largo").onchange=e=>{S.largo=e.target.value;regen()};
 $("tempo").onchange=e=>{S.tempo=Math.max(0,Math.round(+e.target.value||0));e.target.value=S.tempo||"";regen()};
 $("semilla").onchange=e=>{S.seed=Math.max(1,Math.floor(+e.target.value||1));e.target.value=S.seed;regen()};
 $("otra").onclick=()=>{S.seed=1+Math.floor(Math.random()*99998);$("semilla").value=S.seed;regen()};
-$("brillo").onchange=e=>{S.brillo=+e.target.value;regen(true)};
+$("brillo").onchange=e=>{S.brillo=+e.target.value;generar({pieza:S.pieza,letra:fotoLetra()})};
 $("recita").onchange=e=>{S.recita=+e.target.value;regen()};
 // Demos: las semillas que mejor le caen al jurado
 {const caja=$("demos");const NOM=ESTILOS;
@@ -686,8 +689,8 @@ for(const k of[...ORDEN,"bateria"]){const row=document.createElement("div");row.
   row.innerHTML=`<i style="background:var(--${k})"></i><div><b>${k==="bateria"?"Batería":NOMBRES_CUERDA[k]}</b><span class="rng">${k==="bateria"?"loop real":CUERDAS[k].rango}</span></div>
    <input type="range" min="0" max="1.5" step="0.05" value="${S.mix[k]}" id="vol-${k}" aria-label="Volumen ${k}"><button class="mute" aria-pressed="false" id="mute-${k}" aria-label="Silenciar ${k}">M</button>`;
   mixer.appendChild(row);
-  row.querySelector("input").oninput=e=>{S.mix[k]=+e.target.value;aplicarMix(k)};
-  row.querySelector("button").onclick=e=>{S.mute[k]=!S.mute[k];e.target.setAttribute("aria-pressed",S.mute[k]);aplicarMix(k);partitura.silenciar(S.mute)}}
+  row.querySelector("input").oninput=e=>{S.mix[k]=+e.target.value;aplicarMix(k)};row.querySelector("input").onchange=()=>guardarLuego();
+  row.querySelector("button").onclick=e=>{S.mute[k]=!S.mute[k];e.target.setAttribute("aria-pressed",S.mute[k]);aplicarMix(k);partitura.silenciar(S.mute);guardarLuego()}}
 function aplicarMix(k){if(S.nodos&&S.ac)S.nodos.gains[k].gain.setTargetAtTime(S.mute[k]?0:S.mix[k]*(k==="bateria"?1:.9),S.ac.currentTime,.02)}
 
 // ============================================================ exportar
@@ -823,4 +826,61 @@ function versosPorSeccion(){const L=S.letra,out=new Map();if(!L.sil)return out;
     out.set(s.nombre,vs)}
   return out}
 
-generar();
+arrancar();
+
+// ============================================================ las murgas guardadas en este navegador
+// Cada murga se guarda sola (IndexedDB, murgas.js) un momento después de cada cambio: la pieza entera, la letra, los
+// cantantes y la mezcla. Al abrirla no se vuelve a componer. «Mis murgas» lista las guardadas.
+S.murga={id:nuevoId(),nombre:"",creada:Date.now()};
+const CLAVES_PIEZA=["forma","estilo","tonica","modo","seed","largo","tempo","ritmo","clarinada","cancionFinal","modula","tercia","recita","version","brillo"];
+function fotoLetra(){const L=S.letra;return L.textos.length?{textos:L.textos.map(v=>v.slice()),diags:L.diags,temas:L.temas,editados:[...L.editados],sel:L.sel,semLetra:L.semLetra,tema:$("tema").value}:null}
+function foto(){return{id:S.murga.id,nombre:S.murga.nombre||"",creada:S.murga.creada,cambiada:Date.now(),version:1,
+  resumen:S.pieza?`${titulo()} · ${ESTILOS[S.estilo]||S.estilo} · ${fmt(S.P?.total||0)}`:"",
+  pieza:S.pieza,ajustesPieza:Object.fromEntries(CLAVES_PIEZA.map(k=>[k,S[k]])),acordes:S.acordes,voces:S.voces,semCoro:S.semCoro,ajustes:S.ajustes,
+  coro:{formacion:S.formacion,adornos:S.adornos,grito:S.grito,sala:S.sala},mix:S.mix,mute:S.mute,letra:fotoLetra()}}
+let temporizadorGuardar=null;
+function avisoGuardado(t){$("guardado").textContent=t}
+function guardarLuego(){if(!S.pieza)return;clearTimeout(temporizadorGuardar);avisoGuardado("Guardando…");temporizadorGuardar=setTimeout(guardarYa,700)}
+async function guardarYa(){clearTimeout(temporizadorGuardar);if(!S.pieza)return;
+  let f=foto();try{structuredClone(f)}catch(e){f={...f,letra:f.letra&&{...f.letra,diags:null}}}
+  try{await guardarMurga(f);try{localStorage.setItem("murga.actual",S.murga.id)}catch(e){}avisoGuardado("Guardada en este navegador")}
+  catch(e){console.warn("no se guardó la murga:",e);avisoGuardado("No se pudo guardar")}}
+// los controles, como diga S (al abrir una murga)
+function sincronizarControles(){
+  $("forma").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===S.forma));$("campoFinal").style.display=S.forma==="retirada"?"":"none";
+  $("estilo").value=S.estilo;$("tonica").value=S.tonica;$("modo").value=S.modo;$("ritmo").value=S.ritmo;$("largo").value=S.largo;$("tempo").value=S.tempo||"";$("semilla").value=S.seed;
+  $("recita").value=S.recita;$("tercia").value=S.tercia;$("brillo").value=S.brillo;$("version").value=S.version;
+  for(const k of["clarinada","cancionFinal","modula"])$(k).checked=!!S[k];
+  for(const k of[...ORDEN,"bateria"]){$("vol-"+k).value=S.mix[k];$("mute-"+k).setAttribute("aria-pressed",!!S.mute[k])}
+  partitura.silenciar(S.mute);mostrarVoces();mostrarCoro();$("nombreMurga").value=S.murga.nombre||""}
+async function abrirMurga(m){
+  S.murga={id:m.id,nombre:m.nombre||"",creada:m.creada||Date.now()};
+  for(const k of CLAVES_PIEZA)if(m.ajustesPieza?.[k]!==undefined)S[k]=m.ajustesPieza[k];
+  S.acordes=m.acordes||{};S.editando=null;S.soloCantor=null;if(m.voces)S.voces=m.voces;
+  S.semCoro=m.semCoro||1;S.ajustes=m.ajustes||{};Object.assign(S,m.coro||{});S.mix={...S.mix,...(m.mix||{})};S.mute={...(m.mute||{})};
+  cantanteAbierto=null;inspModo="verso";S.firmas=null;S.pv=null;
+  sincronizarControles();try{localStorage.setItem("murga.actual",m.id)}catch(e){}
+  await generar({pieza:m.pieza,letra:m.letra})}
+async function arrancar(){
+  let id=null;try{id=localStorage.getItem("murga.actual")}catch(e){}
+  if(id&&!new URLSearchParams(location.search).has("nueva")){try{const m=await leerMurga(id);if(m&&m.pieza){await abrirMurga(m);return}}catch(e){console.warn("no se pudo abrir la última murga:",e)}}
+  $("nombreMurga").value="";generar()}
+function nuevaMurga(){S.murga={id:nuevoId(),nombre:"",creada:Date.now()};$("nombreMurga").value="";S.seed=1+Math.floor(Math.random()*99998);$("semilla").value=S.seed;
+  S.acordes={};S.editando=null;S.letra.semLetra=1;$("tema").value="";cerrarMurgas();generar()}
+$("nombreMurga").oninput=e=>{S.murga.nombre=e.target.value.trim().slice(0,60);guardarLuego()};
+// «Mis murgas»
+async function mostrarMurgas(){const caja=$("listaMurgas");caja.innerHTML="<p class='hint'>Buscando…</p>";
+  let l=[];try{l=await listarMurgas()}catch(e){caja.innerHTML=`<p class="hint">No se pudo leer: ${esc(e?.message||e)}</p>`;return}
+  if(!l.length){caja.innerHTML="<p class='hint'>Todavía no hay murgas guardadas.</p>";return}
+  caja.innerHTML="";
+  for(const m of l){const d=document.createElement("div");d.className="murga-fila"+(m.id===S.murga.id?" actual":"");
+    d.innerHTML=`<div><b>${esc(m.nombre||"Murga sin nombre")}</b><small>${esc(m.resumen||"")} · ${new Date(m.cambiada).toLocaleString("es-UY",{dateStyle:"short",timeStyle:"short"})}</small></div>
+      <span class="acc">${m.id===S.murga.id?"<em>abierta</em>":'<button class="btn abrir">Abrir</button>'}<button class="btn borrar">Borrar</button></span>`;
+    d.querySelector(".abrir")?.addEventListener("click",async()=>{cerrarMurgas();try{const x=await leerMurga(m.id);if(x)await abrirMurga(x)}catch(e){estadoTexto(`No se pudo abrir: ${e?.message||e}`,true)}});
+    const b=d.querySelector(".borrar");b.onclick=async()=>{if(!b.dataset.seguro){b.dataset.seguro="1";b.textContent="¿Seguro? Borrar";b.classList.add("fuerte");return}
+      try{await borrarMurga(m.id);if(m.id===S.murga.id)S.murga={id:nuevoId(),nombre:S.murga.nombre,creada:Date.now()};mostrarMurgas()}catch(e){estadoTexto(`No se pudo borrar: ${e?.message||e}`,true)}};
+    caja.append(d)}}
+function cerrarMurgas(){const d=$("dialogoMurgas");if(d.open)d.close()}
+$("misMurgas").onclick=()=>{guardarYa();$("dialogoMurgas").showModal();mostrarMurgas()};
+$("nuevaMurga").onclick=nuevaMurga;$("cerrarMurgas").onclick=cerrarMurgas;
+$("dialogoMurgas").addEventListener("click",e=>{if(e.target===$("dialogoMurgas"))cerrarMurgas()});

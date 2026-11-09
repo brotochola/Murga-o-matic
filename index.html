@@ -177,6 +177,22 @@ a{color:var(--sobreprimos)}
 .tarjeta .acc button{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:4px 7px;font-size:12px;font-weight:600;cursor:pointer}
 .tarjeta .acc button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .cantantes .cabeza .botones{margin:0}
+.la-murga{display:flex;flex-direction:column;gap:0;flex:1 1 220px;min-width:160px;max-width:420px}
+.la-murga input{font:600 17px var(--body);background:transparent;border:0;border-bottom:1px dashed var(--line);padding:3px 0;color:var(--ink);width:100%}
+.la-murga input:focus{outline:none;border-bottom-color:var(--accent)}
+.guardado{font-size:12px;color:var(--muted);min-height:1.2em}
+dialog#dialogoMurgas{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--ink);padding:16px;width:min(560px,calc(100vw - 32px));max-height:min(80vh,720px)}
+dialog#dialogoMurgas::backdrop{background:rgba(10,12,30,.45)}
+dialog .cabeza{display:flex;justify-content:space-between;align-items:center;gap:12px}
+dialog .cabeza h2{font-family:var(--display);font-weight:400;font-size:18px;margin:0}
+.lista-murgas{display:grid;gap:6px;margin:10px 0;max-height:52vh;overflow:auto}
+.murga-fila{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px}
+.murga-fila.actual{border-color:var(--accent)}
+.murga-fila b{display:block}
+.murga-fila small{display:block;font-size:12px;color:var(--muted)}
+.murga-fila .acc{display:flex;gap:6px;align-items:center}
+.murga-fila em{font-size:12px;color:var(--muted)}
+.murga-fila .btn{padding:5px 10px;font-size:13px}
 .insp-cantante{display:grid;gap:10px}
 .ic-cabeza{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:12px;align-items:center}
 .ic-cabeza img{width:72px;height:72px;border-radius:50%;background:var(--well)}
@@ -276,6 +292,11 @@ a{color:var(--sobreprimos)}
 <div class="app">
   <header class="barra">
     <h1 class="marca">Murga-o-<span>matic</span></h1>
+    <div class="la-murga">
+      <input id="nombreMurga" maxlength="60" placeholder="Murga sin nombre" aria-label="Nombre de esta murga" autocomplete="off">
+      <span class="guardado" id="guardado" role="status"></span>
+    </div>
+    <button class="btn" id="misMurgas">Mis murgas</button>
     <div class="transport">
       <button class="btn play" id="play" disabled>Cargando…</button>
       <span class="time" id="time">0:00 / 0:00</span>
@@ -508,6 +529,13 @@ a{color:var(--sobreprimos)}
     </aside>
   </div>
 </div>
+
+<dialog id="dialogoMurgas" aria-labelledby="t-murgas">
+  <div class="cabeza"><h2 id="t-murgas">Mis murgas</h2><button class="btn" id="cerrarMurgas" aria-label="Cerrar">×</button></div>
+  <p class="hint">Las murgas guardadas en este navegador: la música (con lo que le cambiaste), la letra, los cantantes y la mezcla. Cada una se guarda sola al cambiarla.</p>
+  <div class="lista-murgas" id="listaMurgas"></div>
+  <div class="botones"><button class="btn fuerte" id="nuevaMurga">Nueva murga</button></div>
+</dialog>
 
 <script type="module" src="motor/app.js"></script>
 <script type="module" src="motor/sinconexion.js"></script>
