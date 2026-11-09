@@ -238,7 +238,10 @@ Las frases de prueba de cada voz de banco, ya arregladas, están en `murga_traba
 6. **Whisper salta mucho** de una semilla a otra (Oveja daba 24 y 33 %). Para decidir algo fino, conviene medir con 3
    semillas.
 7. **El reparto por defecto** (`bancos/plantel.json`): entre los primos, que llevan la melodía, cantan Hitsuji y
-   Ottava, de las que menos se entienden. Las cambiaría por voces más claras, pero también cambia el color de la murga:
-   lo decidís vos. La nota de cada voz ya dice cuánto se entiende.
+   Ottava, de las que menos se entienden.
+   - **Lo probé:** LongWei en la melodía y Hitsuji en los bajos se entiende peor (16,3 % y 17,7 %, contra 15,2 % y
+     14,9 %) y queda más lejos del coro real (4,24 · 2,75 contra 3,62 · 2,64), así que el reparto quedó como estaba.
+   - **Lo que falta:** cuenta más cómo se mezclan las voces que lo que entiende cada una sola. La nota de cada voz ya
+     dice cuánto se entiende cantando sola.
 8. **Para borrar a mano** (el sistema no me dejó): `D:\bancos_utau`, `D:\tmp\utau` y `D:\tmp\prueba_murga_zip`, que
    quedaron de antes de la noche.
