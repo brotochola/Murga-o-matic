@@ -91,6 +91,9 @@ export function leerWav(bytes) {
   return { x, sr };
 }
 
+// el nivel de cada .wav de un banco recortado (herramientas/utau_recortar.mjs): «ruta\tnivel» por línea
+export const NIVELES = 'murga_niveles.txt';
+
 // rutas: todas las rutas del banco, relativas a su raíz, con «/». leer(ruta) → Uint8Array (o null si no está).
 export function crearBanco(rutas, leer) {
   const base = r => r.split('/').pop().toLowerCase();
@@ -103,11 +106,16 @@ export function crearBanco(rutas, leer) {
   const nombre = rChar ? (/^name=(.*)$/im.exec(texto(leer(rChar)))?.[1] || '').trim() : '';
   const rYaml = rutas.find(r => r.toLowerCase() === 'character.yaml');
   const subbancos = rYaml ? leerSubbancos(texto(leer(rYaml))) : [];
+  // entradas cuyo .wav no está (un .zip japonés desarmado con los nombres mal, en Shift-JIS, queda así: ver zip.js; y
+  // un banco recortado, de herramientas/utau_recortar.mjs, no trae los .wav que ninguna murga usa)
+  const hay = new Set(rutas.map(r => r.toLowerCase())), tiene = e => hay.has(e.archivo.toLowerCase());
+  const sinArchivo = entradas.filter(e => !tiene(e)).length;
+  // el índice, sólo con las entradas que tienen su .wav: una sílaba que no está en una altura se busca en otra
   const indice = new Map();
-  for (const e of entradas) if (!indice.has(e.alias)) indice.set(e.alias, e);
-  // entradas cuyo .wav no está (un .zip japonés desarmado con los nombres mal, en Shift-JIS, queda así: ver zip.js)
-  const hay = new Set(rutas.map(r => r.toLowerCase()));
-  const sinArchivo = entradas.filter(e => !hay.has(e.archivo.toLowerCase())).length;
+  for (const e of entradas) if (!indice.has(e.alias) && tiene(e)) indice.set(e.alias, e);
+  // el nivel de cada .wav, si el banco lo trae anotado (uno recortado: el .wav ya no es el entero y daría otro)
+  const rNiveles = rutas.find(r => r.toLowerCase() === NIVELES), niveles = new Map();
+  if (rNiveles) for (const l of texto(leer(rNiveles)).split(/\r?\n/)) { const i = l.lastIndexOf('\t'); if (i > 0) niveles.set(l.slice(0, i), +l.slice(i + 1)); }
   // las capas del banco: cada altura grabada (o color) es un prefijo y un sufijo que se le ponen al alias («C3_» y
   // «» en los bancos de OpenUtau, «» y «_E4» en los de UTAU), con las notas que cubre. Salen de los subbanks del
   // character.yaml de OpenUtau o, si no hay, del prefix.map de UTAU.
@@ -147,8 +155,10 @@ export function crearBanco(rutas, leer) {
     for (const { c } of orden) { const e = indice.get(c.prefijo + alias + c.sufijo); if (e) return e; }
     return indice.get(alias) || null;
   }
+  // lo que existe, con todas las entradas (también las que no traen su .wav): así las sílabas se reparten igual que con
+  // el banco entero, y la reclist sale la misma
   const existe = new Set();
-  for (const a of indice.keys()) {
+  for (const a of new Set(entradas.map(e => e.alias))) {
     existe.add(a);
     for (const { prefijo, sufijo } of capas) {
       if ((prefijo || sufijo) && a.length > prefijo.length + sufijo.length && a.startsWith(prefijo) && a.endsWith(sufijo)) existe.add(a.slice(prefijo.length, a.length - sufijo.length));
@@ -160,7 +170,8 @@ export function crearBanco(rutas, leer) {
       const b = leer(archivo), w = b ? leerWav(b) : null;
       // el nivel del archivo: el de su 30 % más fuerte (de a 10 ms), que son las vocales. Cada altura (y a veces cada
       // archivo) se grabó a otro volumen; UTAU lo empareja normalizando
-      if (w) {
+      if (w && niveles.has(archivo)) w.nivel = niveles.get(archivo);
+      else if (w) {
         const W = Math.max(1, Math.round(.01 * w.sr)), e = [];
         for (let i = 0; i + W <= w.x.length; i += W) { let s = 0; for (let j = 0; j < W; j++) s += w.x[i + j] ** 2; e.push(s / W); }
         e.sort((p, q) => q - p);
@@ -750,7 +761,7 @@ function analisis(cache, world, banco, e, len, max = CACHE_MAX) {
 
 const azarNota = (a, b) => { let x = Math.imul(a ^ 0x51ed27, 0x85ebca6b) ^ Math.imul(b + 0x2545f491, 0xc2b2ae35); x ^= x >>> 16; x = Math.imul(x, 0x7feb352d); x ^= x >>> 15; return (x >>> 0) / 4294967296; };
 // las frases de un cantor (notas ligadas) y, en cada una, sus unidades con el pedazo del banco que le toca
-function frasesDe(banco, notas, o) {
+export function frasesDe(banco, notas, o) {
   const frases = [[]];
   notas.forEach((n, i) => { if (i && n.t0 - notas[i - 1].t1 >= .02) frases.push([]); frases[frases.length - 1].push(n); });
   return frases.map(F => {

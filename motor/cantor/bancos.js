@@ -107,7 +107,7 @@ export async function abrirFuente(fuente) {
 export async function cargarBanco(fuente) {
   const { rutas, leer, carpeta } = await abrirFuente(fuente);
   const bytes = new Map();
-  const esTexto = r => /(^|\/)(oto\.ini|prefix\.map|character\.txt|character\.yaml)$/i.test(r);
+  const esTexto = r => /(^|\/)(oto\.ini|prefix\.map|character\.txt|character\.yaml|murga_niveles\.txt)$/i.test(r);
   await Promise.all(rutas.filter(esTexto).map(async r => bytes.set(r, await leer(r))));
   // los .wav se sueltan apenas banco.js los decodifica (se queda con las muestras)
   const banco = crearBanco(rutas, r => { const b = bytes.get(r) || null; if (b && /\.wav$/i.test(r)) bytes.delete(r); return b; });

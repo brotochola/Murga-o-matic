@@ -31,6 +31,11 @@ function bajar(mapa) {
   }
 }
 export function abrirBancoNode(ruta) {
+  const { rutas, leer } = archivosDelBanco(ruta);
+  return crearBanco(rutas, leer);
+}
+// los archivos del banco (rutas desde su carpeta), sin armarlo: { rutas, leer(ruta) → Uint8Array o null }
+export function archivosDelBanco(ruta) {
   ruta = rutaDelBanco(ruta);
   let mapa = new Map();
   if (statSync(ruta).isDirectory()) {
@@ -45,5 +50,5 @@ export function abrirBancoNode(ruta) {
     for (const e of lista) if (SIRVE.test(e.nombre)) mapa.set(e.nombre, () => extraer(e, b => inflateRawSync(b)));
   }
   mapa = bajar(mapa);
-  return crearBanco([...mapa.keys()], r => { const f = mapa.get(r); try { return f ? f() : null; } catch { return null; } });
+  return { rutas: [...mapa.keys()], leer: r => { const f = mapa.get(r); try { return f ? f() : null; } catch { return null; } } };
 }

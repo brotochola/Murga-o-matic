@@ -38,3 +38,5 @@ murga_trabajo/utau/
 # bancos/LEEME.md (de dónde bajarlos).
 bancos/*.zip
 bancos/*.uar
+# La versión liviana para usar sin conexión (herramientas/construir.mjs y utau_recortar.mjs): se rehace
+liviana/
