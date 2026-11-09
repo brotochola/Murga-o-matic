@@ -78,9 +78,12 @@ export function crearBanco(rutas, leer) {
   const rPrefix = rutas.find(r => r.toLowerCase() === 'prefix.map');
   const prefijos = rPrefix ? leerPrefixMap(texto(leer(rPrefix))) : new Map();
   const rChar = rutas.find(r => r.toLowerCase() === 'character.txt');
-  const nombre = rChar ? (/^name=(.*)$/m.exec(texto(leer(rChar)))?.[1] || '').trim() : '';
+  const nombre = rChar ? (/^name=(.*)$/im.exec(texto(leer(rChar)))?.[1] || '').trim() : '';
   const indice = new Map();
   for (const e of entradas) if (!indice.has(e.alias)) indice.set(e.alias, e);
+  // entradas cuyo .wav no está (un .zip japonés desarmado con los nombres mal, en Shift-JIS, queda así: ver zip.js)
+  const hay = new Set(rutas.map(r => r.toLowerCase()));
+  const sinArchivo = entradas.filter(e => !hay.has(e.archivo.toLowerCase())).length;
   // las alturas grabadas: cada sufijo del prefix.map, con la nota que dice su nombre o, si no, el medio de sus notas
   const porSufijo = new Map();
   for (const [m, { sufijo }] of prefijos) { if (!porSufijo.has(sufijo)) porSufijo.set(sufijo, []); porSufijo.get(sufijo).push(m); }
@@ -96,8 +99,10 @@ export function crearBanco(rutas, leer) {
     ?? alturas.reduce((a, b) => (Math.abs(b.midi - midi) < Math.abs(a.midi - midi) ? b : a)).sufijo;
   const midiDe = suf => alturas.find(a => a.sufijo === suf)?.midi ?? 60;
   // el pedazo para un alias en una nota: la altura grabada que dice el prefix.map, o la más cercana que lo tenga.
-  // evitar: sufijos que no se usan (por ejemplo el falsete, «_F»: un sobreprimo canta con el pecho)
-  function buscar(alias, midi, evitar = null) {
+  // evitar: sufijos que no se usan (por ejemplo el falsete, «_F»: un sobreprimo canta con el pecho). color: un sufijo
+  // que se prueba primero, en cualquier nota (los colores de un banco, como «_dp», grave, y «_sf», suave, de MIKE)
+  function buscar(alias, midi, evitar = null, color = null) {
+    if (color) { const e = indice.get(alias + color); if (e) return e; }
     let s = sufijoDe(midi);
     const otras = alturas.map(a => a.sufijo).filter(x => x !== s && !evitar?.includes(x)).sort((a, b) => Math.abs(midiDe(a) - midi) - Math.abs(midiDe(b) - midi));
     const orden = evitar?.includes(s) ? otras : [s, ...otras];
@@ -126,9 +131,11 @@ export function crearBanco(rutas, leer) {
     }
     return wavs.get(archivo);
   }
-  // la reclist: la de AkuP corta con «a R»; la VCCV de nJokis, con «a-»
-  const reclist = existe.has('a R') && existe.has('- a') ? 'akup' : 'njokis';
-  return { nombre, entradas, indice, prefijos, alturas, buscar, existe: a => existe.has(a), wav, sufijoDe, reclist };
+  // la reclist: la de AkuP corta con «a R»; la CVVC castellana común (la del fonetizador silábico de OpenUtau), con
+  // «a -»; la VCCV de nJokis, con «a-»
+  const reclist = existe.has('か') && existe.has('- あ') ? 'japones'
+    : existe.has('a R') && existe.has('- a') ? 'akup' : existe.has('a -') && existe.has('- a') && existe.has('a b') ? 'cvvc' : 'njokis';
+  return { nombre, entradas, indice, prefijos, alturas, buscar, existe: a => existe.has(a), wav, sufijoDe, reclist, sinArchivo };
 }
 
 // ── de nuestras sílabas a los alias (reclist VCCV de nJokis) ──────────────
@@ -142,7 +149,153 @@ const OCLUSIVA = { B: 'b', D: 'd', G: 'g' }, FRICATIVA = { b: 'B', d: 'D', g: 'G
 //   fin: el final de la frase.
 export function aliasFrase(notas, existe, o = {}) {
   // (una copia: la reclist de AkuP le pasa la coda a la sílaba que sigue, y las notas son de quien llama)
-  return (o.reclist === 'akup' ? aliasAkup : aliasNjokis)(notas.map(n => ({ ...n, sil: { ...n.sil } })), existe, o);
+  const f = { akup: aliasAkup, cvvc: aliasCvvc, japones: aliasJapones }[o.reclist] || aliasNjokis;
+  return f(notas.map(n => ({ ...n, sil: { ...n.sil } })), existe, o);
+}
+
+// ── un banco japonés CVVC (Vincen-oto): la sílaba en kana («か»), el paso de la vocal a la consonante en romaji
+// («a k»), «- あ» para empezar con vocal, «a R» para cortar, «a い» entre vocales, «ai» el diptongo. Muchos traen
+// además sonidos de otros idiomas: la l («la»), la rr («rra»), la zh («zha»), que es la ll/y rioplatense, y sus pasos
+// («a l», «a s»). Lo que el japonés no tiene se acerca: la jota con la h japonesa, la s aspirada con un soplo («a hh»).
+const KANA = {
+  '': ['あ', 'い', 'う', 'え', 'お'], k: ['か', 'き', 'く', 'け', 'こ'], g: ['が', 'ぎ', 'ぐ', 'げ', 'ご'],
+  s: ['さ', 'すぃ', 'す', 'せ', 'そ'], t: ['た', 'てぃ', 'とぅ', 'て', 'と'], d: ['だ', 'でぃ', 'どぅ', 'で', 'ど'],
+  n: ['な', 'に', 'ぬ', 'ね', 'の'], x: ['は', 'ひ', 'ほぅ', 'へ', 'ほ'], b: ['ば', 'び', 'ぶ', 'べ', 'ぼ'],
+  p: ['ぱ', 'ぴ', 'ぷ', 'ぺ', 'ぽ'], m: ['ま', 'み', 'む', 'め', 'も'], r: ['ら', 'り', 'る', 'れ', 'ろ'],
+  f: ['ふぁ', 'ふぃ', 'ふ', 'ふぇ', 'ふぉ'], C: ['ちゃ', 'ち', 'ちゅ', 'ちぇ', 'ちょ'], S: ['しゃ', 'し', 'しゅ', 'しぇ', 'しょ'],
+  N: ['にゃ', 'に', 'にゅ', 'にぇ', 'にょ'], j: ['や', 'い', 'ゆ', 'いぇ', 'よ'], w: ['わ', 'うぃ', 'う', 'うぇ', 'うぉ'],
+};
+// consonante + y: きゃ, びゃ... (yōon)
+// (sin t, d ni s: ちゃ, じゃ y しゃ son otra consonante; «dia» va «でぃ» + «i あ»)
+const YOON = { k: 'き', g: 'ぎ', b: 'び', p: 'ぴ', m: 'み', r: 'り', n: 'に', x: 'ひ', C: 'ち' };
+const YO = ['ゃ', null, 'ゅ', 'ぇ', 'ょ'];
+// las sílabas que un banco japonés de siempre puede no tener, y la más parecida
+const KANA_ALT = { 'ふぁ': 'は', 'ふぃ': 'ひ', 'ふぇ': 'へ', 'ふぉ': 'ほ', 'いぇ': 'え', 'ほぅ': 'ふ', 'すぃ': 'し', 'ずぃ': 'じ', 'てぃ': 'ち', 'とぅ': 'つ', 'でぃ': 'じ', 'どぅ': 'ず', 'うぃ': 'い', 'うぇ': 'え', 'うぉ': 'お' };
+const LATINO = { l: 'l', R: 'rr', Z: 'zh' };                 // las sílabas con letras: «la», «rra», «zha»
+const ROMAJI = { k: 'k', g: 'g', s: 's', t: 't', d: 'd', n: 'n', x: 'h', b: 'b', p: 'p', m: 'm', r: 'r', R: 'rr', l: 'l', f: 'f', C: 'ch', S: 'sh', Z: 'zh', N: 'n', j: 'y', w: 'w', h: 'hh' };
+const SUAVE = { B: 'b', D: 'd', G: 'g', h: 's' };
+const IV = { a: 0, i: 1, u: 2, e: 3, o: 4 };
+function aliasJapones(notas, existe, o = {}) {
+  const U = [], faltan = [];
+  const pon = (alias, nota, tipo, extra) => { if (alias) U.push({ alias, nota, tipo, ...extra }); };
+  const elegir = (...c) => { const a = c.find(x => x && existe(x)); if (!a && c[0]) faltan.push(c[0]); return a || null; };
+  const fon = p => SUAVE[p] && p !== 'h' ? SUAVE[p] : p;     // b, d y g suaves: las de siempre
+  // la sílaba de una consonante (nuestra) con una vocal
+  const sil = (c, v) => {
+    if (!c) return KANA[''][IV[v]];
+    if (LATINO[c] && existe(LATINO[c] + v)) return LATINO[c] + v;
+    if (c === 'Z') return sil('S', v);
+    if (c === 'l') return sil('r', v);
+    if (c === 'R') return sil('r', v);
+    if (c === 'h') return sil('s', v);
+    const k = KANA[c]?.[IV[v]] || KANA[''][IV[v]];
+    return existe(k) || !KANA_ALT[k] ? k : KANA_ALT[k];
+  };
+  let antes = { tipo: 'silencio' };
+  for (let i = 0; i < notas.length; i++) {
+    const n = notas[i], sig = notas[i + 1], s = n.sil;
+    const { desliz, vocs, cola } = nucleoDe(s);
+    const K = s.ataque.map(fon), v1 = vocs[0];
+    // el ataque: lo que no es la última consonante va solo (un grupo: «p» + «ら» no existe en japonés: la primera
+    // consonante con su paso y la segunda como sílaba)
+    const c0 = K[K.length - 1] || null;
+    let cv = null, extra = [];
+    if (desliz.length && c0 && desliz[0] === 'y' && YOON[c0] && YO[IV[v1]] && existe(YOON[c0] + YO[IV[v1]])) cv = YOON[c0] + YO[IV[v1]];
+    else if (desliz.length && !c0) cv = sil(desliz[0] === 'y' ? 'j' : 'w', v1);
+    else if (desliz.length) { cv = sil(c0, desliz[0] === 'y' ? 'i' : 'u'); extra = [desliz[0] === 'y' ? 'i' : 'u']; }
+    else cv = sil(c0, v1);
+    const paso = (v, c) => elegir(v + ' ' + ROMAJI[c], c === 'R' && v + ' r', c === 'l' && v + ' r');
+    // en los bancos VCV la sílaba viene con la vocal de antes («a か») o con el silencio («- か»): una sola unidad
+    if (antes.tipo === 'silencio') {
+      if (!K.length && !desliz.length) cv = elegir('- ' + KANA[''][IV[v1]], KANA[''][IV[v1]]);
+      else if (existe('- ' + cv)) cv = '- ' + cv;
+    } else if (antes.tipo === 'vocal') {
+      if (!K.length && !desliz.length) cv = elegir(antes.v + ' ' + KANA[''][IV[v1]], KANA[''][IV[v1]]);
+      else if (existe(antes.v + ' ' + cv)) cv = antes.v + ' ' + cv;
+      else if (K.length) pon(paso(antes.v, K[0]), i - 1, 'antes');
+    } else if (antes.tipo === 'consonante') {
+      if (!K.length && !desliz.length) cv = sil(antes.c, v1);
+      else if (K.length && antes.c === 'n') pon(elegir('n ' + ROMAJI[K[0]]), i - 1, 'antes');
+    }
+    // los grupos (pr, bl, tr): la primera consonante, sola, con el paso de la vocal anterior; la segunda, sílaba
+    if (K.length > 1 && antes.tipo === 'vocal') { /* el paso a K[0] ya está */ }
+    pon(existe(cv) ? cv : elegir(cv), i, 'cv');
+    // dentro de la nota: la vocal que sigue a una deslizada, las vocales que siguen y el diptongo
+    let v = extra[0] || v1;
+    for (const w of [...(extra.length ? [v1] : []), ...vocs.slice(1)]) { pon(elegir(v + ' ' + KANA[''][IV[w]]), i, 'medio', { frac: .3 }); v = w; }
+    let dipt = null;
+    if (cola.length) { const g = cola[0] === 'I' ? 'i' : 'u'; if (existe(v + g)) { dipt = v + g; pon(dipt, i, 'medio', { frac: .62 }); } else pon(elegir(v + ' ' + KANA[''][IV[g]]), i, 'medio', { frac: .62 }); v = g; }
+    // la coda y el final
+    let coda = s.coda.map(fon);
+    const sigK0 = sig?.sil.ataque[0] ? fon(sig.sil.ataque[0]) : null;
+    if (o.acento !== 0 && s.fin && sig && sigK0 && ['s', 'h'].includes(coda[coda.length - 1])) coda = coda.slice(0, -1);
+    if (coda.length > 1) coda = [coda[0]];
+    if (coda[0] === 'n' && ['p', 'b', 'm'].includes(sigK0)) coda[0] = 'm';
+    const c = coda[0];
+    if (!c) {
+      if (!sig) pon(elegir((dipt || v) + ' R', v + ' R'), i, 'fin');
+      antes = { tipo: 'vocal', v };
+    } else {
+      // la s aspirada de adentro de la palabra: un soplo («a hh»)
+      const pc = c === 'h' || c === 's' && !s.fin ? elegir(v + ' hh', v + ' s') : paso(v, c);
+      if (!sig) { pon(pc, i, 'antes'); pon(elegir(c === 'n' ? 'n R' : c === 'l' ? 'L R' : null), i, 'fin'); }
+      else pon(pc, i, 'antes');
+      antes = { tipo: 'consonante', c };
+    }
+  }
+  U.faltan = faltan.filter(Boolean);
+  return U;
+}
+
+// ── la CVVC castellana común (Sheep Oveja; la del fonetizador silábico de OpenUtau): «- a» o «- l» al empezar, «a b»
+// + «ba», la consonante sola en los grupos («p» + «ra»), «a -» y «b -» al cortar, «a e» entre vocales. La deslizada
+// va como vocal («bien» = «bi» + «i e»). La jota es «j», la s aspirada «h», la ñ «nh» y la ll/y rioplatense «ll».
+const CV_ = { a: 'a', e: 'e', i: 'i', o: 'o', u: 'u', l: 'l', r: 'r', R: 'rr', m: 'm', n: 'n', N: 'nh', B: 'b', D: 'd', G: 'g', b: 'b', d: 'd', g: 'g', p: 'p', t: 't', k: 'k', C: 'ch', f: 'f', s: 's', h: 'h', x: 'j', S: 'll', Z: 'll', j: 'y', w: 'w' };
+function aliasCvvc(notas, existe, o = {}) {
+  const U = [], faltan = [];
+  const pon = (alias, nota, tipo, extra) => { if (alias) U.push({ alias, nota, tipo, ...extra }); };
+  const elegir = (...c) => { const a = c.find(x => x && existe(x)); if (!a && c[0]) faltan.push(c[0]); return a || null; };
+  let antes = { tipo: 'silencio' };
+  for (let i = 0; i < notas.length; i++) {
+    const n = notas[i], sig = notas[i + 1], s = n.sil;
+    const { desliz, vocs, cola } = nucleoDe(s);
+    const K = s.ataque.map(p => CV_[p] || p);
+    // la deslizada de antes de la vocal, como vocal: «bien» = «bi» + «i e», «bueno» = «bu» + «u e»
+    const vs = [...desliz.map(d => (d === 'y' ? 'i' : 'u')), ...vocs], v1 = vs[0];
+    const ultimaK = K[K.length - 1];
+    // la sílaba: la última consonante con la vocal; las de antes (un grupo), solas («p» + «ra»)
+    const silaba = () => { for (const c of K.slice(0, -1)) pon(['' + c].find(existe) || null, i, 'antes'); pon(elegir(ultimaK + v1, v1), i, 'cv'); };
+    if (antes.tipo === 'silencio') {
+      if (!K.length) pon(elegir('- ' + v1, v1), i, 'cv');
+      else { pon(['- ' + K[0]].find(existe) || null, i, 'antes'); silaba(); }
+    } else if (antes.tipo === 'vocal') {
+      if (!K.length) pon(elegir(antes.v + ' ' + v1, v1), i, 'cv');
+      else { pon(elegir(antes.v + ' ' + K[0]), i - 1, 'antes'); silaba(); }
+    } else {
+      if (!K.length) pon(elegir(antes.c + v1, v1), i, 'cv');
+      else silaba();
+    }
+    // dentro de la nota: las vocales que siguen y el diptongo
+    let v = v1;
+    for (const w of [...vs.slice(1), ...cola.map(g => g.toLowerCase())]) { pon(elegir(v + ' ' + w), i, 'medio', { frac: vs.length > 1 && w === vs[1] ? .3 : .62 }); v = w; }
+    // la coda y el final
+    let coda = s.coda.map(p => CV_[p] || p);
+    const sigK0 = sig?.sil.ataque[0] ? CV_[sig.sil.ataque[0]] : null;
+    if (o.acento !== 0 && s.fin && sig && sigK0 && ['s', 'h'].includes(coda[coda.length - 1])) coda = coda.slice(0, -1);
+    if (coda.length > 1) coda = [coda[0]];
+    if (coda[0] === 'n' && ['p', 'b', 'm'].includes(sigK0)) coda[0] = 'm';
+    const c = coda[0];
+    if (!c) {
+      if (!sig) pon(elegir(v + ' -', v + '-'), i, 'fin');
+      antes = { tipo: 'vocal', v };
+    } else {
+      pon(elegir(v + ' ' + c), i, 'antes');
+      if (!sig) pon(elegir(c + ' -'), i, 'fin');
+      antes = { tipo: 'consonante', c };
+    }
+  }
+  U.faltan = faltan;
+  return U;
 }
 
 // el núcleo de una sílaba: deslizadas de antes (y, w), vocales, deslizadas de después (I, U)
@@ -390,7 +543,7 @@ export function cantarBanco(banco, world, notas, opc = {}) {
     const U = aliasFrase(F, banco.existe, { reclist: banco.reclist, ...o });
     faltan.push(...U.faltan);
     for (const u of U) {
-      u.e = banco.buscar(u.alias, F[u.nota].midi, o.evitar);
+      u.e = banco.buscar(u.alias, F[u.nota].midi, o.evitar, o.color);
       if (!u.e) { faltan.push(u.alias); continue; }
       const w = banco.wav(u.e.archivo); if (w) sr = w.sr;
       u.len = largoDe(u.e, w); u.pre = u.e.pre; u.ovl = Math.max(0, u.e.overlap); u.cons = Math.min(u.e.consonante, u.len);
@@ -447,9 +600,16 @@ function sintetizarFrase(U, banco, world, o, alturaEn, ganancia) {
     }
   });
   const f0 = new Float64Array(cuadros), amp = new Float64Array(cuadros);
+  // la garganta (tracto, como en difonos.js): más de 1, una garganta más corta, con los formantes más arriba; la
+  // envolvente y el aire se corren en frecuencia, la altura no
+  const a = o.tracto || 1, filaL = new Float64Array(ancho), filaA = new Float64Array(ancho);
   for (let q = 0; q < cuadros; q++) {
     const bq = q * ancho, p = peso[q];
     if (p < 1e-6) { for (let m = 0; m < ancho; m++) { lsp[bq + m] = Math.exp(-46); ap[bq + m] = 1; } continue; }
+    if (a !== 1) {
+      for (let m = 0; m < ancho; m++) { filaL[m] = lsp[bq + m]; filaA[m] = ap[bq + m]; }
+      for (let m = 0; m < ancho; m++) { const x = Math.min(ancho - 1, m / a), j = Math.min(ancho - 2, Math.floor(x)), f = x - j; lsp[bq + m] = filaL[j] * (1 - f) + filaL[j + 1] * f; ap[bq + m] = filaA[j] * (1 - f) + filaA[j + 1] * f; }
+    }
     for (let m = 0; m < ancho; m++) { lsp[bq + m] = Math.exp(lsp[bq + m] / p); ap[bq + m] = Math.min(1, Math.max(0, ap[bq + m] / p)); }
     amp[q] = Math.min(1, p);
     const t = inicio + q * P;

@@ -173,6 +173,72 @@ cada idioma:
 
 Falta lo principal: el veredicto de oído sobre el agudo.
 
+## Más cantantes, para todas las cuerdas
+
+La idea creció: no sólo un agudo para los sobreprimos, sino muchos cantantes distintos, uno por murguista, para todas
+las cuerdas. Así se va a poder armar una murga eligiendo a cada integrante, en el inspector de cantantes que hace la
+otra sesión.
+
+**Los bancos que hay ahora.** Ninguno va al repositorio; se bajan aparte (`herramientas/utau_desarmar.mjs`
+desarma el .zip con los nombres bien).
+
+| Banco | Idioma, reclist | Grabado en | Condiciones |
+|---|---|---|---|
+| LW_Symphonia_es | castellano (no nativo), VCCV nJokis | La♭2, Re 3, Sol 3, Do#4, Mi 4 | comercial con licencia; no redistribuir |
+| MIKE (AkuP) | castellano nativo, propia | Fa#3, Re 4, falsete La#4; colores grave (La#2) y suave (Do 3) | comercial con permiso |
+| Sheep Oveja (EdusheeP, <https://sites.google.com/view/edusheep/sheep>) | castellano, CVVC silábica | Re 3 | no dice |
+| Vincen-oto Legato (snowsorry, <https://snowsorry-voicebanks.carrd.co/>) | japonés CVVC, con l, rr, zh y codas | Mi 3, Sol 3, Si 3, Fa 4, La 4, Re 5 | personal con crédito; comercial con permiso; sin derivados ni redistribución |
+| Vincen-oto Ottava | japonés CVVC, igual | Sol#3, Fa 4, Do 5 | las mismas |
+| Vincen-oto Rubato | japonés VCV | La 2, Re 3, La 3, Re#4, Sol#4, La#4, Re#5 | las mismas |
+
+(Las alturas son las medidas; a veces el nombre de la carpeta dice otra. Las condiciones de Vincen-oto dicen
+también: crédito al banco y a su autor, y nada R18.)
+
+**Las tablas.** `banco.js` reconoce la reclist de cada banco y tiene una tabla para cada una. La japonesa canta la
+sílaba en kana («か»), y lo que no está en japonés lo acerca: la l, la rr y la zh van con letras cuando el banco las
+tiene («la», «rra», «zha»); la jota con la h japonesa; la s aspirada con un soplo («a hh»). En los bancos VCV la
+sílaba viene con la vocal de antes («a か»). Con las 24 frases, a ninguno de los seis le falta nada que importe.
+
+**Más cantantes con los mismos bancos:**
+- **Color:** con `color: '_dp'` se canta con otra grabación entera del banco (MIKE grave o suave).
+- **Garganta:** con `tracto: 1.06` se corren la envolvente y el aire en frecuencia, sin tocar la altura. Con 0,92,
+  1 y 1,08, el centro de los formantes de MIKE da 754, 792 y 828 Hz.
+- **Cada murguista con sus valores:** `cantarBanco` le pasa a `guion()` las mismas opciones que los cantores de
+  difonos (vibrato, deriva, pique, caída, adornos, golpe, arco, semilla).
+
+**¿Pecho o falsete?** `herramientas/utau_registro.mjs <carpeta>` mide, en las vocales sostenidas de cada altura
+grabada, H1−H2 (la fundamental contra el segundo armónico) y el brillo. Es una pista; se decide de oído. De
+referencia, MIKE: su Re 4 de pecho da −14 dB y su falsete, +6 dB.
+
+| | H1−H2 | brillo |
+|---|---|---|
+| Ottava, Do 5 | −13,9 dB | −13,3 dB |
+| Ottava, Fa 4 | −12,1 dB | −8,8 dB |
+| Rubato, Sol#4 | −12,0 dB | −6,5 dB |
+| Rubato, La#4 | −6,3 dB | −8,1 dB |
+| Legato, La 4 | +1,1 dB | −18,5 dB |
+
+Ottava y Rubato parecen tener voz plena en el agudo; Legato, más liviana. Vincen-oto figura como «alto» (Re 3 a
+Re 5): puede sonar joven.
+
+**La galería.** `herramientas/utau_galeria.mjs <cantantes.json>` deja `murga_trabajo/utau/galeria/index.html`. Cada
+voz (los seis bancos, los colores de MIKE y los tres de MBROLA) canta la misma frase en el registro de cada cuerda:
+bajos, segundos, primos, sobreprimos, y el agudo hasta Do 5. En esta compu tarda 84 s para 60 celdas.
+`cantantes.json` dice dónde está cada banco en la compu, con su color, su garganta y lo que evita.
+
+**Para la página (paso 6).** Lo que va a necesitar el inspector de cantantes:
+- **Cada murguista con un banco lleva:** `voz: 'banco'` y `banco: { id, color, evitar, tracto }`, más los valores de
+  siempre. El `tracto` de las cuerdas (0,9 en los bajos…) es para MBROLA: un banco ya es una voz, y su garganta va
+  alrededor de 1.
+- **Los bancos los carga el usuario desde su compu** (un .zip) y quedan guardados en el navegador; se identifican
+  por su nombre (`character.txt`). `motor/cantor/zip.js` lee el .zip, con los nombres en Shift-JIS; deflate se
+  descomprime con `DecompressionStream`.
+- **El obrero** (`obrero.js`) suma un motor `banco`, con la misma entrada (notas con sílabas) y la misma salida.
+  `crearBanco` lee los archivos de forma sincrónica: antes de cantar, el obrero descomprime los .wav que la frase va
+  a usar.
+- **Lo que tarda:** el análisis de cada pedazo (0,3 a 1 s por archivo) se guarda; con eso, una frase de 4 a 5 s
+  tarda de 0,5 a 1,9 s.
+
 ## Riesgos
 
 - **Licencia**: muchos bancos no dejan redistribuirlos o piden crédito; por eso se cargan desde la compu.
