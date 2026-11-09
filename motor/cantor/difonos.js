@@ -523,7 +523,7 @@ export function cantorDifonos(cuerda, semilla, { c = 0, V = VARIACION, D = DIFER
 
 // Los tiempos de cada cantor: entra siempre un poco tarde (retraso) y cada nota se corre un poco (desfase), sin
 // romper el ligado: si dos notas iban pegadas, siguen pegadas.
-function correr(notas, opc) {
+export function correr(notas, opc) {
   const ret = opc.retraso || 0, des = opc.desfase || 0;
   if (!ret && !des) return notas;
   const rn = new Rnd((opc.semilla || 1) * 53 + 11);

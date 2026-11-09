@@ -63,7 +63,7 @@ for (const c of CANTANTES) {
       r = cantarDifonos(mbs[c.mbrola], notas, { ...cantorDifonos(k, 3, { c: 0 }), voz: c.mbrola, w: c.mbrola !== 'es4', retraso: 0 });
     } else {
       const { b, cache } = banco(c.carpeta);
-      r = cantarBanco(b, world, notas, { semilla: 3, cache, color: c.color, evitar: c.evitar, tracto: c.tracto });
+      r = cantarBanco(b, world, notas, { semilla: 3, cache, capa: c.capa ?? c.color, evitar: c.evitar, tracto: c.tracto });
     }
     const archivo = `${slug(c.nombre)}_${slug(cuerda)}.wav`;
     wav(archivo, r.x, r.sr, r.inicio);

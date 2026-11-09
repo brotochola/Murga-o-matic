@@ -12,7 +12,7 @@
 //   4. el «resampler» y el «wavtool»: WORLD (world.js) separa cada pedazo en altura, envolvente y aire; los pedazos se
 //      funden cuadro por cuadro (envolvente en dB) y se sintetiza la frase entera con nuestra curva de altura
 //      (la de guion(), en difonos.js: portamento, vibrato, caída) sin mover los formantes.
-import { guion } from './difonos.js';
+import { guion, correr } from './difonos.js';
 
 // ── leer el banco ────────────────────────────────────────────────────────
 const NOMBRES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -626,6 +626,8 @@ function analisis(cache, world, banco, e, len) {
 export function cantarBanco(banco, world, notas, opc = {}) {
   const o = { modulacion: 1, cache: new Map(), ...opc };
   if (!notas.length) return { x: new Float32Array(0), sr: 44100, inicio: 0 };
+  // cada cantor entra un poco tarde y corre un poco cada nota, como los de difonos (retraso, desfase)
+  notas = correr(notas, o);
   const g = guion(notas, o);
   // la altura de guion(), una sola pasada en orden (tiene estado: la fase del vibrato)
   const tA0 = g.inicio, nA = Math.ceil((g.fin + .5 - tA0) / (PERIODO / 1000)) + 2, alt = new Float64Array(nA);
@@ -640,7 +642,9 @@ export function cantarBanco(banco, world, notas, opc = {}) {
     const U = aliasFrase(F, banco.existe, { reclist: banco.reclist, ...o });
     faltan.push(...U.faltan);
     for (const u of U) {
-      u.e = banco.buscar(u.alias, F[u.nota].midi, o.evitar, o.color);
+      // capa: una grabación entera del banco, con otro color (MIKE grave «_dp»). No es el `color` de difonos.js (las
+      // ondas del timbre de cada cantor de MBROLA), que llega en las mismas opciones
+      u.e = banco.buscar(u.alias, F[u.nota].midi, o.evitar, o.capa);
       if (!u.e) { faltan.push(u.alias); continue; }
       const w = banco.wav(u.e.archivo); if (w) sr = w.sr;
       u.len = largoDe(u.e, w); u.pre = u.e.pre; u.ovl = Math.max(0, u.e.overlap); u.cons = Math.min(u.e.consonante, u.len);

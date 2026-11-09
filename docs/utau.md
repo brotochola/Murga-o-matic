@@ -212,7 +212,7 @@ tiene («la», «rra», «zha»); la jota con la h japonesa; la s aspirada con u
 sílaba viene con la vocal de antes («a か»). Con las 24 frases, a ninguno de los seis le falta nada que importe.
 
 **Más cantantes con los mismos bancos:**
-- **Color:** con `color: '_dp'` se canta con otra grabación entera del banco (MIKE grave o suave).
+- **Capa:** con `capa: '_dp'` se canta con otra grabación entera del banco (MIKE grave o suave), o con un color del `character.yaml`. (No es el `color` de los cantores de difonos.)
 - **Garganta:** con `tracto: 1.06` se corren la envolvente y el aire en frecuencia, sin tocar la altura. Con 0,92,
   1 y 1,08, el centro de los formantes de MIKE da 754, 792 y 828 Hz.
 - **Cada murguista con sus valores:** `cantarBanco` le pasa a `guion()` las mismas opciones que los cantores de
@@ -239,7 +239,7 @@ bajos, segundos, primos, sobreprimos, y el agudo hasta Do 5. En esta compu tarda
 `cantantes.json` dice dónde está cada banco en la compu, con su color, su garganta y lo que evita.
 
 **Para la página (paso 6).** Lo que va a necesitar el inspector de cantantes:
-- **Cada murguista con un banco lleva:** `voz: 'banco'` y `banco: { id, color, evitar, tracto }`, más los valores de
+- **Cada murguista con un banco lleva:** `voz: 'banco'` y `banco: { id, capa, evitar, tracto }`, más los valores de
   siempre. El `tracto` de las cuerdas (0,9 en los bajos…) es para MBROLA: un banco ya es una voz, y su garganta va
   alrededor de 1.
 - **Los bancos los carga el usuario desde su compu** (un .zip) y quedan guardados en el navegador; se identifican
