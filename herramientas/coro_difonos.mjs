@@ -18,7 +18,7 @@ import { FRASES, melodia } from './solista.mjs';
 import { cantarBanco } from '../motor/cantor/banco.js';
 import { crearWorld } from '../motor/cantor/world.js';
 import { opcionesDe } from '../motor/cantor/murga_bancos.js';
-import { abrirBancoNode } from './banco_node.mjs';
+import { abrirBancoNode, CACHE_NODE } from './banco_node.mjs';
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TRABAJO = resolve(process.env.MURGA_TRABAJO || join(RAIZ, 'murga_trabajo'));
@@ -71,7 +71,7 @@ for (const [k, texto] of FRASES.entries()) {
         const voz = PL.voces.find(v => v.nombre === PL.murga[cuerda + c]) || PL.voces.find(v => v.mbrola);
         const { motor, opc } = opcionesDe({ cuerda, c, semilla: sem, retraso: ret }, voz);
         const o = { ...opc, ...EXTRA };
-        const r = motor === 'banco' ? cantarBanco(elBanco(voz.banco).b, mundo, notas, { ...o, cache: elBanco(voz.banco).cache }) : cantarDifonos(mbs[o.voz] || mbs.es2, notas, o);
+        const r = motor === 'banco' ? cantarBanco(elBanco(voz.banco).b, mundo, notas, { ...o, cache: elBanco(voz.banco).cache, cacheMax: CACHE_NODE }) : cantarDifonos(mbs[o.voz] || mbs.es2, notas, o);
         const y = remuestrear(r.x, r.sr, SR), desde = Math.round(r.inicio * SR), z = new Float32Array(Math.max(0, desde) + y.length);
         z.set(desde >= 0 ? y : y.subarray(-desde), Math.max(0, desde)); sumar(z, g);
       } else sumar(cantar(notas, { sr: SR, tipo: cfg.tipo, semilla: sem, retraso: ret }), g);

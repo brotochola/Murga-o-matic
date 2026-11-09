@@ -13,7 +13,7 @@
 // reparto.json (si no, la «murga» del plantel): { "bajos0": "nombre", ... } (la murga del estudio) o
 //   { "bajos": ["nombre", ...], ... } (por cuerda, en el orden de sus cantores; si faltan voces, se repiten)
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { abrirBancoNode } from './banco_node.mjs';
+import { abrirBancoNode, CACHE_NODE } from './banco_node.mjs';
 import { join, dirname, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -61,7 +61,7 @@ for (const [i, t] of tareas.entries()) {
     r = cantarDifonos(mbs[t.opc.voz], t.c.notas, t.opc);
   } else {
     const { b, cache } = banco(t.voz.banco || t.voz.carpeta);
-    r = cantarBanco(b, world, t.c.notas, { ...t.opc, cache });
+    r = cantarBanco(b, world, t.c.notas, { ...t.opc, cache, cacheMax: CACHE_NODE });
   }
   cantados.push({ x: r.x, sr: r.sr, inicio: r.inicio, pan: t.c.pan, ganancia: t.c.ganancia });
   const lo = Math.min(...t.c.notas.map(n => n.midi)), hi = Math.max(...t.c.notas.map(n => n.midi));

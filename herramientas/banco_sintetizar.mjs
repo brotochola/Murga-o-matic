@@ -29,7 +29,7 @@ import { cantarDifonos, cantorDifonos, remuestrear, vozDelCantor } from '../moto
 import { cantarBanco } from '../motor/cantor/banco.js';
 import { crearWorld } from '../motor/cantor/world.js';
 import { opcionesDe } from '../motor/cantor/murga_bancos.js';
-import { abrirBancoNode } from './banco_node.mjs';
+import { abrirBancoNode, CACHE_NODE } from './banco_node.mjs';
 import { FRASES } from './solista.mjs';
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -146,7 +146,7 @@ for (const f of fragmentos) {
       const nombre = VOZ !== 'coro' ? VOZ : PL.murga[k + c], voz = PL.voces.find(v => v.nombre === nombre) || PL.voces.find(v => v.mbrola);
       const { motor, opc } = opcionesDe({ cuerda: k, c, semilla, retraso: ret }, voz, 0, variacion || null);
       const o = { ...opc, ...OPC };
-      const d = motor === 'banco' ? cantarBanco(elBanco(voz.banco).b, mundo, notas, { ...o, cache: elBanco(voz.banco).cache }) : cantarDifonos(mbs[o.voz] || mbs.es2, notas, o);
+      const d = motor === 'banco' ? cantarBanco(elBanco(voz.banco).b, mundo, notas, { ...o, cache: elBanco(voz.banco).cache, cacheMax: CACHE_NODE }) : cantarDifonos(mbs[o.voz] || mbs.es2, notas, o);
       const y = d.sr === SR ? d.x : remuestrear(d.x, d.sr, SR), desde = Math.round(d.inicio * SR), z = new Float32Array(n);
       for (let s = 0; s < y.length; s++) { const j = desde + s; if (j >= 0 && j < n) z[j] = y[s]; }
       r = { voz: z, ruido: new Float32Array(n) };

@@ -318,6 +318,22 @@ Whisper, letras mal, semilla 3 (la de siempre), antes → después: MIKE 8,3 →
 27,2 · Hitsuji 39,7 → 27,5. Con dos semillas, Oveja 28,5 → 16,3 y Hitsuji 40,4 → 25,4. Whisper salta mucho de una
 semilla a otra (Oveja vieja: 24,4 y 32,6).
 
+**El coro entero, al final de la noche.** Whisper con las 24 frases y los 13 lugares del plantel:
+
+| Semilla | Antes (letras / palabras mal) | Ahora |
+|---|---|---|
+| 7 | 25,1 % / 57,0 % | **15,2 % / 39,6 %** |
+| 8 | 26,6 % / 57,5 % | **14,9 % / 41,9 %** |
+
+Ahora se entiende mejor que el coro de MBROLA (17 a 19 %). En el banco del coro con letra (`--letra frases`) da
+3,62 · 2,64; con el motor de las 04:58 daba 3,27 · 4,16. Sin letra da 3,67 · 4,83: al empezar la noche daba
+6,31 · 9,77.
+
+**La caché de análisis** tiene tope: 500 MB por obrero en la página, y en las herramientas de Node 4 GB
+(`CACHE_NODE`, banco_node.mjs). Las herramientas abren los 11 bancos en un mismo proceso, y con 500 MB el banco del
+coro con letra tardaba 18 min en vez de 7. En la página no cambia nada: la presentación de 4:16 tarda 160 s con
+500 MB y 154 s con 1,5 GB.
+
 ## Riesgos
 
 - **Licencia**: muchos bancos no dejan redistribuirlos o piden crédito; por eso se cargan desde la compu.

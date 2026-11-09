@@ -8,7 +8,7 @@
 //   "capa": "_dp", ... }, { "nombre": "MBROLA es2", "mbrola": "es2" }] } (o la lista de voces sola). El banco es un
 //   .zip de bancos/ o una carpeta («carpeta»): los bancos no van al repositorio.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { abrirBancoNode } from './banco_node.mjs';
+import { abrirBancoNode, CACHE_NODE } from './banco_node.mjs';
 import { join, dirname, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { melodia } from './solista.mjs';
@@ -64,7 +64,7 @@ for (const c of CANTANTES) {
     } else {
       const { b, cache } = banco(donde);
       const { nombre, banco: _b, carpeta, mbrola, nota, ...valores } = c;
-      r = cantarBanco(b, world, notas, { semilla: 3, cache, ...valores, capa: c.capa ?? c.color });
+      r = cantarBanco(b, world, notas, { semilla: 3, cache, cacheMax: CACHE_NODE, ...valores, capa: c.capa ?? c.color });
     }
     const archivo = `${slug(c.nombre)}_${slug(cuerda)}.wav`;
     wav(archivo, r.x, r.sr, r.inicio);

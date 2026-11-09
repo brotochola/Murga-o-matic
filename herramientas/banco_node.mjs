@@ -12,6 +12,9 @@ import { leerZip, extraer } from '../motor/cantor/zip.js';
 
 export const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const BANCOS = join(RAIZ, 'bancos');
+// la caché de análisis de WORLD en Node (cantarBanco, o.cacheMax): las herramientas abren los 11 bancos en un mismo
+// proceso, y con el tope de la página (500 MB) el banco del coro con letra tardaba 18 min en vez de 7
+export const CACHE_NODE = 4e9;
 export const rutaDelBanco = b => (isAbsolute(b) ? b : existsSync(join(BANCOS, b)) ? join(BANCOS, b) : resolve(b));
 const SIRVE = /\.(wav|ini|map|txt|yaml)$/i;
 

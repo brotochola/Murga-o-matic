@@ -193,7 +193,7 @@ entero en el banco del coro (`banco_medir.py`, 12 fragmentos reales) y con Whisp
 - `VARIACION_DIFONOS`: vibrato de 0,3 a 0,6 semitonos, de 4,8 a 5,7 Hz, que entra entre 0 y 0,15 s;
 - `ESTILO`, para MBROLA: dicción 1,2, pique 1,5 (cada cantor ±40 %), `piqueVa` 0,1, `pasa` 0,35, deriva 0,2, `crece` 0,5,
   caída 2,5 (cada cantor de la mitad a una vez y media) en el 40 % de los finales, en 0,25 s, y golpe 4;
-- `ESTILO_BANCO`, para los bancos: dicción 1, pique 1,2, `pasa` 0,15 y caída 1,5.
+- `ESTILO_BANCO`, para los bancos: dicción 1, pique 1,5, `pasa` 0,15 y caída 1,5 (con pique 1,2 el banco del coro daba 4,41 · 5,79; con 1,5, 3,67 · 4,83).
 
 Los usan `cantorDifonos()`, `murga_bancos.opcionesDe()` y `plantel.opcionesBanco()`. Los cantores de formantes no
 cambian. En la página, el inspector de cada cantante tiene «Entrada desde abajo» y «Caída al final».

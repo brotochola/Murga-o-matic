@@ -352,7 +352,10 @@ function abrirCantante(clave){cantanteAbierto=clave;actualizarInspector();dibuja
 function dibujarInspCantante(){
   const x=losCantantes().find(y=>y.clave===cantanteAbierto);
   if(!x){cantanteAbierto=null;actualizarInspector();return}
-  const aj=S.ajustes[x.clave]||{},val=k=>aj[k]??x.base[k],k=x.c.cuerda;
+  // una voz de banco canta con sus valores (ESTILO_BANCO, su vibrato, su grito: plantel.opcionesBanco), no con los de
+  // MBROLA: el inspector muestra ésos (la garganta no: a mano se cuenta como la de MBROLA)
+  const aj=S.ajustes[x.clave]||{},vv0=aj.voz??x.base.voz,vb=plantel.esDeBanco(vv0)?plantel.opcionesBanco(vv0,x.c.cuerda,x.base,{},x.n):null;
+  const val=k=>aj[k]??(vb&&k!=="tracto"&&k!=="voz"&&vb[k]!=null?vb[k]:x.base[k]),k=x.c.cuerda;
   ponerCara($("icCara"),x);if(document.activeElement!==$("icNombre"))$("icNombre").value=x.nombre;
   $("icCuerda").textContent=`${NOMBRE_CANTOR[k]}${CUERDAS[k].cantores>1?` ${x.n+1}`:""}${x.n===0&&CUERDAS[k].cantores>1?" · lleva la cuerda":""}`;
   const ms=x.c.notas.map(n=>n.midi);

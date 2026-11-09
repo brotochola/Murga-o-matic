@@ -41,8 +41,9 @@ export const VARIACION_DIFONOS = {
 export const ESTILO = { consonantes: 1.2, pique: 1.5, piqueVa: 0.1, pasa: 0.35, deriva: 0.2, crece: 0.5, caida: 2.5, caidaProb: 0.4, caidaLargo: 0.25, golpe: 4 };
 // La dicción (consonantes, cuánto se alargan): con MBROLA, 1,2 hace entender más (coro entero: 17,0 % de letras mal contra
 // 19,3 %); con los bancos estira el pedazo grabado y se entiende menos (MIKE solo: 11,9 % contra 8,2 %), así que 1.
-// WORLD rinde distinto: con los bancos se mide más pique, más pasarse y la misma caída con menos
-export const ESTILO_BANCO = { consonantes: 1, pique: 1.2, pasa: 0.15, caida: 1.5 };
+// WORLD rinde distinto: con los bancos se pasan más de la nota y caen lo mismo con menos. El pique, 1,5 como MBROLA: en
+// el banco del coro, 1,2 daba 4,41 · 5,79 y 1,5 da 3,67 · 4,83 (MIKE solo se entiende igual: 8,2 % de letras mal)
+export const ESTILO_BANCO = { consonantes: 1, pique: 1.5, pasa: 0.15, caida: 1.5 };
 
 // Los cantores de banco (voces de UTAU, motor/cantor/banco.js) cantaban demasiado juntos con la variación de arriba:
 // sus grabaciones, resintetizadas con WORLD, son más limpias que MBROLA, y en el banco del coro la energía de cada

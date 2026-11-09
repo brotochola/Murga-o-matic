@@ -465,7 +465,7 @@ export function esforzar(x, sr, g, o) {
     for (let j = 0; j < nb; j++) {
       let ref = -280; for (let i = Math.max(0, j - V); i <= Math.min(nb - 1, j + V); i++) if (L[i] > ref) ref = L[i];
       const d = ref - L[j], e = esf[Math.min(nc - 1, j)];
-      G[j] = d > E.puerta ? 0 : Math.min(E.parejo * e, Math.max(0, d - E.hueco));
+      G[j] = d > E.puerta ? 0 : Math.min(E.parejo * e, Math.max(0, d - (o.huecoParejo ?? E.hueco)));
     }
     G[nb] = G[nb - 1];
     { const al = 1 - Math.exp(-PASO / sr / .008); let v = G[0]; for (let j = 0; j <= nb; j++) { v += (G[j] - v) * al; G[j] = v; } v = G[nb]; for (let j = nb; j >= 0; j--) { v += (G[j] - v) * al; G[j] = v; } }
