@@ -328,7 +328,7 @@ function igualarVolumen(y, x, sr, tau = .025, max = 6) {
 // una saturación (más armónicos arriba, que ya estaban: sonaba raro y casi no se notaba). Las sordas y las eses no
 // pasan por acá.
 export const ESFUERZO = { formante: .2, angosto: .3, fundamental: 4, techo: 1200, agudo: 280, parejo: 14, hueco: 8, puerta: 35 };
-function esforzar(x, sr, g, o) {
+export function esforzar(x, sr, g, o) {
   const N = g.notas, centro = o.centro ?? N.reduce((a, n) => a + n.midi, 0) / N.length, E = ESFUERZO;
   const PASO = 32, nc = Math.ceil(x.length / PASO) + 2, esf = new Float32Array(nc), f0 = new Float32Array(nc);
   for (const n of N) {

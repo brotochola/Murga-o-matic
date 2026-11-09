@@ -12,7 +12,7 @@
 //   4. el «resampler» y el «wavtool»: WORLD (world.js) separa cada pedazo en altura, envolvente y aire; los pedazos se
 //      funden cuadro por cuadro (envolvente en dB) y se sintetiza la frase entera con nuestra curva de altura
 //      (la de guion(), en difonos.js: portamento, vibrato, caída) sin mover los formantes.
-import { guion, correr } from './difonos.js';
+import { guion, correr, esforzar } from './difonos.js';
 
 // ── leer el banco ────────────────────────────────────────────────────────
 const NOMBRES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -656,17 +656,27 @@ export function cantarBanco(banco, world, notas, opc = {}) {
     for (const u of U) {
       // capa: una grabación entera del banco, con otro color (MIKE grave «_dp»). No es el `color` de difonos.js (las
       // ondas del timbre de cada cantor de MBROLA), que llega en las mismas opciones
-      u.e = banco.buscar(u.alias, F[u.nota].midi, o.evitar, o.capa);
+      // esfuerzo (semitonos, el SHFT de OpenUtau): la grabación de una altura más aguda que la nota (más esforzada) o
+      // más grave (más relajada), llevada a la nota
+      u.e = banco.buscar(u.alias, F[u.nota].midi + (o.esfuerzo || 0), o.evitar, o.capa);
       if (!u.e) { faltan.push(u.alias); continue; }
       const w = banco.wav(u.e.archivo); if (w) sr = w.sr;
-      u.len = largoDe(u.e, w); u.pre = u.e.pre; u.ovl = Math.max(0, u.e.overlap); u.cons = Math.min(u.e.consonante, u.len);
+      // dicción (consonantes, el VEL de UTAU al revés): la parte fija del pedazo (la consonante y el paso a la vocal)
+      // más larga (más de 1) o más corta; el preutterance y el overlap, con ella
+      const k = Math.max(.5, Math.min(2, o.consonantes ?? 1));
+      u.k = k; u.lenSrc = largoDe(u.e, w); u.consSrc = Math.min(u.e.consonante, u.lenSrc);
+      u.cons = u.consSrc * k; u.len = u.lenSrc + u.consSrc * (k - 1); u.pre = u.e.pre * k; u.ovl = Math.max(0, u.e.overlap) * k;
       // normalizar (0 a 1): cuánto se lleva cada archivo al mismo nivel
       u.lg = w ? 2 * (o.normalizar ?? 1) * Math.log(.1 / w.nivel) : 0;
     }
     const V = U.filter(u => u.e);
     if (!V.length) continue;
     ubicar(V, F);
-    piezas.push(sintetizarFrase(V, banco, world, o, alturaEn, g.ganancia));
+    const p = sintetizarFrase(V, banco, world, o, alturaEn, g.ganancia);
+    // el grito, como los cantores de difonos (esforzar(): la boca más abierta, la voz apretada y pareja), sobre la voz
+    // ya sintetizada
+    if (o.grito > 0) esforzar(p.x, p.sr, { ...g, inicio: p.inicio }, o);
+    piezas.push(p);
   }
   if (!piezas.length) return { x: new Float32Array(0), sr, inicio: notas[0].t0, faltan };
   sr = piezas[0].sr;
@@ -681,21 +691,22 @@ function sintetizarFrase(U, banco, world, o, alturaEn, ganancia) {
   const inicio = Math.floor((Math.min(...U.map(u => u.S)) - .02) / P) * P, fin = Math.max(...U.map(u => u.E)) + .02;
   const cuadros = Math.ceil((fin - inicio) / P) + 1;
   let ancho = 0, fft = 0, sr = 44100;
-  const A = U.map(u => { const a = analisis(o.cache, world, banco, u.e, u.len); if (a) { ancho = a.ancho; fft = a.fft; sr = a.sr; } return a; });
+  const A = U.map(u => { const a = analisis(o.cache, world, banco, u.e, u.lenSrc); if (a) { ancho = a.ancho; fft = a.fft; sr = a.sr; } return a; });
   const lsp = new Float64Array(cuadros * ancho), ap = new Float64Array(cuadros * ancho), peso = new Float64Array(cuadros);
   const voz = new Float64Array(cuadros), tiembla = new Float64Array(cuadros), pesoVoz = new Float64Array(cuadros);
   U.forEach((u, k) => {
     const a = A[k]; if (!a || a.ancho !== ancho) return;
-    const L = u.E - u.S, cons = u.cons / 1000, len = u.len / 1000, ult = k === U.length - 1;
+    const L = u.E - u.S, cons = u.cons / 1000, consS = u.consSrc / 1000, lenS = u.lenSrc / 1000, ult = k === U.length - 1;
     const entra = k === 0 ? Math.max(.01, u.ovl / 1000) : U[k - 1].fundir, sale = ult ? .06 : u.fundir;
     const q0 = Math.max(0, Math.ceil((u.S - inicio) / P)), q1 = Math.min(cuadros - 1, Math.floor((u.E - inicio) / P));
     for (let q = q0; q <= q1; q++) {
       const t = inicio + q * P, d = t - u.S;
       // el tiempo dentro del pedazo
       let src;
-      if (u.tipo === 'fin' || ult && u.tipo === 'antes') src = d;                 // el final: a su velocidad, cortado
-      else if (L >= cons) src = d <= cons ? d : cons + (d - cons) * Math.max(0, len - cons) / Math.max(1e-3, L - cons);
-      else src = d * cons / L;
+      // la parte fija va con la dicción (d / k); el final, después, a su velocidad y cortado; lo demás se estira
+      if (u.tipo === 'fin' || ult && u.tipo === 'antes') src = d <= cons ? d / u.k : consS + (d - cons);
+      else if (L >= cons) src = d <= cons ? d / u.k : consS + (d - cons) * Math.max(0, lenS - consS) / Math.max(1e-3, L - cons);
+      else src = d * consS / L;
       const ms = u.e.offset + src * 1000, x = (ms - a.t0) / PERIODO, j = Math.max(0, Math.min(a.cuadros - 2, Math.floor(x))), f = Math.max(0, Math.min(1, x - j));
       let w = Math.min(1, d / entra, (u.E - t) / sale);
       if (w <= 0) continue;
@@ -716,6 +727,23 @@ function sintetizarFrase(U, banco, world, o, alturaEn, ganancia) {
   // la garganta (tracto, como en difonos.js): más de 1, una garganta más corta, con los formantes más arriba; la
   // envolvente y el aire se corren en frecuencia, la altura no
   const a = o.tracto || 1, filaL = new Float64Array(ancho), filaA = new Float64Array(ancho);
+  // la voz, como los flags de los resamplers de UTAU (docs/plan_cantantes.md):
+  //   tensión (Mt): la voz apretada, menos fundamental y más agudos: 4 dB por octava × tensión, alrededor de 1 kHz
+  //     (de −6 dB en 350 Hz a +9 dB en 5 kHz con tensión 1); negativa, más floja;
+  //   aire (BRE, Mb): el aire de WORLD sube arriba de 300 Hz, hasta todo aire en 2 kHz con aire 1;
+  //   ronquera (MG, MC): la voz rajada: la altura tiembla rápido (hasta ±3,5 % con 1), un poco de ruido entre 1 y
+  //     5 kHz, y después de sintetizar, un subarmónico (el volumen sube y baja a la mitad de la altura).
+  const tension = o.tension || 0, aire = Math.max(0, Math.min(1, o.aire || 0)), ronq = Math.max(0, Math.min(1, o.ronquera || 0));
+  const suave = (x, a, b) => { const u = Math.max(0, Math.min(1, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
+  const gT = new Float64Array(ancho), sA = new Float64Array(ancho), sR = new Float64Array(ancho);
+  for (let m = 0; m < ancho; m++) {
+    const fr = Math.max(1, m * sr / fft);
+    gT[m] = 4 * tension * Math.max(-1.5, Math.min(2.3, Math.log2(fr / 1000))) * Math.LN10 / 10;
+    sA[m] = aire * suave(fr, 300, 2000);
+    sR[m] = .35 * ronq * suave(fr, 1000, 2500) * (1 - suave(fr, 5000, 8000));
+  }
+  let azar = (o.semilla || 1) * 2654435761 >>> 0, jit = 0;
+  const rnd = () => { azar = (Math.imul(azar ^ (azar >>> 15), 2246822519) + 3266489917) >>> 0; return azar / 4294967296 - .5; };
   for (let q = 0; q < cuadros; q++) {
     const bq = q * ancho, p = peso[q];
     if (p < 1e-6) { for (let m = 0; m < ancho; m++) { lsp[bq + m] = Math.exp(-46); ap[bq + m] = 1; } continue; }
@@ -723,17 +751,26 @@ function sintetizarFrase(U, banco, world, o, alturaEn, ganancia) {
       for (let m = 0; m < ancho; m++) { filaL[m] = lsp[bq + m]; filaA[m] = ap[bq + m]; }
       for (let m = 0; m < ancho; m++) { const x = Math.min(ancho - 1, m / a), j = Math.min(ancho - 2, Math.floor(x)), f = x - j; lsp[bq + m] = filaL[j] * (1 - f) + filaL[j + 1] * f; ap[bq + m] = filaA[j] * (1 - f) + filaA[j + 1] * f; }
     }
-    for (let m = 0; m < ancho; m++) { lsp[bq + m] = Math.exp(lsp[bq + m] / p); ap[bq + m] = Math.min(1, Math.max(0, ap[bq + m] / p)); }
+    for (let m = 0; m < ancho; m++) {
+      lsp[bq + m] = Math.exp(lsp[bq + m] / p + gT[m]);
+      const v = Math.min(1, Math.max(0, ap[bq + m] / p));
+      ap[bq + m] = 1 - (1 - v) * (1 - sA[m]) * (1 - sR[m]);
+    }
     amp[q] = Math.min(1, p);
     const t = inicio + q * P;
-    if (voz[q] / p >= .5) f0[q] = 440 * Math.pow(2, (alturaEn(t) - 69) / 12) * (pesoVoz[q] > 0 ? Math.exp(o.modulacion * tiembla[q] / pesoVoz[q]) : 1);
+    jit = .4 * jit + .6 * rnd() * 2;
+    if (voz[q] / p >= .5) f0[q] = 440 * Math.pow(2, (alturaEn(t) - 69) / 12) * (pesoVoz[q] > 0 ? Math.exp(o.modulacion * tiembla[q] / pesoVoz[q]) : 1) * Math.exp(.035 * ronq * jit);
     if (o.depurar) o.depurar.push({ t: +t.toFixed(3), peso: +p.toFixed(2), voz: +(voz[q] / p).toFixed(2), f0: +f0[q].toFixed(1), db: +(10 * Math.log10(lsp.subarray(bq, bq + ancho).reduce((s, v) => s + v, 0))).toFixed(1) });
   }
   const y = world.sintetizar({ f0, sp: lsp, ap, fft, periodo: PERIODO, fs: sr });
   const x = new Float32Array(y.length);
+  let fase = 0;
   for (let i = 0; i < y.length; i++) {
     const u = i / sr / P, q = Math.min(cuadros - 2, Math.floor(u)), f = u - q, t = inicio + i / sr;
-    x[i] = y[i] * (amp[q] * (1 - f) + amp[q + 1] * f) * ganancia(t);
+    let v = y[i] * (amp[q] * (1 - f) + amp[q + 1] * f) * ganancia(t);
+    // el subarmónico de la ronquera: el volumen sube y baja a la mitad de la altura (un período fuerte, uno flojo)
+    if (ronq > 0) { const fq = f0[q] > 0 && f0[q + 1] > 0 ? f0[q] * (1 - f) + f0[q + 1] * f : 0; if (fq > 0) { fase += Math.PI * fq / sr; v *= 1 + .5 * ronq * Math.cos(fase); } }
+    x[i] = v;
   }
   return { x, sr, inicio, unidades: U.map(u => ({ alias: u.alias, archivo: u.e.archivo, T: +u.T.toFixed(3), S: +u.S.toFixed(3), E: +u.E.toFixed(3) })) };
 }
