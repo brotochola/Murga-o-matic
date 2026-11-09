@@ -143,6 +143,10 @@ export const ACCIONES = [
 
 // Complementos (sirven al medio o al final del verso: el final decide la rima)
 export const COMPLEMENTOS = [
+  // de 4 y 5 sílabas, agudos (para los versos cortos; solos quedan colgados, así que valen poco sin una frase)
+  { s: 'bajo el farol', t: ['noche', 'barrio'] }, { s: 'a la ciudad', t: ['barrio'] }, { s: 'por el amor', t: ['amor'] },
+  { s: 'a todo color', t: ['fiesta'] }, { s: 'de par en par', t: ['fiesta', 'saludo'] }, { s: 'frente al portón', t: ['barrio'] },
+  { s: 'en el balcón', t: ['barrio', 'memoria'] }, { s: 'frente al café', t: ['barrio'] },
   { s: 'esta noche', t: ['saludo', 'fiesta', 'noche'] }, { s: 'en el tablado', t: ['fiesta', 'saludo'] }, { s: 'con el tambor', t: ['fiesta'] },
   { s: 'a todo pulmón', t: ['fiesta', 'lucha'] }, { s: 'sin pedir permiso', t: ['fiesta', 'lucha'] }, { s: 'una vez más', t: ['saludo', 'fiesta', 'despedida'] },
   { s: 'en carnaval', t: ['fiesta'] }, { s: 'hasta el amanecer', t: ['noche', 'fiesta'] }, { s: 'de punta a punta', t: ['fiesta', 'barrio'] },
@@ -216,6 +220,11 @@ export const FRAGMENTOS = [
   { s: 'que suene el bombo', t: ['fiesta'] }, { s: 'la memoria', t: ['memoria'] }, { s: 'por vos', t: ['amor'] }, { s: 'para vos', t: ['amor'] },
   { s: 'mi canción', t: ['despedida', 'amor'] }, { s: 'el adiós', t: ['despedida'] }, { s: 'la emoción', t: ['despedida', 'fiesta'] },
   { s: 'nuestra voz', t: ['lucha'] }, { s: 'el farol', t: ['noche'] }, { s: 'la esquina', t: ['barrio'] },
+  // de 4 y 5 sílabas, agudos: los versos cortos que terminan en aguda casi no tenían con qué llenarse
+  { s: 'mi corazón', t: ['amor'] }, { s: 'el carnaval', t: ['fiesta'] }, { s: 'la libertad', t: ['lucha'] },
+  { s: 'la luna y el sol', t: ['noche'] }, { s: 'pan y canción', t: ['lucha', 'fiesta'] }, { s: 'nuestra canción', t: ['fiesta', 'amor'] },
+  { s: 'con mucha fe', t: ['lucha'] }, { s: 'el atardecer', t: ['noche', 'memoria'] }, { s: 'bajo la piel', t: ['amor', 'memoria'] },
+  { s: 'sin saber por qué', t: ['amor', 'memoria'] }, { s: 'sin miedo a perder', t: ['lucha'] },
 ];
 
 export const EXCLAMACIONES = ['¡Ay!', '¡Sí!', '¡Va!', '¡Ay, sí!', '¡Arriba!', '¡Carnaval!', '¡Vamo arriba!', '¡Qué tal!', '¡Salud!'];

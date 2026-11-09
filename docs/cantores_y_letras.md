@@ -37,6 +37,22 @@ No usa modelos de lenguaje. Para cada verso:
 
 El primer verso par de una estrofa fija la rima y prefiere terminaciones con muchas rimas posibles. El último verso de un estribillo o una bajada repite el primero si tienen la misma métrica.
 
+Tres reglas más:
+- **Cada forma con lo suyo.** En la presentación la murga llega: nadie se despide ni promete volver. En la retirada se va: nadie da las buenas noches, ni pide que le abran cancha, ni llega cantando.
+- **Ningún verso dos veces en la misma parte**, salvo el gancho del estribillo. «¡Carnaval!» y «carnaval» cuentan como el mismo.
+- **Los versos cortos**, de hasta 6 sílabas, pueden ser un fragmento suelto («mi corazón», «la libertad»). Un complemento solo («frente al portón») también puede, pero cuesta más, porque queda colgado. Antes, un verso de 4 o 5 sílabas agudas casi nunca encontraba con qué llenarse: quedaba lo más parecido, que no entraba y se repetía.
+
+Contado en 40 letras (2205 versos) el 9 de noviembre de 2026:
+
+| Falla | Antes | Después |
+|---|---|---|
+| Despedidas en presentaciones | 36 | 0 |
+| Llegadas en retiradas | 10 | 0 |
+| Versos repetidos en una parte | 49 | 0 |
+| Versos que no entran en la melodía | 28 | 0 |
+
+Las sílabas de cada palabra y los fonemas de cada sílaba se guardan (`letra.js`), porque el letrista prueba miles de versos con las mismas palabras. Eso lo hizo 1,9 veces más rápido, con las mismas letras.
+
 Medido en 36 letras (unos 2000 versos):
 
 | Medida | Resultado |

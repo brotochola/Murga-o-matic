@@ -46,8 +46,16 @@ function unidades(w) {
 
 const debil = s => s === 'i' || s === 'u' || s === 'ü' || s === 'y';
 
-// Sílabas ortográficas de una palabra (arreglo de strings de unidades)
+// El letrista prueba miles de versos con las mismas palabras: las sílabas de cada palabra y los fonemas de cada sílaba
+// se guardan (hasta MEMO_SILABAS de cada una; después se empieza de nuevo)
+const MEMO_SILABAS = 20000, memoSilabas = new Map(), memoFonemas = new Map();
+const recordar = (m, k, v) => { if (m.size >= MEMO_SILABAS) m.clear(); m.set(k, v); return v; };
+
+// Sílabas ortográficas de una palabra (arreglo de strings de unidades). No modificar lo que devuelve: se comparte.
 export function silabas(w) {
+  return memoSilabas.get(w) ?? recordar(memoSilabas, w, silabasDe(w));
+}
+function silabasDe(w) {
   const u = unidades(w);
   if (!u.length) return [];
   // núcleos: vocales seguidas que forman diptongo/triptongo
@@ -95,6 +103,11 @@ export function tonica(w, sils = silabas(w)) {
 // Fonemas de una sílaba. Símbolos: vocales a e i o u; semivocales j w; p t k b d g (B D G suaves),
 // f s x (jota) S (sh) Z (ll/y rioplatense) C (ch) m n N (ñ) l r (simple) R (múltiple), h (s aspirada)
 function fonemasSilaba(sil, ctx) {
+  const k = sil + (ctx.inicioPalabra ? '|1' : '|0') + (ctx.trasNLS ? '1' : '0');
+  // una copia: silabasCantadas() los cambia (las b d g suaves)
+  return (memoFonemas.get(k) ?? recordar(memoFonemas, k, fonemasDe(sil, ctx))).slice();
+}
+function fonemasDe(sil, ctx) {
   const f = [];
   const s = sil;
   for (let i = 0; i < s.length; i++) {

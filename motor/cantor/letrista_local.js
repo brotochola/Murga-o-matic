@@ -26,6 +26,27 @@ const FIN = new Map();
 const finDe = t => { if (!FIN.has(t)) FIN.set(t, finalDe(silabasCantadas(t))); return FIN.get(t); };
 // sólo sujetos a los que les cabe alguna acción
 const SUJETOS_OK = SUJETOS.filter(x => ACCIONES.some(a => a.para.some(p => x.e.includes(p))));
+// lo que no va en cada forma: en la presentación la murga llega (nadie se despide ni promete volver) y en la retirada se
+// va (nadie da las buenas noches ni pide que le abran cancha)
+const DESPIDE = /(?<![a-záéíóúñ])(volver|volveremos|adiós|retirada|último|se va|nos vamos|hasta el año|hasta la vuelta|agradec\w*|baja del tablado|bajamos del tablado|se lleva|nos llevamos|me llevo)(?![a-záéíóúñ])/i;
+const LLEGA = /^(buenas noches|ya llegó|llegó la murga|llegamos|aquí estamos|abran cancha|atención|señoras y señores|qué tal)/i;
+const LLEGA_ACCION = /(?<![a-záéíóúñ])(llega|llegamos|llegó)(?![a-záéíóúñ])/i;
+export function fueraDe(forma, x) {
+  const s = typeof x === 'string' ? x : x.s + (x.n ? ' ' + x.n : ''), t = typeof x === 'string' ? [] : x.t || [];
+  if (forma === 'presentacion') return (t.length === 1 && t[0] === 'despedida') || DESPIDE.test(s);
+  if (forma === 'retirada') return LLEGA.test(s.replace(/^[¡¿]/, '')) || LLEGA_ACCION.test(s);
+  return false;
+}
+const LEXICOS = {};
+const lexicoDe = forma => LEXICOS[forma] ??= Object.fromEntries(Object.entries({ SUJETOS_OK, ACCIONES, COMPLEMENTOS, CRITICAS, SALUDOS, DESPEDIDAS, VOCATIVOS, FRAGMENTOS, EXCLAMACIONES })
+  .map(([k, xs]) => [k, xs.filter(x => !fueraDe(forma, x))]));
+// los fragmentos y complementos que pueden ir solos en un verso corto, con sus sílabas cantadas ya medidas
+const SUELTOS = {};
+// (un complemento solo queda colgado, «frente al portón»: cuesta más que un fragmento, y gana sólo si no hay otra cosa)
+const sueltosDe = forma => SUELTOS[forma] ??= [...lexicoDe(forma).FRAGMENTOS.map(x => ({ ...x, costo: .6 })), ...lexicoDe(forma).COMPLEMENTOS.map(x => ({ ...x, costo: 1.6 }))]
+  .map(x => { const sils = silabasCantadas(x.s); return { ...x, sils, fin: finalDe(sils) }; }).filter(x => x.sils.length <= 6);
+// un verso o una exclamación, para comparar: sin signos ni mayúsculas
+const comparable = t => t.toLowerCase().replace(/[¡!¿?,.]/g, '').replace(/\s+/g, ' ').trim();
 const ATONAS = new Set('a al con de del el en la las lo los me mi mis nos para por que se sin su sus te tu un una y o ya hoy aunque mientras porque como'.split(' '));
 
 function funcionDe(nombre, forma) {
@@ -63,6 +84,7 @@ function expandir(plantilla, rng, ctx) {
   const peso0 = x => Math.max(.05, 1 + (x.t || []).reduce((a, t) => a + (ctx.pedidos.includes(t) ? 3 : ctx.base.includes(t) ? 1.2 : 0) + (previos.includes(t) ? 2.5 : 0), 0) - (ctx.usados.has(x.s) ? .9 : 0));
   const peso = x => peso0(x) * rimaOk(x.n && ctx.nos ? x.n : x.s);
   const temas = [], partes = [];
+  const { SUJETOS_OK, ACCIONES, COMPLEMENTOS, CRITICAS, SALUDOS, DESPEDIDAS, VOCATIVOS, FRAGMENTOS } = lexicoDe(ctx.forma);
   const toks = plantilla.split(' ');
   for (let it = 0; it < toks.length; it++) {
     const tok = toks[it];
@@ -116,6 +138,8 @@ function puntaje(c, verso, rima, ctx) {
   // repetir palabras dentro de la parte o de la letra
   const vistas = new Set();
   for (const w of palabrasContenido(c.texto)) { if (vistas.has(w)) d.repeticion -= 2; vistas.add(w); if (ctx.enParte.has(w)) d.repeticion -= 1.2; else if (ctx.enLetra.has(w)) d.repeticion -= .25; }
+  // el mismo verso otra vez en la parte («Abran cancha / Abran cancha»): sólo si no hay otro
+  if (ctx.versosParte?.has(comparable(c.texto))) d.repeticion -= 6;
   c.desglose = d;
   return d.rima + d.acentos + d.tema + d.repeticion;
 }
@@ -126,15 +150,26 @@ export const leerPlantilla = tpl => tpl.split(' ').filter(t => t !== ',').map(t 
 function verso(v, rima, rng, ctx, funcion) {
   const n = v.silabas;
   if (n <= 3) {
-    const cortos = n === 1 ? ['ay', 'ay', 'ay', 'sí', 'oh'] : n === 2 ? ['ay, sí', 'por vos', 'la la', 'ay, ay, ay'] : EXCLAMACIONES.concat(FRAGMENTOS.map(f => f.s));
+    const L = lexicoDe(ctx.forma);
+    const cortos = n === 1 ? ['ay', 'ay', 'ay', 'sí', 'oh'] : n === 2 ? ['ay, sí', 'por vos', 'la la', 'ay, ay, ay'] : L.EXCLAMACIONES.concat(L.FRAGMENTOS.map(f => f.s));
     let op = cortos.filter(e => medir(e).n === n && (n === 1 || finalDe(silabasCantadas(e)).tipo === v.tipo));
-    const nuevos = op.filter(e => !ctx.cortos.has(e) || e === 'ay');
+    // «¡Carnaval!» y «carnaval» son lo mismo: no dos veces en la parte (salvo el «ay»)
+    const nuevos = op.filter(e => !ctx.cortos.has(comparable(e)) || e === 'ay');
     if (nuevos.length) op = nuevos;
-    if (op.length) { const t = op[Math.floor(rng.r() * op.length)]; ctx.cortos.add(t); return { texto: t, exacto: true, diag: { tipo: 'corto', opciones: op.slice(0, 8) } }; }
+    if (op.length) { const t = op[Math.floor(rng.r() * op.length)]; ctx.cortos.add(comparable(t)); ctx.versosParte?.add(comparable(t)); return { texto: t, exacto: true, diag: { tipo: 'corto', opciones: op.slice(0, 8) } }; }
   }
   const pl = PLANTILLAS[funcion];
   let mejor = null, cerca = null, intentos = 0, probados = 0, exactos = 0, conRima = 0;
   const descartes = { silabas: [], final: [], rima: [] }, top = [];
+  // versos cortos (hasta 6 sílabas): también un fragmento o un complemento suelto. Las plantillas casi nunca arman 4 o
+  // 5 sílabas agudas, y sin esto quedaba lo más parecido, repetido y sin entrar («nos despertamos»)
+  if (n <= 6) for (const x of sueltosDe(ctx.forma)) {
+    if (x.sils.length !== n || x.fin.tipo !== v.tipo) continue;
+    const c = { texto: x.s, sils: x.sils, fin: x.fin, temas: x.t || [], tocados: [x.s], tpl: 'FRAG' };
+    exactos++; if (rima && c.fin.rima === rima) conRima++;
+    c.p = puntaje(c, v, rima, ctx) - x.costo; c.desglose.relleno = -x.costo; c.desglose.coherencia = 0; c.desglose.inicio = 0;
+    if (!mejor || c.p > mejor.p) mejor = c;
+  }
   const MAX = rima ? 1800 : 900;
   while (intentos++ < MAX) {
     ctx.tocados = [];
@@ -180,12 +215,12 @@ export function escribirLetraLocal({ forma, tema, metrica, semilla = 1 }) {
   const partes = partesAEscribir(metrica, forma);
   const rng = new Rng(semilla * 7919 + 17);
   const { base, pedidos } = temasDe(tema, forma);
-  const ctx = { base, pedidos, usados: new Set(), enLetra: new Set(), enParte: new Set(), tocados: [] };
+  const ctx = { forma, base, pedidos, usados: new Set(), enLetra: new Set(), enParte: new Set(), tocados: [] };
   const diags = [];
   const textos = partes.map(p => {
     const dp = []; diags.push(dp);
     const funcion = funcionDe(p.nombre, forma);
-    ctx.enParte = new Set(); ctx.cortos = new Set(); ctx.anterior = '';
+    ctx.enParte = new Set(); ctx.cortos = new Set(); ctx.versosParte = new Set(); ctx.anterior = '';
     const out = [], rimas = {}; let conTema = 0;
     p.versos.forEach((v, k) => {
       // estribillo y bajada: el último verso vuelve al primero (el gancho) si entra igual
@@ -197,7 +232,7 @@ export function escribirLetraLocal({ forma, tema, metrica, semilla = 1 }) {
       ctx.rimaQuerida = rima; ctx.tipoQuerido = v.tipo;
       const r = verso(v, rima, rng, ctx, funcion);
       if (par && r.fin && !rimas[v.tipo] && r.fin.tipo === v.tipo) rimas[v.tipo] = r.fin.rima;
-      out.push(r.texto); dp.push({ ...r.diag, funcion }); ctx.anterior = r.texto.split(' ')[0]; if (r.temas?.some(t => ctx.pedidos.includes(t))) conTema++;
+      out.push(r.texto); ctx.versosParte.add(comparable(r.texto)); dp.push({ ...r.diag, funcion }); ctx.anterior = r.texto.split(' ')[0]; if (r.temas?.some(t => ctx.pedidos.includes(t))) conTema++;
       for (const w of palabrasContenido(r.texto)) { ctx.enParte.add(w); ctx.enLetra.add(w); }
     });
     out[0] = mayuscula(out[0]);
