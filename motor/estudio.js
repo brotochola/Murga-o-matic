@@ -30,6 +30,7 @@ const VALORES = [
   ['golpe', 'Golpe', 0, 10, .5, 'todas', 'dB de más al entrar las sílabas acentuadas'],
   ['pique', 'Pique', 0, 3, .05, 'todas', 'cuánto entra de abajo la nota, en semitonos'],
   ['caida', 'Caída', 0, 4, .05, 'todas', 'cuánto cae al final de la frase, en semitonos'],
+  ['respira', 'Respiración', 0, 2, .1, 'todas', 'cuánto se oye cuando toma aire antes de algunas frases (1: como en el coro real)'],
   ['modulacion', 'Temblor de la grabación', 0, 1.5, .05, 'banco', 'cuánto del temblor de altura de la grabación queda'],
 ];
 // enojados y gritando: grito fuerte, la voz apretada y un poco rajada, la grabación más aguda (bancos), entradas con

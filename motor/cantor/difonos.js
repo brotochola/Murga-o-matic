@@ -540,6 +540,8 @@ export function cantorDifonos(cuerda, semilla, { c = 0, V = { ...VARIACION, ...V
     // de todo lo anterior: lo de arriba no cambia)
     pasa: E.pasa, piqueVa: E.piqueVa, deriva: E.deriva, crece: E.crece, caidaProb: E.caidaProb, caidaLargo: E.caidaLargo,
     caida: +(E.caida * r.u(.5, 1.5)).toFixed(2),
+    // cuánto se oye cuando respira antes de una frase (respirar(): 1, como en el coro real)
+    respira: 1,
   };
 }
 
@@ -558,6 +560,59 @@ export function correr(notas, opc) {
     const a = Math.max(t0[i], i ? t0[i - 1] + .03 : -1e9);
     return { ...n, t0: a, t1: pegada ? Math.max(a + .03, t0[i + 1]) : Math.max(a + .03, n.t1 + (a - n.t0)) };
   });
+}
+
+// Las respiraciones (docs/respiraciones.md: 2.777 arranques de frase en las 85 voces separadas). Antes de un tercio de
+// las frases que siguen a 0,4 s o más sin cantar, el coro respira: un soplo de ruido de unos 190 ms (de 130 a 320), 33 dB
+// abajo de las vocales de la frase, que termina unos 90 ms antes de la voz (de 40 a 180), con cuerpo en los medios y una
+// joroba en 1,4–1,8 kHz; sube unos 70 ms, baja unos 90 y se corta 5 dB abajo del pico, sin cola. Respiran unos 7 de los
+// 13. Qué frase respira sale del momento de la nota (es la misma para todos los cantores, aunque canten en obreros
+// distintos), y si cada cantor respira o no, de su semilla. respira (opción del cantor): 1, lo medido; 0, no respira.
+export const RESPIRA = { prob: .35, cantores: 7 / 13, db: -33, dbAzar: 5, dur: [.13, .32], hueco: [.04, .18], pico: [.25, .75], pausa: .4 };
+// el color: la potencia por tercio de octava del soplo del coro real (dB bajo la banda más fuerte), como curva de
+// ecualizador para ruido blanco (que sube 1 dB por tercio de octava), con los extremos cerrados
+const CURVA_RESPIRA = [[100, -40], ...[[224, -14.4], [281, -14.1], [355, -16.4], [447, -15.2], [561, -12.1], [710, -10.3], [894, -9.6], [1118, -10.5], [1414, -3.6],
+  [1789, -4.3], [2236, -9.1], [2806, -8.4], [3550, -7.5], [4472, -12.6], [5612, -10.5], [7099, -12.9], [8944, -14.2]].map(([f, db]) => [f, db - 10 * Math.log10(f / 1414)]), [12000, -40]];
+// r: lo cantado ({ x, sr, inicio }, inicio en segundos de la pieza); notas: las del cantor, en segundos de la pieza
+export function respirar(r, notas, o = {}) {
+  const R = RESPIRA, k = o.respira ?? 1;
+  if (!(k > 0) || !notas.length || !r.x.length) return r;
+  const sr = r.sr, sem = Math.round((o.semilla || 1) * 97 + 13), soplos = [];
+  // la potencia de las vocales de la frase que sigue: el primer segundo, los cuadros de 20 ms a menos de 15 dB del más fuerte
+  const vocales = t0 => {
+    const c = Math.round(.02 * sr), a = Math.max(0, Math.round((t0 - r.inicio) * sr)), b = Math.min(r.x.length, a + sr), ps = [];
+    for (let i = a; i + c <= b; i += c) { let e = 0; for (let j = i; j < i + c; j++) e += r.x[j] * r.x[j]; ps.push(e / c); }
+    if (!ps.length) return 0;
+    const max = Math.max(...ps), fuertes = ps.filter(p => p >= max / 31.6);
+    return fuertes.reduce((x, y) => x + y, 0) / fuertes.length;
+  };
+  notas.forEach((n, i) => {
+    if (i && n.t0 - notas[i - 1].t1 < R.pausa) return;
+    const q = Math.round(n.t0 * 4);
+    if (azarDe(7919, q) >= R.prob || azarDe(sem, q) >= R.cantores) return;
+    const u = j => azarDe(sem + 101 * j, q);
+    const dur = R.dur[0] * Math.pow(R.dur[1] / R.dur[0], u(1)), hueco = R.hueco[0] * Math.pow(R.hueco[1] / R.hueco[0], u(2));
+    const fin = n.t0 - hueco, ini = Math.max(fin - dur, i ? notas[i - 1].t1 + .05 : -Infinity);
+    const pv = vocales(n.t0);
+    if (fin - ini < .08 || !(pv > 0)) return;
+    soplos.push({ ini, fin, pico: R.pico[0] + (R.pico[1] - R.pico[0]) * u(3), p: pv * Math.pow(10, (R.db + R.dbAzar * (2 * u(4) - 1)) / 10) * k * k, semilla: sem + q });
+  });
+  if (!soplos.length) return r;
+  const desde = Math.min(r.inicio, ...soplos.map(s => s.ini)), pre = Math.max(0, Math.round((r.inicio - desde) * sr));
+  const x = new Float32Array(r.x.length + pre); x.set(r.x, pre);
+  const M = 2048, suelta = Math.round(.005 * sr);
+  for (const s of soplos) {
+    const a = Math.round((s.ini - desde) * sr), n = Math.round((s.fin - s.ini) * sr), rnd = new Rnd(s.semilla);
+    const ruido = new Float32Array(n + 2 * M); for (let j = 0; j < ruido.length; j++) ruido[j] = rnd.r() * 2 - 1;
+    const y = ecualizar(ruido, sr, CURVA_RESPIRA).subarray(M, M + n);
+    // la campana: sube hasta el pico, baja hasta 5 dB abajo y se corta (con 5 ms, para que no haga clic)
+    const p = Math.max(1, Math.round(s.pico * n)), env = new Float32Array(n);
+    for (let j = 0; j < n; j++) env[j] = (j < p ? .5 - .5 * Math.cos(Math.PI * j / p) : 1 - .44 * (.5 - .5 * Math.cos(Math.PI * (j - p) / Math.max(1, n - p)))) * Math.min(1, (n - j) / suelta);
+    let ey = 0; for (let j = 0; j < n; j++) ey += (y[j] * env[j]) ** 2;
+    const g = Math.sqrt(s.p / Math.max(1e-12, ey / n));
+    for (let j = 0; j < n; j++) if (a + j >= 0 && a + j < x.length) x[a + j] += y[j] * env[j] * g;
+  }
+  return { ...r, x, inicio: desde };
 }
 
 // La memoria de frases (opc.memo): lo que ya se cantó, por la voz, las opciones y las notas de cada frase, en 16 bits.
@@ -606,5 +661,6 @@ export function cantarDifonos(mb, notas, opc = {}) {
   const t0 = partes[0].inicio, fin = Math.max(...partes.map(p => p.inicio + p.x.length / F));
   const x = new Float32Array(Math.ceil((fin - t0) * F) + 1);
   for (const p of partes) x.set(p.x, Math.round((p.inicio - t0) * F));
-  return { x, sr: F * a, inicio: t0 / a };
+  // y respira antes de algunas frases (con las notas en segundos de la pieza)
+  return respirar({ x, sr: F * a, inicio: t0 / a }, notas, o);
 }

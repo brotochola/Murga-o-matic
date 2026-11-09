@@ -9,6 +9,7 @@
 //     --plantel p   con banco: otro plantel (por defecto bancos/plantel.json)
 //     --emision 0   difonos sin la emisión murguera de difonos.js (para medir el timbre crudo)
 //     --curva no    sin la curva de ecualización (para medir el timbre crudo, como hace herramientas/curva_difonos.py)
+//     --letra frases  sin letra, cada golpe con la sílaba que sigue de las 24 frases de solista.mjs (si no, «la»/«a»)
 //     --variacion   cuánto se diferencian los cantores (lo que prueba banco_ajustar.py); si no, motor/cantor/variacion.js
 //     --exportar    además, cada cantor por separado y un manifiesto, para transcripcion/convertir_coro.py (Seed-VC)
 //     --ids a,b     sólo esos fragmentos      --sala 0.24   cuánta sala se le suma (las grabaciones tienen la suya; 0 = seco)
@@ -29,6 +30,7 @@ import { cantarBanco } from '../motor/cantor/banco.js';
 import { crearWorld } from '../motor/cantor/world.js';
 import { opcionesDe } from '../motor/cantor/murga_bancos.js';
 import { abrirBancoNode } from './banco_node.mjs';
+import { FRASES } from './solista.mjs';
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TRABAJO = resolve(process.env.MURGA_TRABAJO || join(RAIZ, 'murga_trabajo'));
@@ -63,6 +65,10 @@ const wav = (ruta, x) => {
   writeFileSync(ruta, b);
 };
 const LA = { ataque: ['l'], nucleo: ['a'], coda: [] }, A = { ataque: [], nucleo: ['a'], coda: [] };
+// --letra frases: sin la letra de verdad, cada golpe canta la sílaba que sigue de las 24 frases de solista.mjs (las
+// consonantes de una letra en castellano, que hacen los huecos entre sílabas como en el coro real). Si no, «la» después
+// de un silencio y «a» en lo ligado: sin consonantes, el hueco entre golpes queda chato.
+const CORRIDA = arg('letra') === 'frases' ? FRASES.flatMap(t => silabasCantadas(t).map(x => partes(x.fon))) : null;
 
 const fragmentos = JSON.parse(readFileSync(join(BANCO, 'fragmentos.json'), 'utf8')).filter(f => (!solo || f.id === solo) && (!ids || ids.has(f.id)));
 for (const f of fragmentos) {
@@ -94,7 +100,7 @@ for (const f of fragmentos) {
   }
   // de cada golpe, qué canta cada cuerda (como el compositor: por registro; en unísono, todos los que llegan)
   const lineas = Object.fromEntries(Object.entries(CORO).map(([k, c]) => [k, Array.from({ length: c.cantores }, () => [])]));
-  let finAnt = -1;
+  let finAnt = -1, kCorrida = 0;
   for (const g of G) {
     const porCuerda = { bajos: [], segundos: [], primos: [], sobreprimos: [], tercia: [] };
     if (g.ps.length === 1) { for (const k of ['bajos', 'segundos', 'primos', 'sobreprimos']) if (g.ps[0] >= RANGOS[k][0] && g.ps[0] <= RANGOS[k][1]) porCuerda[k].push(g.ps[0]); if (!Object.values(porCuerda).some(l => l.length)) porCuerda.primos.push(g.ps[0]); }
@@ -105,7 +111,7 @@ for (const f of fragmentos) {
       for (const k of ['bajos', 'segundos']) if (!porCuerda[k].length && grave >= RANGOS[k][0] && grave <= RANGOS[k][1]) porCuerda[k].push(grave);
     }
     // sin letra, «la»; acentuada si cae en el tiempo (para el cantor de difonos, que marca los acentos)
-    const silabas = silDe.get(g.i) || [{ s: { ...(g.t0 - finAnt > .15 ? LA : A), acento: g.q % 4 === 0 }, t0: g.t0, t1: g.t1 }];
+    const silabas = silDe.get(g.i) || [{ s: { ...(CORRIDA ? CORRIDA[kCorrida++ % CORRIDA.length] : g.t0 - finAnt > .15 ? LA : A), acento: g.q % 4 === 0 }, t0: g.t0, t1: g.t1 }];
     for (const [k, ps] of Object.entries(porCuerda)) {
       if (!ps.length) continue;
       const n = lineas[k].length;

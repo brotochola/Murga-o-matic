@@ -307,6 +307,7 @@ const PARAMS=[
   ["consonantes","Dicción",.8,1.6,.01,v=>`× ${v.toFixed(2)}`,"Consonantes más largas (más de 1) o más cortas. En las voces de banco conviene dejarla cerca de 1: estira la grabación."],
   ["pique","Entrada desde abajo",0,3,.05,v=>v<.01?"entra justo":`${Math.round(v*100)} cents`,"Cuánto arranca desde abajo al entrar después de un silencio. Los murguistas de verdad, unos 2 semitonos."],
   ["caida","Caída al final",0,4,.05,v=>v<.01?"no cae":`${Math.round(v*100)} cents`,"Cuánto cae la nota al final de algunas frases. Los de verdad, unos 2 semitonos en dos de cada tres finales."],
+  ["respira","Respiración",0,2,.1,v=>v<.01?"no respira":v===1?"como los de verdad":`× ${v.toFixed(1)}`,"Cuánto se oye cuando toma aire antes de algunas frases. En el coro real respiran unos 7 de 13, antes de un tercio de las frases, 33 dB abajo del canto."],
   ["adornos","Adornos",0,1,.05,v=>v<.01?"canta liso":`${Math.round(v*100)} % de las notas largas`,"En las notas largas de las clarinadas y los finales: vibrato, trino, una vuelta o pasarse a otra voz del acorde."],
   ["grito","Grito",0,1.5,.05,v=>v<.01?"no grita":v<.45?"grita poco":v<.9?"grita":"grita mucho","La boca más abierta y la voz apretada y pareja: grita como en el tablado."],
   ["retraso","Retraso",-.03,.06,.001,v=>`${Math.round(v*1000)} ms`,"Cuánto entra tarde (o antes, si es negativo) respecto del coro."],
