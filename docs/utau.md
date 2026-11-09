@@ -252,6 +252,50 @@ tardaron 84 s para 60 celdas.
 - **Lo que tarda:** el análisis de cada pedazo (0,3 a 1 s por archivo) se guarda; con eso, una frase de 4 a 5 s
   tarda de 0,5 a 1,9 s.
 
+## Que suene creíble (la noche del 9 de noviembre de 2026)
+
+El registro completo, con cada número, está en `murga_trabajo/plan/noche_2026-11-09.md`. La vara es el banco del coro
+(`banco_sintetizar.mjs --motor banco`, nuevo: cada lugar con su voz del plantel), y la distancia va en «ajuste ·
+control», para no sobreajustar.
+
+1. **Cantaban demasiado juntos.** Al principio daban 6,31 · 9,77, y casi todo era «una voz»: el real deja entre el 30 y
+   el 44 % de la energía de cada armónico a ±10 cents de la nota, y los bancos, entre el 40 y el 68 %. WORLD resintetiza
+   las grabaciones más limpias que MBROLA. `VARIACION_BANCO` (variacion.js) los abre:
+   - desafinación por cantor de 0,25 semitonos;
+   - desafinación por nota de 0,06 (nueva en banco.js: el azar sale de la semilla y del momento de la nota);
+   - el temblor de la grabación a 1,5;
+   - temblor rápido de 0,08.
+
+   Con eso llega a 4,18 · 6,94. Más corrimiento en el tiempo empeora.
+2. **El color de cada voz.** `herramientas/curva_bancos.py` saca una curva por voz contra el coro real, en 3
+   fragmentos de ajuste, y la deja en `curvas_banco.js`. `cantarBanco` la aplica (`colorReal`). Llega a 4,27 · 6,01.
+3. **Gritan** (`GRITO_BANCO` 0,3: con «Gritan», la mitad que MBROLA). El timbre se acerca (de 4,0 a 3,7 dB), pero
+   llena los huecos: cuesta un 5 %. Se dejó porque se pidió que griten.
+4. **Cantan como los solistas de verdad** (`docs/solistas_reales.md`): vibrato de 0,3 a 0,6, entran de abajo, se
+   pasan de la nota al ligar, caen al final de algunas frases, y las notas largas no crecen (crecían +1,8 dB/s). Los
+   valores están en `ESTILO_BANCO`. Llega a **3,86 · 4,94**.
+5. **Respiran** antes de algunas frases (`respirar()` de difonos.js, `docs/respiraciones.md`).
+
+**¿Se entienden?** Whisper, letras mal, cada voz sola con las 24 frases:
+
+| Voz | Letras mal |
+|---|---|
+| MIKE | 8,3 % |
+| LongWei | 14,0 % |
+| MBROLA es2 | 16,4 % |
+| Sanfu | 17,3 % |
+| Vincen-oto Legato | 21,5 % |
+| Sheep Oveja | 24,4 % |
+| Sheep Cordeiro | 26,8 % |
+| Vincen-oto Ottava | 27,7 % |
+| Vincen-oto Rubato | 33,1 % |
+| Sheep Hitsuji | 39,7 % |
+
+El coro entero de bancos, 25,1 %; sólo con voces en castellano, 19,0 %; el de MBROLA, 16,5 %. El problema son las voces
+extranjeras, una por una, y Sheep Oveja: pierde las codas («esquina esperaba» → «ikinai se vea»). Además, la dicción
+1,2 de MBROLA en un banco estira el pedazo grabado y se entiende menos (MIKE 11,9 % contra 8,2 %), así que los bancos
+cantan con 1.
+
 ## Riesgos
 
 - **Licencia**: muchos bancos no dejan redistribuirlos o piden crédito; por eso se cargan desde la compu.

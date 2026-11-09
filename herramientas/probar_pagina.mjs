@@ -100,8 +100,9 @@ const notas = await leer(`Object.values(window.murga.S.pieza.ev).reduce((a,l)=>a
 console.log('notas en el coro:', notas);
 if (!(notas > 50)) fallas++;
 await leer(`document.getElementById('play').click()`);
-await esperar(1500);
-const t = await leer(`document.getElementById('time').textContent`);
+// la página multipista tarda un poco en arrancar (más con la máquina ocupada): hasta 6 s para que el reloj se mueva
+let t = '';
+for (let i = 0; i < 12; i++) { await esperar(500); t = await leer(`document.getElementById('time').textContent`); if (!/^0:00 /.test(t)) break; }
 console.log('tocando:', t, '·', await leer(`document.getElementById('play').textContent`));
 if (/^0:00 /.test(t)) { console.log('  el tiempo no avanzó'); fallas++; }
 await leer(`document.getElementById('play').click()`);
