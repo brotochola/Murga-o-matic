@@ -3,6 +3,7 @@
 // de los bancos de UTAU (banco.js con WORLD; el banco se le presenta antes con { tipo: 'banco', banco, fuente }, y
 // lee sus .wav de la carpeta: bancos.js).
 import { cantar } from './cantor.js';
+import * as guardadas from './guardadas.js';   // lo ya cantado, guardado en el navegador (sobrevive a recargar)
 
 const bancos = {};
 let mundo = null;
@@ -49,6 +50,18 @@ function deMemoria(clave, arrays) {
   for (const k of arrays) r[k] = a32(m[k]);
   return r;
 }
+// Lo ya cantado: primero la memoria del obrero; después lo guardado en el navegador (guardadas.js: sobrevive a recargar
+// la página, y sirve para otra murga que cante lo mismo); si no está, se canta y se guarda en las dos. memoria: false
+// para los de difonos, que tienen la suya por frase (difonos.js); persistir: false si no se pidió (opc.memo).
+async function conMemoria(clave, arrays, cantarlo, { memoria = true, persistir = true } = {}) {
+  const m = memoria && deMemoria(clave, arrays); if (m) return m;
+  const k = persistir ? await guardadas.claveDe(clave) : null;
+  if (k) { const g = await guardadas.leer(k, arrays); if (g) { if (memoria) recordar(clave, g, arrays); return g; } }
+  const r = await cantarlo();
+  if (memoria) recordar(clave, r, arrays);
+  if (k) guardadas.guardar(k, r, arrays);   // (pasa a 16 bits antes de volver: después se pueden transferir)
+  return r;
+}
 
 self.onmessage = async ({ data: { id, notas, opc, motor, tipo, banco, fuente } }) => {
   try {
@@ -67,28 +80,28 @@ self.onmessage = async ({ data: { id, notas, opc, motor, tipo, banco, fuente } }
     }
     if (motor === 'banco') {
       if (!bancos[opc.banco]) throw new Error(`el banco «${opc.banco}» no está cargado`);
-      const clave = 'banco|' + JSON.stringify([opc, notas]), m = deMemoria(clave, ['x']);
-      if (m) { self.postMessage({ id, ...m }, [m.x.buffer]); return; }
-      const [{ cantarBanco, archivosQueUsa }, b, w] = await Promise.all([import('./banco.js'), bancos[opc.banco], elMundo()]);
-      await b.preparar(archivosQueUsa(b, notas, opc));
-      const { x, sr, inicio, faltan } = cantarBanco(b, w, notas, { ...opc, cache: b.cacheAnalisis });
-      const r = { x, sr, inicio, faltan: [...new Set(faltan || [])] };
-      recordar(clave, r, ['x']);
-      self.postMessage({ id, ...r }, [x.buffer]);
+      const r = await conMemoria('banco|' + JSON.stringify([opc, notas]), ['x'], async () => {
+        const [{ cantarBanco, archivosQueUsa }, b, w] = await Promise.all([import('./banco.js'), bancos[opc.banco], elMundo()]);
+        await b.preparar(archivosQueUsa(b, notas, opc));
+        const { x, sr, inicio, faltan } = cantarBanco(b, w, notas, { ...opc, cache: b.cacheAnalisis });
+        return { x, sr, inicio, faltan: [...new Set(faltan || [])] };
+      });
+      self.postMessage({ id, ...r }, [r.x.buffer]);
       return;
     }
     if (motor === 'difonos') {
-      const [{ cantarDifonos }, mb] = await Promise.all([import('./difonos.js'), vozMbrola(opc.voz || 'es2')]);
-      const { x, sr, inicio } = cantarDifonos(mb, notas, opc);
-      self.postMessage({ id, x, sr, inicio }, [x.buffer]);
+      const r = await conMemoria('difonos|' + JSON.stringify([opc, notas]), ['x'], async () => {
+        const [{ cantarDifonos }, mb] = await Promise.all([import('./difonos.js'), vozMbrola(opc.voz || 'es2')]);
+        const { x, sr, inicio } = cantarDifonos(mb, notas, opc);
+        return { x, sr, inicio };
+      }, { memoria: false, persistir: !!opc.memo });
+      self.postMessage({ id, ...r }, [r.x.buffer]);
       return;
     }
     // los de formantes: con memo, la misma memoria que los bancos (la página lo pide cuando canta cada uno con su voz)
-    const clave = opc.memo ? 'formantes|' + JSON.stringify([opc, notas]) : null, m = clave && deMemoria(clave, ['voz', 'ruido']);
-    if (m) { self.postMessage({ id, ...m }, [m.voz.buffer, m.ruido.buffer]); return; }
-    const { voz, ruido } = cantar(notas, { ...opc, separar: true });
-    if (clave) recordar(clave, { voz, ruido }, ['voz', 'ruido']);
-    self.postMessage({ id, voz, ruido }, [voz.buffer, ruido.buffer]);
+    const formantes = async () => { const { voz, ruido } = cantar(notas, { ...opc, separar: true }); return { voz, ruido }; };
+    const r = opc.memo ? await conMemoria('formantes|' + JSON.stringify([opc, notas]), ['voz', 'ruido'], formantes) : await formantes();
+    self.postMessage({ id, voz: r.voz, ruido: r.ruido }, [r.voz.buffer, r.ruido.buffer]);
   } catch (e) {
     self.postMessage({ id, error: String(e?.message || e) });
   }
