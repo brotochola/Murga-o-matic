@@ -402,12 +402,13 @@ function esforzar(x, sr, g, o) {
     C[j * 4] = -2 * rz * Math.cos(th); C[j * 4 + 1] = rz * rz; C[j * 4 + 2] = -2 * rad2 * Math.cos(th2); C[j * 4 + 3] = rad2 * rad2;
   }
   // 2. el filtro que corre el formante (coeficientes interpolados entre cuadros: un segundo orden estable sigue estable)
-  //    y el pozo en la fundamental (pico negativo, Q 1,2, recalculado cada 32 muestras)
+  //    y el pozo en la fundamental (pico negativo, Q 1,2, recalculado cada 32 muestras; o.pozoAgudo: cuánto queda del
+  //    pozo en el agudo, desde `agudo` Hz, de 0 a 1)
   const y = new Float32Array(x.length);
   let x1 = 0, x2 = 0, y1 = 0, y2 = 0, p1 = 0, p2 = 0, q1 = 0, q2 = 0, pb0 = 1, pb1 = 0, pb2 = 0, pa1 = 0, pa2 = 0;
   for (let k = 0; k < x.length; k++) {
     if (k % PASO === 0) {
-      const j = Math.min(nc - 1, k / PASO), e = esf[j], db = -E.fundamental * e * voc[j];
+      const j = Math.min(nc - 1, k / PASO), e = esf[j], ua = Math.max(0, Math.min(1, (f0[j] - E.agudo) / 100)), db = -E.fundamental * e * voc[j] * (1 - ua * ua * (3 - 2 * ua) * (1 - (o.pozoAgudo ?? 1)));
       if (db > -.05) { pb0 = 1; pb1 = pb2 = pa1 = pa2 = 0; }
       else {
         const A = Math.pow(10, db / 40), w = 2 * Math.PI * Math.min(f0[j], sr * .45) / sr, cs = Math.cos(w), al = Math.sin(w) / (2 * 1.2), a0 = 1 + al / A;
