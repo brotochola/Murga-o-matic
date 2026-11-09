@@ -45,7 +45,7 @@ function chrome() {
 }
 const PUERTO = 9300 + Math.floor(Math.random() * 500);
 const perfil = join(process.env.MURGA_PERFIL || tmpdir(), 'murga_estudio_' + Date.now());
-const ch = spawn(chrome(), [`--remote-debugging-port=${PUERTO}`, '--no-sandbox', '--autoplay-policy=no-user-gesture-required', `--user-data-dir=${perfil}`, 'about:blank'], { stdio: 'ignore' });
+const ch = spawn(chrome(), [`--remote-debugging-port=${PUERTO}`, '--no-sandbox', '--mute-audio', '--autoplay-policy=no-user-gesture-required', `--user-data-dir=${perfil}`, 'about:blank'], { stdio: 'ignore' });
 let lista = null;
 for (let i = 0; i < 40 && !lista; i++) { await esperar(250); try { lista = await (await fetch(`http://127.0.0.1:${PUERTO}/json/list`)).json(); } catch { } }
 const ws = new WebSocket(lista.find(t => t.type === 'page').webSocketDebuggerUrl);

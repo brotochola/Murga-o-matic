@@ -49,7 +49,7 @@ if (!url) {
 
 const PUERTO = 9300 + Math.floor(Math.random() * 500);
 const perfil = process.env.MURGA_PERFIL || join(tmpdir(), 'murga_perfil');
-const ch = spawn(chrome(), [`--remote-debugging-port=${PUERTO}`, '--no-sandbox', '--autoplay-policy=no-user-gesture-required', '--window-size=1280,900', `--user-data-dir=${perfil}`, 'about:blank'], { stdio: 'ignore' });
+const ch = spawn(chrome(), [`--remote-debugging-port=${PUERTO}`, '--no-sandbox', '--mute-audio', '--autoplay-policy=no-user-gesture-required', '--window-size=1280,900', `--user-data-dir=${perfil}`, 'about:blank'], { stdio: 'ignore' });
 let lista = null;
 for (let i = 0; i < 40 && !lista; i++) { await esperar(250); try { lista = await (await fetch(`http://127.0.0.1:${PUERTO}/json/list`)).json(); } catch { } }
 const ws = new WebSocket(lista.find(t => t.type === 'page').webSocketDebuggerUrl);
@@ -99,6 +99,12 @@ await paso('presentación', `document.querySelector('#forma button[data-v=presen
 const notas = await leer(`Object.values(window.murga.S.pieza.ev).reduce((a,l)=>a+l.length,0)`);
 console.log('notas en el coro:', notas);
 if (!(notas > 50)) fallas++;
+// las voces no se cantan solas: el botón del paso 3
+{ const t0 = Date.now(), antes = await leer(`!!window.murga.S.vozHecha`);
+  await leer(`document.getElementById('cantarVoces').click()`);
+  let v = false; for (let i = 0; i < 240 && !v; i++) { await esperar(500); v = await leer(`!!(window.murga.S.vozHecha&&!window.murga.S.cantando)`); }
+  console.log('cantar las voces'.padEnd(20), ((Date.now() - t0) / 1000).toFixed(1).padStart(5) + ' s ', v && !antes ? await leer(`document.getElementById('pasoVocesTxt').textContent`) : `MAL: antes ${antes}, después ${v}`);
+  if (!v || antes) fallas++; }
 await leer(`document.getElementById('play').click()`);
 // la página multipista tarda un poco en arrancar (más con la máquina ocupada): hasta 6 s para que el reloj se mueva
 let t = '';

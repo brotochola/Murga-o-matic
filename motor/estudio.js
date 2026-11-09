@@ -238,7 +238,9 @@ function wavMono(x, sr) {
   for (let k = 0; k < n; k++) dv.setInt16(44 + k * 2, Math.max(-32767, Math.min(32767, Math.round(x[k] * g * 32767))), true);
   return new Blob([b], { type: 'audio/wav' });
 }
-async function cantarVoz(i) {
+// tocar: que suene apenas está (con «Cantar todas» no: cantan todas a la vez y se pisarían; cada una queda en su
+// reproductor)
+async function cantarVoz(i, tocar = true) {
   const v = S.plantel[i], d = $('voz' + i); if (!d) return;
   const est = d.querySelector('.estado'), a = d.querySelector('audio');
   est.textContent = 'cantando…'; const t = performance.now();
@@ -252,7 +254,8 @@ async function cantarVoz(i) {
     if (a.src) URL.revokeObjectURL(a.src);
     a.src = URL.createObjectURL(wavMono(r.x, r.sr));
     est.textContent = `en ${((performance.now() - t) / 1000).toFixed(1)} s${r.faltan?.length ? ` · le faltan ${r.faltan.slice(0, 4).join(', ')}` : ''}`;
-    await a.play().catch(() => {});
+    // una voz por vez: si otra estaba sonando, se calla (dos voces con la misma frase, corridas, suenan desparejas)
+    if (tocar) { document.querySelectorAll('audio').forEach(x => { if (x !== a) x.pause(); }); await a.play().catch(() => {}); }
   } catch (e) { est.textContent = 'no pudo: ' + e.message; }
 }
 $('enojados').onclick = () => {
@@ -262,8 +265,8 @@ $('enojados').onclick = () => {
 $('comoEstaban').onclick = () => { S.plantel = JSON.parse(JSON.stringify(alAbrir)); guardar(); dibujarVoces(); dibujarLugares(); $('estadoVoces').textContent = 'Como estaban al abrir el estudio.'; };
 $('todas').onclick = async () => {
   $('estadoVoces').textContent = `Cantando ${S.plantel.length} voces…`;
-  await Promise.all(S.plantel.map((_, i) => cantarVoz(i)));
-  $('estadoVoces').textContent = 'Cantaron todas.';
+  await Promise.all(S.plantel.map((_, i) => cantarVoz(i, false)));
+  $('estadoVoces').textContent = 'Cantaron todas: tocá ▶ en cada una para escucharla.';
 };
 for (const id of ['frase', 'cuerda', 'auto']) $(id).onchange = () => { S.opciones[id] = id === 'auto' ? $(id).checked : $(id).value; guardar(); if (id === 'cuerda') S.plantel.forEach((_, i) => refrescar(i)); };
 $('exportar').onclick = () => {

@@ -1,4 +1,5 @@
-// La voz de cada murguista en la página, en Chrome sin ventana: las caras (con la regla COEP que bloqueaba las de
+// La voz de cada murguista en la página, en Chrome sin ventana: los pasos (la pieza se ve enseguida, sin cantar; las
+// voces, con el botón «Cantar las voces»), las caras (con la regla COEP que bloqueaba las de
 // DiceBear), toda la murga con una voz (MBROLA, muestras de coro, formantes, un banco) y cuánto suena cada una, y cuánto
 // tarda en volver a cantar cuando se cambia un solo murguista (su volumen, su voz).
 //   node herramientas/probar_voces.mjs [--sin-coep] [--voces es2,muestras,formantes,banco:MIKE]
@@ -32,7 +33,7 @@ const srv = spawn(process.execPath, [join(RAIZ, 'herramientas', 'servir.js'), St
 await esperar(800);
 const PUERTO = 9300 + Math.floor(Math.random() * 500);
 const perfil = join(process.env.MURGA_PERFIL || tmpdir(), `murga_voces_${Date.now()}`);
-const ch = spawn(chrome(), [`--remote-debugging-port=${PUERTO}`, '--no-sandbox', '--autoplay-policy=no-user-gesture-required', '--window-size=1400,1000', `--user-data-dir=${perfil}`, 'about:blank'], { stdio: 'ignore' });
+const ch = spawn(chrome(), [`--remote-debugging-port=${PUERTO}`, '--no-sandbox', '--mute-audio', '--autoplay-policy=no-user-gesture-required', '--window-size=1400,1000', `--user-data-dir=${perfil}`, 'about:blank'], { stdio: 'ignore' });
 const fin = code => { try { ws.close(); } catch { } ch.kill(); srv.kill(); process.exit(code); };
 let lista = null;
 for (let i = 0; i < 40 && !lista; i++) { await esperar(250); try { lista = await (await fetch(`http://127.0.0.1:${PUERTO}/json/list`)).json(); } catch { } }
@@ -64,7 +65,8 @@ await env('Page.addScriptToEvaluateOnNewDocument', { source: `try{if(!sessionSto
 await env('Page.navigate', { url: `http://127.0.0.1:${PW}/index.html?nueva&voces=difonos` });
 
 const hasta = async (js, ms) => { const t = Date.now(); while (Date.now() - t < ms) { let v = null; try { v = await leer(js); } catch { } if (v) return v; await esperar(400); } return null; };
-const LISTO = `(()=>{const S=window.murga?.S;return !!(S&&S.stems&&!document.getElementById('play').disabled)})()`;
+const LISTO = `(()=>{const S=window.murga?.S;return !!(S&&S.stems&&!S.cantando&&!document.getElementById('play').disabled)})()`;
+const CANTADAS = `(()=>{const S=window.murga?.S;return !!(S&&S.vozHecha&&!S.cantando)})()`;
 // espera a que la página empiece a cantar otra vez (S.gen cambia) y a que termine; devuelve los segundos
 async function cantaDeNuevo(accion, ms = 900000) {
   const g = await leer(`window.murga?.S?.gen ?? -1`), t0 = Date.now();
@@ -73,15 +75,24 @@ async function cantaDeNuevo(accion, ms = 900000) {
   if (!await hasta(LISTO, ms)) return null;
   return (Date.now() - t0) / 1000;
 }
+const CANTAR = `document.getElementById('cantarVoces').click()`;
 // la energía de lo que cantaron (todas las cuerdas, sin la normalización de la página)
 const ENERGIA = `(()=>{const S=window.murga.S;let e=0;for(const k of ['bajos','segundos','primos','sobreprimos','tercia']){const b=S.stems[k];if(!b)continue;for(let c=0;c<b.numberOfChannels;c++){const x=b.getChannelData(c);for(let i=0;i<x.length;i++)e+=x[i]*x[i]}}return e*S.pv*S.pv})()`;
 
 console.log(`página en http://127.0.0.1:${PW}/ ${COEP ? 'con la regla COEP (como el Chrome del dueño)' : 'sin COEP'}`);
-if (!await hasta(LISTO, 600000)) { console.log('la página no terminó de cantar'); for (const e of errores.slice(0, 10)) console.log('  ' + e); fin(1); }
+const tEntra = Date.now();
+if (!await hasta(LISTO, 120000)) { console.log('la página no se armó'); for (const e of errores.slice(0, 10)) console.log('  ' + e); fin(1); }
+// al entrar: la música, la letra y la partitura enseguida, y las voces sin cantar
+const entrada = await leer(`(()=>{const S=window.murga.S;return {voces:!!S.vozHecha,notas:document.querySelectorAll('#multipista *').length,versos:S.letra.partes.reduce((a,p)=>a+p.versos.length,0),pasos:[...document.querySelectorAll('.etapa')].map(p=>p.className.replace('etapa ','')+': '+p.innerText.replace(/\s+/g,' ').trim()).join(' | ')}})()`);
+ok(!entrada.voces && entrada.versos > 0 && entrada.notas > 50, `al entrar, en ${((Date.now() - tEntra) / 1000).toFixed(1)} s: ${entrada.versos} versos, el multipista armado, voces sin cantar`);
+console.log('  pasos: ' + entrada.pasos);
 console.log('aislada (COEP activa):', await leer('self.crossOriginIsolated'));
 // una pieza corta: así cada vuelta tarda menos
 const tCorta = await cantaDeNuevo(`(()=>{const s=document.getElementById('largo');s.value='corta';s.dispatchEvent(new Event('change',{bubbles:true}))})()`);
-console.log(`pieza corta, cantada con es2 en ${tCorta} s: ${await leer(`document.getElementById('status').textContent`)}`);
+console.log(`pieza corta, armada en ${tCorta} s (sin cantar)`);
+const t0 = Date.now(); await leer(CANTAR);
+const canto = await hasta(CANTADAS, 900000);
+ok(!!canto, `«Cantar las voces» (los trece con es2): ${((Date.now() - t0) / 1000).toFixed(1)} s — ${await leer(`document.getElementById('pasoVocesTxt').textContent`)}`);
 
 // las caras: las de DiceBear tienen que verse (o las iniciales si no hay internet), y ningún error de COEP. Se
 // cargan cuando se ven (loading=lazy): se abre el panel «Cantantes»

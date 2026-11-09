@@ -35,10 +35,17 @@ Es un multipista, como el Timba-o-matic: una fila por cosa y los compases de izq
 - Abajo está la sección elegida: sus acordes de a medio compás, el loop de cada compás y su letra, que se escribe ahí mismo.
 - Los paneles de la barra (La pieza, Mezcla, Cantantes, Letra, Partitura, Exportar) se abren arriba del multipista, de a uno.
 
+Arriba hay tres pasos, cada uno con su botón: **1 Música** (Otra música), **2 Letra** (Otra letra, Lailareo) y **3
+Voces** (Cantar las voces). Al entrar se compone la pieza y la página la muestra enseguida, con la letra apenas el
+letrista la termina (en un obrero, sin trabar la página) y la batería lista para tocar en un segundo y medio. Las
+voces no se cantan solas: con los bancos tardan minutos, así que las canta el botón del paso 3, y mientras tanto la
+página se usa igual (se toca la batería, se edita, se cambian cantantes). Con música nueva las voces vuelven a quedar
+sin cantar.
+
 Cada cambio rehace sólo lo que toca:
 - Un acorde recompone sólo su sección (y las bajadas que la repiten), y vuelven a cantar sólo sus frases.
 - El loop de un compás rearma sólo la batería, en unos 2 segundos.
-- Un verso, una nota o un cantante vuelven a cantar sólo las frases que cambiaron. Al cambiar un cantante se vuelve a
+- Con las voces ya cantadas, un verso, una nota o un cantante vuelven a cantar solos, sólo las frases que cambiaron. Al cambiar un cantante se vuelve a
   sumar su cuerda, y los demás de la cuerda salen de la memoria de su obrero: los de MBROLA frase por frase, los de
   banco y de formantes enteros. La mezcla de las cuerdas y la batería se hace en vivo, mientras suena; el MP3 se arma
   recién al exportar.
