@@ -191,6 +191,18 @@ desarma el .zip con los nombres bien).
 | Vincen-oto Ottava | japonés CVVC, igual | Sol#3, Fa 4, Do 5 | las mismas |
 | Vincen-oto Rubato | japonés VCV | La 2, Re 3, La 3, Re#4, Sol#4, La#4, Re#5 | las mismas |
 
+| Sheep Cordeiro V3 (EdusheeP) | portugués de Brasil, BRAPA | Do 3, Fa 3, La 3 (cubre de Fa 2 a Fa 5 estirando) | no dice |
+| Sheep Hitsuji V3 (EdusheeP) | japonés CV (sin pasos: las codas se pierden) | La 2, Do 3, Mi 3, La 3, Si 3, Fa 4 | no dice |
+
+Las tres Sheep son la misma voz en tres idiomas. Para el castellano, el portugués trae lo que a los bancos en
+castellano les falta: la r gutural («h»), que es la jota; la «j» ([ʒ]), que es la ll/y rioplatense; y la «sh». No
+tiene la rr de lengua: va la r simple. Los bancos de OpenUtau dicen sus alturas en el `character.yaml` (subbanks:
+un prefijo como «C3_», un sufijo, un color y las notas que cubre), y `banco.js` los lee como el `prefix.map`.
+
+En italiano y portugués hay muy pocos bancos de hombre, y ninguno con voz de pecho en el agudo. Los tres KEI de
+Rosaaah (portugués) ya no están en Drive. Sanfu (italiano CVVC, Do 3, Sol 3 y Do 4) no dice si es voz de hombre.
+ZIL (italiano) es una voz andrógina, en BowlRoll. Al oído, MBROLA es4 suena malísimo.
+
 (Las alturas son las medidas; a veces el nombre de la carpeta dice otra. Las condiciones de Vincen-oto dicen
 también: crédito al banco y a su autor, y nada R18.)
 

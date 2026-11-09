@@ -50,6 +50,26 @@ export function leerPrefixMap(t) {
   }
   return m;
 }
+// los subbanks del character.yaml de OpenUtau: [{ color, prefijo, sufijo, rangos: [[desde, hasta], ...] }]. Un YAML
+// chico, siempre con la misma forma: se lee línea por línea.
+export function leerSubbancos(t) {
+  const out = []; let dentro = false, sb = null;
+  for (const l of t.split(/\r?\n/)) {
+    if (/^﻿?subbanks\s*:/.test(l)) { dentro = true; continue; }
+    if (!dentro) continue;
+    if (/^\S/.test(l) && !/^-/.test(l)) break;       // otra clave de arriba: se terminó la lista
+    const k = /^\s*(-\s*)?(color|prefix|suffix|tone_ranges)\s*:\s*(.*)$/.exec(l);
+    if (k) {
+      if (k[1] || !sb) { sb = { color: '', prefijo: '', sufijo: '', rangos: [] }; out.push(sb); }
+      const v = k[3].trim().replace(/^["']|["']$/g, '');
+      if (k[2] === 'color') sb.color = v; else if (k[2] === 'prefix') sb.prefijo = v; else if (k[2] === 'suffix') sb.sufijo = v;
+      continue;
+    }
+    const r = /^\s*-\s*["']?([A-G][#b]?\d)(?:\s*-\s*([A-G][#b]?\d))?["']?\s*$/.exec(l);
+    if (r && sb) { const a = notaDeNombre(r[1]), b = notaDeNombre(r[2] || r[1]); if (a != null && b != null) sb.rangos.push([Math.min(a, b), Math.max(a, b)]); }
+  }
+  return out;
+}
 export function leerWav(bytes) {
   const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), tag = p => String.fromCharCode(...bytes.subarray(p, p + 4));
   let p = 12, sr = 0, bits = 16, canales = 1, formato = 1, x = null;
@@ -79,40 +99,56 @@ export function crearBanco(rutas, leer) {
   const prefijos = rPrefix ? leerPrefixMap(texto(leer(rPrefix))) : new Map();
   const rChar = rutas.find(r => r.toLowerCase() === 'character.txt');
   const nombre = rChar ? (/^name=(.*)$/im.exec(texto(leer(rChar)))?.[1] || '').trim() : '';
+  const rYaml = rutas.find(r => r.toLowerCase() === 'character.yaml');
+  const subbancos = rYaml ? leerSubbancos(texto(leer(rYaml))) : [];
   const indice = new Map();
   for (const e of entradas) if (!indice.has(e.alias)) indice.set(e.alias, e);
   // entradas cuyo .wav no está (un .zip japonés desarmado con los nombres mal, en Shift-JIS, queda así: ver zip.js)
   const hay = new Set(rutas.map(r => r.toLowerCase()));
   const sinArchivo = entradas.filter(e => !hay.has(e.archivo.toLowerCase())).length;
-  // las alturas grabadas: cada sufijo del prefix.map, con la nota que dice su nombre o, si no, el medio de sus notas
-  const porSufijo = new Map();
-  for (const [m, { sufijo }] of prefijos) { if (!porSufijo.has(sufijo)) porSufijo.set(sufijo, []); porSufijo.get(sufijo).push(m); }
-  // (sin nombre de nota: si el sufijo cubre hasta lo más agudo, como un falsete, su nota más grave; si cubre hasta lo
-  // más grave, la más aguda; si no, la del medio)
-  const alturas = [...porSufijo].map(([sufijo, ms]) => {
-    const dicho = notaDeNombre(sufijo.replace(/^[_\s-]+/, '').replace(/[_\s-].*$/, ''));
-    ms.sort((a, b) => a - b);
-    return { sufijo, midi: dicho ?? (ms[ms.length - 1] >= 100 ? ms[0] : ms[0] <= 25 ? ms[ms.length - 1] : ms[ms.length >> 1]) };
-  });
-  if (!alturas.length) alturas.push({ sufijo: '', midi: 60 });
-  const sufijoDe = midi => prefijos.get(Math.round(midi))?.sufijo
-    ?? alturas.reduce((a, b) => (Math.abs(b.midi - midi) < Math.abs(a.midi - midi) ? b : a)).sufijo;
-  const midiDe = suf => alturas.find(a => a.sufijo === suf)?.midi ?? 60;
-  // el pedazo para un alias en una nota: la altura grabada que dice el prefix.map, o la más cercana que lo tenga.
-  // evitar: sufijos que no se usan (por ejemplo el falsete, «_F»: un sobreprimo canta con el pecho). color: un sufijo
-  // que se prueba primero, en cualquier nota (los colores de un banco, como «_dp», grave, y «_sf», suave, de MIKE)
+  // las capas del banco: cada altura grabada (o color) es un prefijo y un sufijo que se le ponen al alias («C3_» y
+  // «» en los bancos de OpenUtau, «» y «_E4» en los de UTAU), con las notas que cubre. Salen de los subbanks del
+  // character.yaml de OpenUtau o, si no hay, del prefix.map de UTAU.
+  const capas = [];
+  const capa = (prefijo, sufijo, color) => {
+    let c = capas.find(x => x.prefijo === prefijo && x.sufijo === sufijo && x.color === color);
+    if (!c) { c = { prefijo, sufijo, color, notas: new Set() }; capas.push(c); }
+    return c;
+  };
+  for (const sb of subbancos) { const c = capa(sb.prefijo, sb.sufijo, sb.color); for (const [a, b] of sb.rangos) for (let m = a; m <= b; m++) c.notas.add(m); }
+  if (!subbancos.length) for (const [m, { prefijo, sufijo }] of prefijos) capa(prefijo, sufijo, '').notas.add(m);
+  // la nota grabada de cada capa: la que dice su nombre; si no (un falsete «_F»): si cubre hasta lo más agudo, su
+  // nota más grave; si cubre hasta lo más grave, la más aguda; si no, la del medio
+  const notaEn = s => notaDeNombre(String(s).replace(/^[_\s-]+/, '').replace(/[_\s-].*$/, ''));
+  for (const c of capas) {
+    const ms = [...c.notas].sort((a, b) => a - b);
+    c.midi = notaEn(c.sufijo) ?? notaEn(c.prefijo) ?? (!ms.length ? 60 : ms[ms.length - 1] >= 100 ? ms[0] : ms[0] <= 25 ? ms[ms.length - 1] : ms[ms.length >> 1]);
+  }
+  if (!capas.length) capas.push({ prefijo: '', sufijo: '', color: '', notas: new Set(), midi: 60 });
+  const alturas = capas;
+  const colores = new Set(capas.map(c => c.color).filter(Boolean));
+  const sufijoDe = midi => (capas.find(c => c.notas.has(Math.round(midi))) || capas[0]).sufijo;
+  // el pedazo para un alias en una nota: la capa que cubre esa nota (la del color pedido), o la más cercana que lo
+  // tenga. evitar: sufijos, prefijos o colores que no se usan (por ejemplo el falsete, «_F»: un sobreprimo canta con
+  // el pecho). color: un color del character.yaml o, si no, un sufijo que se prueba primero en cualquier nota (los
+  // colores de MIKE, «_dp», grave, y «_sf», suave, que no están en su prefix.map)
   function buscar(alias, midi, evitar = null, color = null) {
-    if (color) { const e = indice.get(alias + color); if (e) return e; }
-    let s = sufijoDe(midi);
-    const otras = alturas.map(a => a.sufijo).filter(x => x !== s && !evitar?.includes(x)).sort((a, b) => Math.abs(midiDe(a) - midi) - Math.abs(midiDe(b) - midi));
-    const orden = evitar?.includes(s) ? otras : [s, ...otras];
-    for (const suf of orden) { const e = indice.get(alias + suf); if (e) return e; }
+    const m = Math.round(midi);
+    if (color && !colores.has(color)) { const e = indice.get(alias + color); if (e) return e; }
+    const quiero = color && colores.has(color) ? color : '';
+    const fuera = c => evitar?.some(x => x && (x === c.sufijo || x === c.prefijo || x === c.color));
+    const orden = capas.filter(c => !fuera(c))
+      .map(c => ({ c, d: (c.notas.has(m) ? 0 : 100 + Math.abs(c.midi - m)) + (c.color === quiero ? 0 : 1000) }))
+      .sort((a, b) => a.d - b.d);
+    for (const { c } of orden) { const e = indice.get(c.prefijo + alias + c.sufijo); if (e) return e; }
     return indice.get(alias) || null;
   }
   const existe = new Set();
   for (const a of indice.keys()) {
     existe.add(a);
-    for (const { sufijo } of alturas) if (sufijo && a.endsWith(sufijo)) existe.add(a.slice(0, -sufijo.length));
+    for (const { prefijo, sufijo } of capas) {
+      if ((prefijo || sufijo) && a.length > prefijo.length + sufijo.length && a.startsWith(prefijo) && a.endsWith(sufijo)) existe.add(a.slice(prefijo.length, a.length - sufijo.length));
+    }
   }
   const wavs = new Map();
   function wav(archivo) {
@@ -133,7 +169,8 @@ export function crearBanco(rutas, leer) {
   }
   // la reclist: la de AkuP corta con «a R»; la CVVC castellana común (la del fonetizador silábico de OpenUtau), con
   // «a -»; la VCCV de nJokis, con «a-»
-  const reclist = existe.has('か') && existe.has('- あ') ? 'japones'
+  const reclist = existe.has('か') && (existe.has('- あ') || existe.has('a あ')) ? 'japones'
+    : existe.has('-b a') && existe.has('b a') ? 'brapa'
     : existe.has('a R') && existe.has('- a') ? 'akup' : existe.has('a -') && existe.has('- a') && existe.has('a b') ? 'cvvc' : 'njokis';
   return { nombre, entradas, indice, prefijos, alturas, buscar, existe: a => existe.has(a), wav, sufijoDe, reclist, sinArchivo };
 }
@@ -149,7 +186,7 @@ const OCLUSIVA = { B: 'b', D: 'd', G: 'g' }, FRICATIVA = { b: 'B', d: 'D', g: 'G
 //   fin: el final de la frase.
 export function aliasFrase(notas, existe, o = {}) {
   // (una copia: la reclist de AkuP le pasa la coda a la sílaba que sigue, y las notas son de quien llama)
-  const f = { akup: aliasAkup, cvvc: aliasCvvc, japones: aliasJapones }[o.reclist] || aliasNjokis;
+  const f = { akup: aliasAkup, cvvc: aliasCvvc, japones: aliasJapones, brapa: aliasBrapa }[o.reclist] || aliasNjokis;
   return f(notas.map(n => ({ ...n, sil: { ...n.sil } })), existe, o);
 }
 
@@ -244,6 +281,63 @@ function aliasJapones(notas, existe, o = {}) {
     }
   }
   U.faltan = faltan.filter(Boolean);
+  return U;
+}
+
+// ── BRAPA, la reclist del portugués de Brasil (Sheep Cordeiro, KEI): la sílaba con un espacio («b a»), «-b a» al
+// empezar con consonante, «- a» con vocal, «a b» de la vocal a la consonante, «a -» y «b -» al cortar, «a b-» la
+// vocal con la consonante final. Tiene lo que el rioplatense necesita y el castellano de los bancos no: la r gutural
+// («h»), que es la jota; la «j» ([ʒ]), que es la ll/y; la «sh». No tiene la rr de lengua: va la r simple.
+const BR = { a: 'a', e: 'e', i: 'i', o: 'o', u: 'u', l: 'l', r: 'r', R: 'r', m: 'm', n: 'n', N: 'nh', B: 'b', D: 'd', G: 'g', b: 'b', d: 'd', g: 'g', p: 'p', t: 't', k: 'k', C: 'ch', f: 'f', s: 's', h: 'h', x: 'h', S: 'sh', Z: 'j', j: 'y', w: 'w' };
+function aliasBrapa(notas, existe, o = {}) {
+  const U = [], faltan = [];
+  const pon = (alias, nota, tipo, extra) => { if (alias) U.push({ alias, nota, tipo, ...extra }); };
+  const elegir = (...c) => { const a = c.find(x => x && existe(x)); if (!a && c[0]) faltan.push(c[0]); return a || null; };
+  let antes = { tipo: 'silencio' };
+  for (let i = 0; i < notas.length; i++) {
+    const n = notas[i], sig = notas[i + 1], s = n.sil;
+    const { desliz, vocs, cola } = nucleoDe(s);
+    const K = s.ataque.map(p => BR[p] || p), v1 = vocs[0];
+    // la deslizada: «bien» = «b i» + «i e» (o «y e»)
+    const vAtaque = desliz.length ? (desliz[0] === 'y' ? 'i' : 'u') : v1;
+    const c0 = K[K.length - 1];
+    // los grupos (pr, bl): la primera consonante con su paso o sola, la segunda con la vocal
+    if (antes.tipo === 'silencio') {
+      if (!K.length) pon(elegir('- ' + vAtaque, vAtaque), i, 'cv');
+      else {
+        if (K.length > 1) pon(elegir('- ' + K[0]), i, 'antes');
+        pon(elegir('-' + c0 + ' ' + vAtaque, c0 + ' ' + vAtaque), i, 'cv');
+      }
+    } else if (antes.tipo === 'vocal') {
+      if (!K.length) pon(elegir(antes.v + ' ' + vAtaque, vAtaque), i, 'cv');
+      else { pon(elegir(antes.v + ' ' + K[0]), i - 1, 'antes'); pon(elegir(c0 + ' ' + vAtaque), i, 'cv'); }
+    } else {
+      if (!K.length) pon(elegir(antes.c + ' ' + vAtaque, vAtaque), i, 'cv');
+      else pon(elegir(c0 + ' ' + vAtaque), i, 'cv');
+    }
+    let v = vAtaque;
+    for (const w of [...(desliz.length ? [v1] : []), ...vocs.slice(1), ...cola.map(g => g === 'I' ? 'i' : 'u')]) {
+      // de una vocal a otra: el paso, o (si es una deslizada) «y i» / «w u», o la vocal sola
+      pon(elegir(v + ' ' + w, w === 'i' ? 'y i' : w === 'u' ? 'w u' : null, w), i, 'medio', { frac: w === v1 && desliz.length ? .3 : .62 }); v = w;
+    }
+    let coda = s.coda.map(p => BR[p] || p);
+    const sigK0 = sig?.sil.ataque[0] ? BR[sig.sil.ataque[0]] : null;
+    if (o.acento !== 0 && s.fin && sig && sigK0 && ['s', 'h'].includes(coda[coda.length - 1])) coda = coda.slice(0, -1);
+    if (coda.length > 1) coda = [coda[0]];
+    if (coda[0] === 'n' && ['p', 'b', 'm'].includes(sigK0)) coda[0] = 'm';
+    const c = coda[0];
+    if (!c) {
+      if (!sig) pon(elegir(v + ' -'), i, 'fin');
+      antes = { tipo: 'vocal', v };
+    } else if (!sig) {
+      pon(elegir(v + ' ' + c + '-', v + ' ' + c), i, 'fin');
+      antes = { tipo: 'silencio' };
+    } else {
+      pon(elegir(v + ' ' + c), i, 'antes');
+      antes = { tipo: 'consonante', c };
+    }
+  }
+  U.faltan = faltan;
   return U;
 }
 
@@ -500,7 +594,10 @@ export function ubicar(U, notas) {
     const u = U[k], s = U[k + 1];
     u.fundir = s ? Math.max(.012, s.ovl / 1000) : .06;
     u.E = s ? s.S + u.fundir : u.S + u.len / 1000;
-    if (!s) u.E = Math.min(u.E, u.T + .25);   // el final: como mucho un cuarto de segundo después de cortar la vocal
+    // el final: como mucho un cuarto de segundo después de cortar la vocal. Si el banco no tiene con qué terminar
+    // (un banco CV), la última sílaba se estira hasta el final de su nota
+    if (!s && u.tipo === 'fin') u.E = Math.min(u.E, u.T + .25);
+    else if (!s && (u.tipo === 'cv' || u.tipo === 'medio')) u.E = Math.max(u.S + .05, notas[u.nota].t1);
   }
 }
 
@@ -580,7 +677,7 @@ function sintetizarFrase(U, banco, world, o, alturaEn, ganancia) {
       const t = inicio + q * P, d = t - u.S;
       // el tiempo dentro del pedazo
       let src;
-      if (ult || u.tipo === 'fin') src = d;                                       // el final: a su velocidad, cortado
+      if (u.tipo === 'fin' || ult && u.tipo === 'antes') src = d;                 // el final: a su velocidad, cortado
       else if (L >= cons) src = d <= cons ? d : cons + (d - cons) * Math.max(0, len - cons) / Math.max(1e-3, L - cons);
       else src = d * cons / L;
       const ms = u.e.offset + src * 1000, x = (ms - a.t0) / PERIODO, j = Math.max(0, Math.min(a.cuadros - 2, Math.floor(x))), f = Math.max(0, Math.min(1, x - j));
