@@ -19,7 +19,7 @@ export const DURACION = {
 const VOCAL = p => 'aeiou'.includes(p);
 import { VARIACION, VARIACION_DIFONOS, ESTILO } from './variacion.js';
 import * as TIMBRES from './timbre.js';
-import { ecualizar, ponderarA } from './eq.js';
+import { ecualizar, ponderarA, gananciaEn } from './eq.js';
 import { adornar, cuantoAdorna } from './adornos.js';
 import { AGUDO, hayAgudo, phoGrave, corregirAgudo } from './agudo.js';
 
@@ -178,6 +178,11 @@ export function guion(notas, opc = {}) {
   return { pho: lineas.join('\n') + '\n', inicio, fin, segs, ganancia, notas, altura };
 }
 
+// Lo que todavía separa el color del coro de MBROLA del coro real, con el estilo de los solistas (banco del coro con
+// letra, los 8 fragmentos de ajuste: el real menos el sintético, suavizado y a ±10 dB). En los de control sale casi la
+// misma curva (se parecen 0,82): le sobran graves y le falta el filo de 3 a 4 kHz. terminar() le suma resto × esto.
+export const RESTO_DIFONOS = [[100, -10], [126, -10], [159, -8.1], [200, -4.5], [252, -2.6], [317, -3], [400, -2.8], [504, -0.5], [635, 2.5], [800, 4], [1008, 1.4], [1270, -1.8], [1600, -1.9], [2016, -1], [2540, 2.8], [3200, 7.5], [4032, 5.8], [5080, 0.6], [6400, -0.9], [8063, -0.8]];
+
 // Después de MBROLA: el volumen de cada nota, las eses más suaves, un poco de aire (ruido que sigue a la voz) y la
 // emisión murguera (más presencia en 2-4 kHz, menos barro en los graves, un poco de saturación). x: Float32Array a sr;
 // g: el guion.
@@ -188,6 +193,7 @@ export function terminar(x, sr, g, opc = {}) {
   // que le falta
   const brillo = o.brillo + (1 - o.brillo) * Math.min(1, o.grito) * .7;
   if (o.curva && brillo !== 1) o.curva = o.curva.map(([f, db]) => [f, db * brillo]);
+  if (o.curva && o.resto) o.curva = o.curva.map(([f, db]) => [f, db + (f >= (o.restoDesde ?? 0) ? o.resto * gananciaEn(RESTO_DIFONOS, f) : 0)]);
   if (o.color > 0 || o.inclinacion) {
     // el color propio de este cantor: unas ondas suaves en dB sobre la escala de frecuencias (de 400 Hz a 5 kHz), y su
     // brillo (inclinación, dB por octava arriba de 1 kHz)
