@@ -72,9 +72,16 @@ que dice de dónde bajar cada banco.
 - **Si un .zip no está** (la página publicada no los trae), el banco queda apagado y tachado, y ofrece «Buscar el
   archivo…». Chrome y Edge recuerdan el archivo elegido; la próxima vez piden un clic para dar permiso.
 - **Desmarcar un banco** saca sus voces: sus lugares cantan con MBROLA.
-- **En el inspector de cada murguista,** «Voz» ofrece MBROLA (es2, es1, es4) y las voces de los bancos. Las que no
-  están aparecen apagadas y dicen qué falta. Con una voz de banco aparecen también tensión, ronquera, aire, esfuerzo
-  y temblor de la grabación.
+- **En el inspector de cada murguista,** «Voz» ofrece las voces de los bancos, MBROLA (es2, es1, es4), las muestras
+  de coro («aah», sin letra) y los formantes. Las de banco que no están aparecen apagadas y dicen qué falta. Con una
+  voz de banco aparecen también tensión, ronquera, aire, esfuerzo y temblor de la grabación; con muestras, sólo
+  afinación, volumen y paneo; con formantes, además garganta y adornos.
+- **«Toda la murga con»** pone la misma voz a los trece, o la de cada uno en el plantel.
+- **«Cómo canta la murga»** (los botones de voces, que antes estaban en «La pieza»): cada uno con su voz, todos con
+  muestras de coro o todos con formantes. Elegir una voz para un murguista pasa a «cada uno con su voz».
+- **Al cambiar un murguista** se vuelve a sumar su cuerda. Los demás de la cuerda salen de la memoria de su obrero:
+  los de MBROLA frase por frase (`difonos.js`), los de banco y de formantes enteros (`obrero.js`, 16 bits, hasta
+  unos 130 MB por obrero). Antes los de banco se cantaban otra vez desde cero.
 - **Por defecto,** cada lugar canta con la voz que le da el plantel si su banco está; si no, con MBROLA.
 - **Las voces de banco** cantan en los obreros con el motor `banco`. Si algo falla, ese cantor canta con MBROLA.
 - **El panel «Cantantes»** se ve siempre (antes se escondía con las muestras de coro, y por eso no aparecían los

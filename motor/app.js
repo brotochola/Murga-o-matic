@@ -103,6 +103,29 @@ async function renderCuerda(k,eventos,P,muestras){
   const src=ctx.createBufferSource();src.buffer=b;eq(ctx,src,P.brillo).connect(ctx.destination);src.start(0,IR_N/2/SR);
   return ctx.startRendering();
 }
+// Un murguista con las muestras de coro («aah», sin letra), cuando cada uno canta con su voz: sus notas (las de
+// cantores(), en segundos), cada una con la muestra de su altura, como un cantor de renderCuerda. La muestra ya es un
+// grupito de voces. Devuelve { x, sr, inicio } como los de difonos; el timbre (eq) se le pone al sumar la cuerda.
+async function cantarMuestras(notas,o){
+  if(!notas.length)return{x:new Float32Array(0),sr:SR,inicio:0};
+  const bufs={};await Promise.all([...new Set(notas.map(n=>Math.round(n.midi)))].map(async m=>{bufs[m]=await cargar(`coro/${o.banco}/${muestraDe(m)}.mp3`)}));
+  const t0=Math.max(0,notas[0].t0-.05),fin=Math.max(...notas.map(n=>n.t1))+.2,len=Math.ceil((fin-t0)*SR),y=new Float32Array(len);
+  const rng=new Rng((o.semilla||1)*31+7),desaf=rng.uni(-9,9)+(o.cents||0);
+  const ataque=Math.round(.09*SR),subida=Math.round(.012*SR),caida=Math.round(.09*SR),xf=Math.round(.1*SR);
+  for(const[k,nt]of notas.entries()){if(k%64===63)await pausa();const m=Math.round(nt.midi),x=bufs[m]&&bufs[m].getChannelData(0);if(!x)continue;
+    const i0=Math.round((nt.t0-t0+rng.uni(0,.022))*SR);if(i0>=len)continue;
+    const g=Math.pow(nt.vel??.7,1.23)*rng.uni(.85,1),rate=Math.pow(2,(desaf+rng.uni(-4,4))/1200+(nt.midi-muestraDe(m))/12);
+    const n=Math.min(Math.round((nt.t1-nt.t0)*SR)+caida,len-i0),ls=Math.round(.8*SR),le=x.length-Math.round(.15*SR),per=le-ls;
+    const at=i=>{const j=Math.floor(i),f=i-j;return x[j]+(x[j+1]-x[j])*f};
+    let pos=ataque;
+    for(let s=0;s<n;s++){
+      if(pos>=le)pos-=per;
+      let v=at(pos);
+      if(pos>le-xf){const w=(pos-(le-xf))/xf;v=v*(1-w)+at(pos-per)*w}
+      let e=1;if(s<subida)e=s/subida;else if(s>n-caida)e=Math.max(0,(n-s)/caida);
+      y[i0+s]+=v*g*e;pos+=rate}}
+  return{x:y,sr:SR,inicio:t0};
+}
 
 // Rebanadas: dónde empieza cada golpe de un loop. Para cambiar el tempo sin cambiar la afinación, cada golpe
 // se coloca en su lugar nuevo tal como fue grabado, como en una caja de ritmos sampleada.
@@ -242,6 +265,16 @@ async function cantarCuerdas(pieza,P,gen,incremental){
 // Cantores de difonos (cantor/difonos.js con MBROLA): cada uno canta en un obrero y sale a la frecuencia de la voz
 // (22.050 Hz, o un poco más o menos según su tracto); Web Audio los pasa a la de la página al sumar cada cuerda.
 // Con «sólo un solista», canta el primero de los primos (la melodía) y las otras cuerdas callan.
+// Cuando cada uno canta con su voz, la voz de un murguista puede ser una de MBROLA, la de un banco del plantel, las
+// muestras de coro («aah», sin letra) o los formantes (la voz armada desde cero). NIVEL_MOTOR: cada motor sale con
+// otro volumen; esto los empareja con los de MBROLA (medido en la página: herramientas/probar_voces.mjs).
+const VOZ_MUESTRAS="muestras",VOZ_FORMANTES="formantes";
+const VOCES_PROPIAS={[VOZ_MUESTRAS]:"Muestras de coro",[VOZ_FORMANTES]:"Formantes"};
+const nombreVoz=v=>VOCES_PROPIAS[v]||plantel.nombreDeVoz(v);
+// (2026-11-09, los trece con cada voz, contra los trece con es2: muestras -16,0 dB, formantes +11,8 dB; con eso, en
+// otra pieza, -0,1 y +1,0 dB. Los bancos, todos más bajos: MIKE -6,6, Sheep Oveja -7,3, Sanfu -6,0, Vincen-oto Legato
+// -6,2 dB. Con una sola clase de voz no cambia nada, la página iguala el pico; sirve cuando se mezclan.)
+const NIVEL_MOTOR={muestras:6.3,formantes:.24,banco:2.1};
 const mbHilo={};
 async function difonosEnHilo(notas,opc){const v=opc.voz||"es2";
   if(!mbHilo[v])mbHilo[v]=(async()=>{const[{crearMbrola},wasm,voz]=await Promise.all([import("./cantor/mbrola.js"),...["vendor/mbrola/mbrola.wasm","vendor/mbrola/"+v].map(u=>fetch(new URL(u,import.meta.url)).then(x=>{if(!x.ok)throw new Error("no se pudo bajar "+u);return x.arrayBuffer()}))]);return crearMbrola(wasm,new Uint8Array(voz))})();
@@ -250,6 +283,12 @@ async function difonosEnHilo(notas,opc){const v=opc.voz||"es2";
 // cantó: difonos.js, opc.memo), y una cuerda se vuelve a sumar sólo si cambió algo de sus cantantes (las notas, la
 // sílaba, la voz, el volumen o el paneo). incremental: las cuerdas que no cambiaron quedan como estaban en S.stems.
 function huella(t){let h=0x811c9dc5;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,0x01000193)}return(h>>>0).toString(36)+t.length.toString(36)}
+// Un cantor sumado a mano a una cuerda (L, R a SR): pasado a SR con interpolación lineal, como un AudioBufferSourceNode
+// de Chrome, con su volumen y el paneo de potencia constante de un StereoPannerNode con entrada mono. r: { x, sr, inicio }.
+function sumarAMano(r,[g,pan],L,R){const x=r.x;if(!x||x.length<2)return;
+  const a=(Math.max(-1,Math.min(1,pan))+1)*Math.PI/4,gl=g*Math.cos(a),gr=g*Math.sin(a),k=r.sr/SR,len=L.length;
+  const n0=Math.max(0,Math.ceil(r.inicio*SR)),n1=Math.min(len,Math.floor((r.inicio+(x.length-1)/r.sr)*SR));
+  for(let n=n0;n<n1;n++){const p=(n-r.inicio*SR)*k,j=p|0,v=x[j]+(x[j+1]-x[j])*(p-j);L[n]+=v*gl;R[n]+=v*gr}}
 async function cantarDifonosCoro(pieza,P,gen,solo,incremental){
   await Promise.race([plantel.listo,new Promise(r=>setTimeout(r,4000))]);   // qué bancos están
   const L=S.letra,letras=letrasPorSeccion();
@@ -263,17 +302,26 @@ async function cantarDifonosCoro(pieza,P,gen,solo,incremental){
   for(const c of lista){const aj=S.ajustes[c.clave]||{};
     const o={...cantorDifonos(c.cuerda,aj.semilla??c.semilla,{c:solo?0:c.c||0}),voz:solo?(plantel.vozDeLugar("primos0")??"es2"):(plantel.vozDeLugar(c.clave)??vozDelCantor(c.c||0)),...elegidos(aj)};o.adornos*=ADORNOS_COR[S.adornos]??1;o.grito*=GRITO_COR[S.grito]??1;
     c.opc={...o,retraso:o.retraso+(c.retraso||0),memo:true};c.motor="difonos";
-    if(plantel.esDeBanco(o.voz)){const vb=plantel.opcionesBanco(o.voz,c.cuerda,c.opc,elegidos(aj),c.c||0);
-      c.respaldo={...c.opc,voz:vozDelCantor(c.c||0)};if(vb){c.motor="banco";c.opc=vb}else c.opc=c.respaldo}c.mezcla=[(solo?1:c.ganancia)*Math.pow(10,(aj.db||0)/20),aj.pan??(solo?0:c.pan)]}
+    // con las muestras de coro («aah», sin letra) o con los formantes: su afinación, su garganta y sus adornos
+    // (los mismos valores que muestra el inspector: los de su tarjeta, o los que se cambiaron a mano)
+    if(o.voz===VOZ_MUESTRAS){c.motor="muestras";c.opc={banco:BANCOS[(c.c||0)%2],semilla:aj.semilla??c.semilla,cents:100*(o.transporte||0)}}
+    else if(o.voz===VOZ_FORMANTES){c.motor="formantes";c.opc={sr:SR,tipo:c.tipo,semilla:aj.semilla??c.semilla,retraso:c.retraso||0,adornos:o.adornos,desafinacion:o.transporte||0,escalaFormantes:1/(o.tracto||1),memo:true}}
+    else if(plantel.esDeBanco(o.voz)){const vb=plantel.opcionesBanco(o.voz,c.cuerda,c.opc,elegidos(aj),c.c||0);
+      c.respaldo={...c.opc,voz:vozDelCantor(c.c||0)};if(vb){c.motor="banco";c.opc=vb}else c.opc=c.respaldo}
+    c.mezcla=[(solo?1:c.ganancia)*Math.pow(10,(aj.db||0)/20)*(NIVEL_MOTOR[c.motor]??1),aj.pan??(solo?0:c.pan)]}
   const len=Math.ceil(P.total*SR);
-  const firmas=Object.fromEntries(ORDEN.map(k=>[k,huella(JSON.stringify([len,lista.filter(c=>c.cuerda===k).map(c=>[c.clave,c.notas,c.opc,c.mezcla])]))]));
+  const firmas=Object.fromEntries(ORDEN.map(k=>[k,huella(JSON.stringify([len,P.brillo,lista.filter(c=>c.cuerda===k).map(c=>[c.clave,c.notas,c.motor,c.opc,c.mezcla])]))]));
   const cambiadas=new Set(ORDEN.filter(k=>!incremental||!S.stems||!S.firmas||S.firmas[k]!==firmas[k]||!S.stems[k]));
   const aCantar=lista.filter(c=>cambiadas.has(c.cuerda));
   const res=new Map();let hechos=0;
   avance(0,`Cantando: 0 de ${aCantar.length} cantores…`);
-  const uno=async(c,w)=>{const msg={motor:c.motor||"difonos",notas:c.notas,opc:c.opc};let r=null;
-    if(w){try{if(msg.motor==="banco")await plantel.presentar(w,msg.opc.banco,enObrero);r=await enObrero(w,msg)}catch(e){console.warn("canta la página:",e.message)}}
-    if(!r)r=await difonosEnHilo(msg.notas,msg.motor==="banco"?c.respaldo:msg.opc);
+  const uno=async(c,w)=>{let r=null;
+    if(c.motor==="muestras")r=await cantarMuestras(c.notas,c.opc);
+    else if(c.motor==="formantes"){if(w){try{r=await enObrero(w,{notas:c.notas,opc:c.opc})}catch(e){console.warn("canta la página:",e.message)}}
+      if(!r){await pausa();r=cantar(c.notas,{...c.opc,separar:true})}}
+    else{const msg={motor:c.motor||"difonos",notas:c.notas,opc:c.opc};
+      if(w){try{if(msg.motor==="banco")await plantel.presentar(w,msg.opc.banco,enObrero);r=await enObrero(w,msg)}catch(e){console.warn("canta la página:",e.message)}}
+      if(!r)r=await difonosEnHilo(msg.notas,msg.motor==="banco"?c.respaldo:msg.opc)}
     res.set(c.clave,r);hechos++;avance(hechos/(aCantar.length+1),`Cantando: ${hechos} de ${aCantar.length} cantores (${NOMBRES_CUERDA[c.cuerda].toLowerCase()})…`)};
   const ws=losObreros();
   if(ws.length){const colas=ws.map(()=>[]);for(const c of aCantar)colas[c.lugar%ws.length].push(c);
@@ -286,12 +334,26 @@ async function cantarDifonosCoro(pieza,P,gen,solo,incremental){
     if(!cambiadas.has(k)){voces.push(S.stems[k]);continue}
     const js=lista.filter(c=>c.cuerda===k);
     if(!js.length){voces.push(new OAC(2,1,SR).createBuffer(2,1,SR));continue}
-    const ctx=new OAC(2,len,SR);
-    for(const c of js){const r=res.get(c.clave);if(!r||!r.x.length)continue;
-      const b=ctx.createBuffer(1,r.x.length,r.sr);b.copyToChannel(r.x,0);
-      const s=ctx.createBufferSource();s.buffer=b;const g=ctx.createGain();g.gain.value=c.mezcla[0];const p=ctx.createStereoPanner();p.pan.value=c.mezcla[1];
-      s.connect(g).connect(p).connect(ctx.destination);s.start(Math.max(0,r.inicio),Math.max(0,-r.inicio))}
-    voces.push(await ctx.startRendering());if(gen!==S.gen)return null}
+    // los de MBROLA y de banco se suman a mano (sumarAMano: un OfflineAudioContext tardaba ~1 s por cuerda); los que
+    // llevan un filtro (el color del coro real de los formantes, el timbre de las muestras), con Web Audio
+    const L=new Float32Array(len),R=new Float32Array(len),filtrados=[];
+    for(const c of js){const r=res.get(c.clave);if(!r)continue;if(r.voz||c.motor==="muestras")filtrados.push(c);else sumarAMano(r,c.mezcla,L,R)}
+    if(filtrados.length){
+      const ctx=new OAC(2,len,SR);
+      // los filtros de fase lineal atrasan media respuesta: esos cantores arrancan esa media respuesta antes
+      const filtro=ir=>{const f=ctx.createConvolver();f.normalize=false;const b=ctx.createBuffer(1,ir.length,SR);b.copyToChannel(ir,0);f.buffer=b;f.connect(ctx.destination);return f};
+      let fMuestras=null,fFormantes=null;
+      const poner=(x,sr,inicio,c,dest,atraso=0)=>{if(!x||!x.length)return;const b=ctx.createBuffer(1,x.length,sr);b.copyToChannel(x,0);
+        const s=ctx.createBufferSource();s.buffer=b;const g=ctx.createGain();g.gain.value=c.mezcla[0];const p=ctx.createStereoPanner();p.pan.value=c.mezcla[1];
+        s.connect(g).connect(p).connect(dest);const t=inicio-atraso;s.start(Math.max(0,t),Math.max(0,-t))};
+      for(const c of filtrados){const r=res.get(c.clave);
+        if(r.voz){if(!IR_CANTOR)IR_CANTOR=disenar(CURVA,SR,2048);fFormantes??=filtro(IR_CANTOR);
+          poner(r.voz,SR,0,c,fFormantes,IR_CANTOR.length/2/SR);poner(r.ruido,SR,0,c,ctx.destination)}
+        else{fMuestras??=filtro(respuesta(P.brillo));poner(r.x,r.sr,r.inicio,c,fMuestras,IR_N/2/SR)}}
+      const b=await ctx.startRendering();if(gen!==S.gen)return null;
+      const bl=b.getChannelData(0),br=b.getChannelData(1);for(let i=0;i<len;i++){L[i]+=bl[i];R[i]+=br[i]}}
+    const b=decodeCtx.createBuffer(2,len,SR);b.copyToChannel(L,0);b.copyToChannel(R,1);voces.push(b);
+    await pausa();if(gen!==S.gen)return null}
   voces.firmas=firmas;if(incremental)voces.cambiadas=cambiadas;
   return voces;
 }
@@ -322,11 +384,14 @@ function guardarAjustes(){try{localStorage.setItem("murga.cantantes",JSON.string
 // Lo que se cambia a mano, el nombre y la cara se guardan en S.ajustes[lugar]. Al cambiar un valor, en un momento
 // vuelve a cantar sólo ese cantante (cantarDeNuevo es incremental).
 const NOMBRES=["Martín","Gonzalo","Diego","Sebastián","Nicolás","Federico","Agustín","Matías","Santiago","Rodrigo","Pablo","Andrés","Germán","Leonardo","Fabián","Gustavo","Marcelo","Fernando","Alejandro","Javier","Ignacio","Facundo","Mauricio","Emiliano","Bruno","Joaquín","Lucas","Mateo","Felipe","Raúl","Walter","Carlos","Jorge","Daniel","Alfredo","Rubén","Néstor","Horacio","Hugo","Julio","Pepe","Tato","Cacho","Toto","Pocho","Lalo","Nacho","Fito","Beto","Tito","Coco","Quique","Pancho","Chiche"];
-const caraDe=semilla=>`https://api.dicebear.com/10.x/notionists/svg?seed=${encodeURIComponent(semilla)}`;
+// (miniavs, con fondos de colores; la semilla es el nombre, u otra si se pidió «Otra cara»)
+const caraDe=semilla=>`https://api.dicebear.com/10.x/miniavs/svg?backgroundColor=ff5d8f,ffb703,43aa8b,4d96ff,b57bff&seed=${encodeURIComponent(semilla)}`;
 // sin internet (o si DiceBear no contesta), las iniciales en un círculo del color de la cuerda
 const COLOR_CUERDA={bajos:"#c0392b",segundos:"#c97a12",primos:"#2b2e6e",sobreprimos:"#0f8a7e",tercia:"#8e3fb3"};
 const iniciales=(nombre,cuerda)=>"data:image/svg+xml,"+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="${COLOR_CUERDA[cuerda]||"#5d6079"}"/><text x="32" y="41" font-family="sans-serif" font-size="26" font-weight="700" text-anchor="middle" fill="#fff">${esc((nombre||"?").slice(0,2))}</text></svg>`);
-function ponerCara(img,x){img.onerror=()=>{img.onerror=null;img.src=iniciales(x.nombre,x.c.cuerda)};img.src=caraDe(x.cara)}
+// crossOrigin: DiceBear contesta con CORS, y así la cara entra aunque el navegador le ponga a la página la regla de
+// «sólo lo del mismo sitio» (COEP: la pone, por ejemplo, el service worker de otro proyecto servido en el mismo puerto)
+function ponerCara(img,x){img.crossOrigin="anonymous";img.onerror=()=>{img.onerror=null;img.src=iniciales(x.nombre,x.c.cuerda)};img.src=caraDe(x.cara)}
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
 const nombreNota=m=>`${NOTAS[((m%12)+12)%12]} ${Math.floor(m/12)-1}`;
 const LIBRO={bajos:"según Sin Disfraz, los segundos (los bajos incluidos) van de Do 3 a Do 4",segundos:"según Sin Disfraz, van de Do 3 a Do 4",primos:"según Sin Disfraz, van de Sol 3 a Sol 4",sobreprimos:"según Sin Disfraz, van de Mi 4 a La 4, y un buen sobreprimo llega a Si 4",tercia:"según Sin Disfraz, la tercia canta en el registro de los sobreprimos"};
@@ -340,8 +405,23 @@ function losCantantes(){if(!S.pieza)return[];
 // los valores que no cantan (nombre, cara) no hacen volver a cantar
 const NO_CANTAN=new Set(["nombre","cara"]);
 let temporizadorCanto=null;
-function programarCanto(){clearTimeout(temporizadorCanto);temporizadorCanto=setTimeout(()=>{if(S.pieza&&sint())cantarDeNuevo()},900)}
+// (espera un momento por si cambian otra cosa enseguida: así canta una vez)
+function programarCanto(){clearTimeout(temporizadorCanto);temporizadorCanto=setTimeout(()=>{if(S.pieza&&sint())cantarDeNuevo()},400)}
 function cambiarCantante(clave,k,v){S.ajustes={...S.ajustes,[clave]:{...(S.ajustes[clave]||{}),[k]:v}};guardarAjustes();dibujarCantantes();if(!NO_CANTAN.has(k))programarCanto()}
+// Las voces que puede tener un murguista, para un <select>: los bancos del plantel, MBROLA y las dos sin banco
+function opcionesDeVoz(vv){const op=(v,t,mas="")=>`<option value="${esc(v)}"${v===vv?" selected":""}${mas}>${esc(t)}</option>`;
+  return`<optgroup label="Bancos de voz cantada (el plantel)">${plantel.vocesDeBanco().map(v=>op(v.valor,v.nombre+(v.disponible?"":" (no está)"),`${v.disponible?"":" disabled"} title="${esc(v.disponible?v.nota:v.falta)}"`)).join("")}</optgroup>`+
+    `<optgroup label="MBROLA (difonos de voces de habla)">${["es2","es1","es4"].map(v=>op(v,v+(v==="es4"?" (la más pobre)":""))).join("")}</optgroup>`+
+    `<optgroup label="Otras">${op(VOZ_MUESTRAS,"Muestras de coro: «aah», sin letra")}${op(VOZ_FORMANTES,"Formantes: voz armada desde cero")}</optgroup>`}
+const AYUDA_VOZ="La voz de este murguista: una voz cantada de un banco del plantel (arriba, en «El plantel»), los difonos de MBROLA (voces de habla), las muestras de coro («aah», sin letra) o los formantes (voz armada desde cero). Las de banco que no están aparecen apagadas: buscá su archivo en el plantel.";
+// Lo que se le puede cambiar a un murguista de muestras o de formantes (lo demás es de los de difonos y de banco)
+const PARAMS_DE={[VOZ_MUESTRAS]:new Set(["transporte","db","pan"]),[VOZ_FORMANTES]:new Set(["tracto","transporte","adornos","db","pan"])};
+// La voz de uno o de varios murguistas (null: la que le toca en el plantel). Si la murga no cantaba cada uno con su
+// voz (muestras o formantes para todos), pasa a eso y canta entera; si no, vuelven a cantar sólo esos.
+function elegirVozDe(claves,v){const a={...S.ajustes};for(const c of claves){const o={...(a[c]||{})};if(v==null)delete o.voz;else o.voz=v;a[c]=o}
+  S.ajustes=a;guardarAjustes();
+  if(!difonos())elegirVoces("difonos");else programarCanto();
+  dibujarCantantes()}
 let cantanteAbierto=null,notaAbierta=null;const deshacer=[];
 function actualizarInspector(){const cant=!!cantanteAbierto,nota=!!notaAbierta;
   $("inspCantante").hidden=!cant;$("cantVacio").hidden=cant;$("devNota").hidden=!nota;$("inspNota").hidden=!nota;
@@ -364,10 +444,11 @@ function dibujarInspCantante(){
   const ps=$("icParams");ps.innerHTML="";
   const fila=(nombre,ctrl,out)=>{const r=document.createElement("label");r.className="param";r.innerHTML=`<span>${nombre}</span>`;r.append(ctrl);const o=document.createElement("output");o.textContent=out;r.append(o);ps.append(r);return o};
   const vv=val("voz"),sel=document.createElement("select");
-  sel.innerHTML=`<optgroup label="MBROLA (difonos de voces de habla)">${["es2","es1","es4"].map(v=>`<option value="${v}"${v===vv?" selected":""}>${v}${v==="es4"?" (la más pobre)":""}</option>`).join("")}</optgroup><optgroup label="Bancos de voz cantada (el plantel)">${plantel.vocesDeBanco().map(v=>`<option value="${esc(v.valor)}"${v.valor===vv?" selected":""}${v.disponible?"":" disabled"} title="${esc(v.disponible?v.nota:v.falta)}">${esc(v.nombre)}${v.disponible?"":" (no está)"}</option>`).join("")}</optgroup>`;
-  sel.title="La voz de este murguista: los difonos de MBROLA (voces de habla) o una voz cantada de un banco del plantel (arriba, en «El plantel»). Las de banco que no están aparecen apagadas: buscá su archivo en el plantel.";
-  sel.onchange=()=>cambiarCantante(x.clave,"voz",sel.value);fila("Voz",sel,plantel.esDeBanco(vv)&&!plantel.vozDisponible(vv)?"no está: canta MBROLA":"");
-  for(const[p,nombre,mn,mx,paso,fmt,ayuda]of PARAMS){const r=document.createElement("input");r.type="range";r.min=mn;r.max=mx;r.step=paso;r.value=val(p);
+  sel.innerHTML=opcionesDeVoz(vv);
+  sel.title=AYUDA_VOZ;
+  sel.onchange=()=>elegirVozDe([x.clave],sel.value);fila("Voz",sel,plantel.esDeBanco(vv)&&!plantel.vozDisponible(vv)?"no está: canta MBROLA":"");
+  if(PARAMS_DE[vv]){const h=document.createElement("p");h.className="hint";h.textContent=vv===VOZ_MUESTRAS?"Canta su línea con una muestra de coro («aah»), sin letra: la muestra ya es un grupito de voces. Se le cambian la afinación, el volumen y el paneo.":"Canta la letra con la voz de formantes, armada desde cero (la de «Formantes» para toda la murga). Se le cambian la garganta, la afinación, los adornos, el volumen y el paneo.";ps.append(h)}
+  for(const[p,nombre,mn,mx,paso,fmt,ayuda]of PARAMS){if(PARAMS_DE[vv]&&!PARAMS_DE[vv].has(p))continue;const r=document.createElement("input");r.type="range";r.min=mn;r.max=mx;r.step=paso;r.value=val(p);
     const o=fila(nombre,r,fmt(+val(p)));if(ayuda){r.title=ayuda;o.parentElement.title=ayuda}r.oninput=()=>{o.textContent=fmt(+r.value)};r.onchange=()=>cambiarCantante(x.clave,p,+r.value)}
   // las voces de banco tienen además los valores de los resamplers de UTAU (docs/plan_cantantes.md)
   if(plantel.esDeBanco(vv))for(const[p,nombre,mn,mx,paso,fmt,ayuda]of plantel.PARAMS_BANCO){const r=document.createElement("input");r.type="range";r.min=mn;r.max=mx;r.step=paso;
@@ -379,12 +460,16 @@ function dibujarCantantes(){
   if(sec.hidden){actualizarInspector();return}
   let lista=losCantantes();if(S.voces==="solista")lista=lista.filter(x=>x.clave==="primos0");
   caja.innerHTML="";
-  if(!difonos()){const a=document.createElement("p");a.className="hint aviso-voces";a.innerHTML='Ahora suenan las muestras de coro (o los formantes): los murguistas no cantan con su voz. Para escucharlos, cada uno con su voz y su letra: <button class="btn">Que canten con su voz</button>';
-    a.querySelector("button").title="Pasa las voces a «Difonos»: cada murguista canta la letra con su voz (MBROLA o un banco del plantel)";a.querySelector("button").onclick=()=>elegirVoces("difonos");caja.append(a)}
+  if(!difonos()){const a=document.createElement("p");a.className="hint aviso-voces";a.innerHTML=`Ahora toda la murga canta con ${S.voces==="muestras"?"las muestras de coro, sin letra":"los formantes"}: los murguistas no cantan con su voz. Para escucharlos, cada uno con la suya y con la letra: <button class="btn">Que canten con su voz</button>`;
+    a.querySelector("button").title="Pasa a «Cada uno con su voz»: cada murguista canta con la voz que le toca (abajo, en su tarjeta)";a.querySelector("button").onclick=()=>elegirVoces("difonos");caja.append(a)}
+  // toda la murga con una voz: la misma para los trece, o la de cada uno en el plantel
+  const todos=losCantantes(),vs=new Set(todos.map(x=>(S.ajustes[x.clave]||{}).voz??null)),una=vs.size===1?[...vs][0]:undefined,vt=$("vozTodos");
+  vt.innerHTML=`${una===undefined?'<option value="*" selected>Cada uno con una voz distinta (elegida a mano)</option>':""}<option value=""${una===null?" selected":""}>La de cada uno en el plantel</option>${opcionesDeVoz(una??"")}`;
+  vt.onchange=()=>{if(vt.value!=="*")elegirVozDe(todos.map(x=>x.clave),vt.value||null)};
   for(const x of lista){const aj=S.ajustes[x.clave]||{},val=k=>aj[k]??x.base[k],k=x.c.cuerda;
     const d=document.createElement("div");d.className="tarjeta"+(Object.keys(aj).some(q=>!["mudo","nombre","cara"].includes(q))?" cambiado":"")+(x.clave===cantanteAbierto?" abierta":"")+(aj.mudo?" callado":"");
     d.tabIndex=0;d.setAttribute("role","button");d.setAttribute("aria-label",`${x.nombre}, ${NOMBRE_CANTOR[k].toLowerCase()}: ver y cambiar`);
-    d.innerHTML=`<img alt="" loading="lazy"><div><b>${esc(x.nombre)}</b><small><i style="background:var(--${k})"></i>${NOMBRE_CANTOR[k]}${CUERDAS[k].cantores>1?" "+(x.n+1):""} · ${esc(plantel.nombreDeVoz(val("voz")))}${plantel.esDeBanco(val("voz"))&&!plantel.vozDisponible(val("voz"))?" (no está)":""}</small></div>
+    d.innerHTML=`<img alt="" loading="lazy"><div><b>${esc(x.nombre)}</b><small><i style="background:var(--${k})"></i>${NOMBRE_CANTOR[k]}${CUERDAS[k].cantores>1?" "+(x.n+1):""} · ${esc(nombreVoz(val("voz")))}${plantel.esDeBanco(val("voz"))&&!plantel.vozDisponible(val("voz"))?" (no está)":""}</small></div>
       <span class="acc"><button class="solo" aria-pressed="${S.soloCantor===x.clave}" title="Escucharlo solo">Solo</button><button class="mudo" aria-pressed="${!!aj.mudo}" title="Que no cante">Callar</button></span>`;
     ponerCara(d.querySelector("img"),x);
     d.onclick=()=>abrirCantante(x.clave);d.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();abrirCantante(x.clave)}};
@@ -403,7 +488,7 @@ async function importarCantante(archivo){if(!archivo||!cantanteAbierto)return;
     const viejo=S.ajustes[cantanteAbierto]||{},nuevo={nombre:String(d.nombre||"").slice(0,40)||undefined,cara:d.cara?String(d.cara).slice(0,80):undefined};
     if(Number.isFinite(d.semilla))nuevo.semilla=d.semilla;
     for(const[k,,mn,mx]of PARAMS)if(k!=="db"&&k!=="pan"&&Number.isFinite(d[k]))nuevo[k]=Math.max(mn,Math.min(mx,d[k]));
-    if(["es1","es2","es4"].includes(d.voz)||plantel.esDeBanco(d.voz))nuevo.voz=d.voz;
+    if(["es1","es2","es4",VOZ_MUESTRAS,VOZ_FORMANTES].includes(d.voz)||plantel.esDeBanco(d.voz))nuevo.voz=d.voz;
     for(const[k,,mn,mx]of plantel.PARAMS_BANCO)if(Number.isFinite(d[k]))nuevo[k]=Math.max(mn,Math.min(mx,d[k]));
     for(const k of["db","pan","mudo"])if(viejo[k]!=null)nuevo[k]=viejo[k];
     S.ajustes={...S.ajustes,[cantanteAbierto]:nuevo};guardarAjustes();dibujarCantantes();programarCanto();
@@ -446,7 +531,8 @@ function resumen(){const c=S.pieza.secs.find(s=>s.tipo!=="clarinada"&&s.bateria)
 // Todas las voces al mismo pico (y un poco de saturación). Si sólo cambiaron algunas cuerdas, esas se escalan con el
 // mismo factor que la última vez: las otras ya están procesadas, y así no cambia el volumen de lo que no se tocó.
 function normalizarVoces(voces){const drive=sint()?1.02:1+.8*S.brillo;S.firmas=voces.firmas||null;
-  if(voces.cambiadas&&S.pv){ORDEN.forEach((k,i)=>{if(voces.cambiadas.has(k))procesar(voces[i],1/S.pv,drive)});return}
+  // si cambiaron todas (otra voz para toda la murga), el pico se mide de nuevo
+  if(voces.cambiadas&&S.pv&&voces.cambiadas.size<ORDEN.length){ORDEN.forEach((k,i)=>{if(voces.cambiadas.has(k))procesar(voces[i],1/S.pv,drive)});return}
   const pv=picoDe(voces);S.pv=pv;voces.forEach(b=>procesar(b,1/pv,drive))}
 
 const firmaLetra=()=>JSON.stringify(S.letra.partes.map(p=>[p.nombre,p.versos.map(v=>v.silabas)]));
@@ -793,9 +879,9 @@ $("tema").addEventListener("keydown",e=>{if(e.key==="Enter")otraLetra()});
  if(["sintetizadas","muestras","difonos","solista"].includes(v))S.voces=v}
 
 // ============================================================ controles
-const HINT_VOCES={muestras:"Muestras «aah» de coro: suena a coro, sin palabras.",sintetizadas:"Trece cantores de formantes (voz armada desde cero) cantan una letra escrita para esta melodía. Tarda unos segundos más.",
-  difonos:"Trece cantores armados con pedacitos de voz grabada (difonos de MBROLA, tres voces), con acento rioplatense: se entiende mucho más la letra. La primera vez baja las voces (12 MB).",
-  solista:"Un solo cantor de difonos canta la melodía con la letra, sobre la batería: para escuchar bien cómo canta."};
+const HINT_VOCES={muestras:"Toda la murga con muestras «aah» de coro: suena a coro, sin palabras, y sale enseguida.",sintetizadas:"Toda la murga con cantores de formantes (voz armada desde cero), que cantan una letra escrita para esta melodía. Tarda unos segundos más.",
+  difonos:"Cada murguista canta la letra con la voz que le toca: un banco de voz cantada del plantel, los difonos de MBROLA, las muestras de coro o los formantes. Se elige en su tarjeta (abajo), o para todos juntos en «Toda la murga con».",
+  solista:"Un solo cantor, el primero de los primos, canta la melodía con la letra sobre la batería: para escuchar bien cómo canta. Canta con su voz (la de su tarjeta)."};
 function mostrarVoces(){const b=difonos()?"difonos":S.voces;$("voces").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===b));$("vocesHint").textContent=HINT_VOCES[S.voces];$("campoBrillo").hidden=sint();$("campoSolista").hidden=!difonos();$("soloSolista").checked=S.voces==="solista";$("campoAdornos").hidden=!sint();$("campoGrito").hidden=!difonos()}
 const elegirVoces=v=>{if(S.voces===v)return;S.voces=v;try{localStorage.setItem("murga.voces",S.voces)}catch(e){}mostrarVoces();generar({pieza:S.pieza,letra:fotoLetra()})};
 $("voces").querySelectorAll("button").forEach(b=>b.onclick=()=>{if(b.dataset.v==="difonos"&&difonos())return;elegirVoces(b.dataset.v==="difonos"&&$("soloSolista").checked?"solista":b.dataset.v)});
@@ -957,6 +1043,8 @@ function pintarPaneles(){for(const b of BOTONES_PANEL){const on=b.dataset.panel=
 function revisarPaneles(){for(const b of BOTONES_PANEL)b.hidden=$(b.dataset.panel).hidden;if(panelAbierto&&$(panelAbierto).hidden)cerrarPanel()}
 BOTONES_PANEL.forEach(b=>{b.setAttribute("aria-controls",b.dataset.panel);b.onclick=()=>{$("barraMas").classList.remove("abierta");$("mas").setAttribute("aria-expanded",false);abrirPanel(b.dataset.panel,true)}});
 document.querySelectorAll(".cerrar-panel").forEach(b=>b.onclick=cerrarPanel);
+// «La pieza» manda a «Cantantes», donde se eligen las voces
+$("irCantantes").onclick=()=>abrirPanel("cantantes");
 {const mo=new MutationObserver(revisarPaneles);for(const b of BOTONES_PANEL)mo.observe($(b.dataset.panel),{attributes:true,attributeFilter:["hidden"]});revisarPaneles();pintarPaneles()}
 // el tema: como el sistema, oscuro o claro (se guarda en este navegador)
 const TEMAS_COLOR=["","dark","light"],NOMBRE_TEMA={"":"como el sistema",dark:"oscuro",light:"claro"};

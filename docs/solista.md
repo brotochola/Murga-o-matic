@@ -174,7 +174,7 @@ Para separar lo que se pierde por cómo pronuncia de lo que se pierde por cantar
 
 ## En la página
 
-En **Voces**, la opción **Difonos** hace cantar a los trece cantores, en obreros; la primera vez baja las tres voces (12 MB).
+En **Cantantes → Cómo canta la murga**, la opción **Cada uno con su voz** hace cantar a los trece cantores, en obreros, cada uno con la voz de su tarjeta (MBROLA, un banco, las muestras de coro o los formantes); la primera vez baja las tres voces de MBROLA (12 MB).
 
 Abajo, en **Los cantantes**, cada uno de los trece se puede cambiar a mano:
 

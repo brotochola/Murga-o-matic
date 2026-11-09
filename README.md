@@ -6,7 +6,10 @@ Elegís presentación o retirada, murga, tono y largo, y compone una pieza nueva
 
 - **Batería:** siempre loops reales, del video [17 ritmos fundamentales de murga](https://www.youtube.com/watch?v=0DSJVulzDYw), de La Tríada: Pablo "Lolito" Iribarne (bombo), Raúl García (redoblante) y Gerardo "Batata" Cánepa (platillos). Para cambiar de tempo, cada golpe del loop se corta y se pone en su lugar nuevo, así la afinación no cambia. Cada loop son dos compases tal como los tocaron, de un "1" al siguiente, en un tramo parejo de cada demostración: los bateristas aceleran mientras tocan, así que el largo se mide en el audio y no se calcula con el tempo. `herramientas/recortar_loops.mjs` los rehace desde el video, y con `--revisar` controla que cada vuelta caiga donde la tocaron.
 - **Composición:** recombina gestos reales de dos compases, con su melodía, sus voces y sus acordes, según la forma: pregunta, respuesta, contraste y vuelta. Cada pocas notas cambia una nota débil, y los gestos seguidos vienen de temas distintos: el pasaje igual a un tema real más largo tiene, en la mediana, 10 notas.
-- **Voces:** se eligen arriba de todo.
+- **Voces:** se eligen en «Cantantes». Cada murguista canta con la voz de su tarjeta: un banco de voz cantada del
+  plantel, una de MBROLA, las muestras de coro («aah», sin letra) o los formantes; se cambia uno por uno o, con «Toda
+  la murga con», los trece juntos. También puede cantar toda la murga con las muestras de coro (sale enseguida) o con
+  los formantes.
   - *Muestras de coro:* cinco cuerdas (bajos, segundos, primos, sobreprimos y tercia) con muestras "aah" de FluidR3 y MusyngKite, tomadas de [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts). Cada cuerda tiene de dos a cinco cantores (la tercia es una voz sola), y el timbre se ecualiza hacia el de un coro de murga medido.
   - *Cantores sintéticos:* un letrista algorítmico escribe una letra rioplatense que entra en la melodía, sílaba por nota y con rima, y trece voces de fuente glótica y formantes la cantan. No usa muestras ni modelos de lenguaje, y anda sin conexión. La letra se puede editar o pedir otra, y un panel muestra paso a paso cómo se hizo cada verso. La voz se calibró contra La Trasnochada 2020. Detalles y mediciones en [docs/cantores_y_letras.md](docs/cantores_y_letras.md).
   - *Difonos:* la misma letra la cantan trece cantores armados con difonos (pedacitos de voz grabada) de [MBROLA](https://github.com/numediart/MBROLA), compilado a WebAssembly, con acento rioplatense exagerado de murguista. Cada cuerda tiene su largo de garganta y cada cantor sus mañas. Las mañas salen de medir 208 pasajes de solistas de verdad, de 14 murgas: vibran ±40 cents, entran desde abajo, se pasan de la nota al ligar y caen al final de algunas frases ([docs/solistas_reales.md](docs/solistas_reales.md)). Y respiran antes de algunas frases, como el coro real ([docs/respiraciones.md](docs/respiraciones.md)). Se entiende mucho más: con el coro entero, Whisper erra el 13 % de las letras, contra el 45 % del coro de formantes. Con «Sólo un solista» canta uno solo la melodía. En «Los cantantes» se puede cambiar cada uno de los trece (voz, garganta, afinación, vibrato, brillo, dicción, adornos, volumen, paneo) y escucharlo solo ([docs/solista.md](docs/solista.md)).
@@ -35,7 +38,10 @@ Es un multipista, como el Timba-o-matic: una fila por cosa y los compases de izq
 Cada cambio rehace sólo lo que toca:
 - Un acorde recompone sólo su sección (y las bajadas que la repiten), y vuelven a cantar sólo sus frases.
 - El loop de un compás rearma sólo la batería, en unos 2 segundos.
-- Un verso, una nota o un cantante vuelven a cantar sólo las frases que cambiaron.
+- Un verso, una nota o un cantante vuelven a cantar sólo las frases que cambiaron. Al cambiar un cantante se vuelve a
+  sumar su cuerda, y los demás de la cuerda salen de la memoria de su obrero: los de MBROLA frase por frase, los de
+  banco y de formantes enteros. La mezcla de las cuerdas y la batería se hace en vivo, mientras suena; el MP3 se arma
+  recién al exportar.
 
 Cada murga se guarda sola en el navegador, con todo lo que se le cambió, y se vuelve a abrir desde «Mis murgas». Se puede bajar:
 - la mezcla en **MP3**, tal como suena con los volúmenes de la mezcla;

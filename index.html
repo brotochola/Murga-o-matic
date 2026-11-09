@@ -245,6 +245,7 @@ a{color:var(--sobreprimos)}
 .sinred progress{width:100%;height:6px;accent-color:var(--accent)}
 .cantantes .cabeza{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;margin-bottom:6px}
 .cantantes .cabeza h2{margin:0}
+.toda-murga{margin:12px 0 0}
 .lista-cantantes{display:grid;gap:8px;margin-top:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr))}
 .tarjeta{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel);cursor:pointer}
 .tarjeta:hover{border-color:var(--muted)}
@@ -413,14 +414,8 @@ p.elegido{font-size:16px;font-weight:600}
     <section class="panel-sup pieza" id="pPieza" aria-labelledby="t-pPieza">
       <div class="cabeza"><h2 id="t-pPieza">La pieza</h2><button class="btn ghost cerrar-panel" aria-label="Cerrar">×</button></div>
 
-      <div class="field voces"><span class="lbl" id="l-voces">Voces</span>
-        <div class="seg" role="group" aria-labelledby="l-voces" id="voces">
-          <button data-v="muestras" aria-pressed="true">Muestras de coro</button>
-          <button data-v="sintetizadas" aria-pressed="false">Formantes</button>
-          <button data-v="difonos" aria-pressed="false">Difonos</button>
-        </div>
-        <label class="chk" id="campoSolista" hidden><input type="checkbox" id="soloSolista"> Sólo un solista, con la melodía</label>
-        <p class="hint" id="vocesHint"></p>
+      <div class="field"><span class="lbl">Voces</span>
+        <p class="hint">Con qué voz canta cada murguista (un banco del plantel, MBROLA, las muestras de coro o los formantes) se elige en <button class="btn" id="irCantantes">Cantantes</button></p>
       </div>
       <div class="field"><span class="lbl">Para empezar</span>
         <div class="demos" id="demos"></div>
@@ -512,8 +507,18 @@ p.elegido{font-size:16px;font-weight:600}
       <span></span>
       <div class="botones"><button class="btn" id="otrosCantantes">Otros cantantes</button><button class="btn" id="cantantesReset">Volver a como salieron</button></div>
     </div>
+    <div class="field voces"><span class="lbl" id="l-voces">Cómo canta la murga</span>
+      <div class="seg" role="group" aria-labelledby="l-voces" id="voces">
+        <button data-v="difonos" aria-pressed="false" title="Cada murguista con la voz de su tarjeta: un banco del plantel, MBROLA, las muestras de coro o los formantes">Cada uno con su voz</button>
+        <button data-v="muestras" aria-pressed="true" title="Los trece con las muestras «aah» de coro, sin letra: sale enseguida">Todos con muestras de coro</button>
+        <button data-v="sintetizadas" aria-pressed="false" title="Los trece con la voz de formantes, armada desde cero, cantando la letra">Todos con formantes</button>
+      </div>
+      <label class="chk" id="campoSolista" hidden><input type="checkbox" id="soloSolista"> Sólo un solista, con la melodía</label>
+      <p class="hint" id="vocesHint"></p>
+    </div>
     <section class="plantel" id="plantelCaja" aria-label="El plantel: los bancos de voces"></section>
-<p class="hint">Los trece murguistas, cada uno con su nombre, su voz y sus mañas. Tocá uno para verlo y cambiarlo en el inspector: al cambiar algo, en un momento vuelve a cantar él solo. Son los mismos aunque cambies la música; con «Otros cantantes» viene otro coro. Se guardan en este navegador.</p>
+<p class="hint">Los trece murguistas, cada uno con su nombre, su voz y sus mañas. Tocá uno para verlo y cambiarlo en el inspector: al cambiar algo, en un momento vuelve a cantar él solo (y si cambiás sólo su volumen o su paneo, se vuelve a mezclar su cuerda). Son los mismos aunque cambies la música; con «Otros cantantes» viene otro coro. Se guardan en este navegador.</p>
+    <label class="field toda-murga"><span class="lbl">Toda la murga con</span><select id="vozTodos" title="La misma voz para los trece murguistas, o la que le toca a cada uno en el plantel. Después se puede cambiar uno por uno."></select></label>
     <div class="lista-cantantes" id="listaCantantes"></div>
   </div><div class="cant-editor">      <section class="insp-cantante" id="inspCantante" hidden aria-label="El cantante elegido">
         <div class="ic-cabeza">
