@@ -49,9 +49,10 @@ Lo decidido el 9 de noviembre de 2026:
 
 ## En la página principal (9 de noviembre de 2026)
 
-**Los bancos son .zip en la carpeta `bancos/` del repositorio.** No se suben: los ignora `.gitignore`, porque cada
-banco tiene sus condiciones. El repositorio lleva `bancos/plantel.json`, el plantel de siempre, y `bancos/LEEME.md`,
-que dice de dónde bajar cada banco.
+**Los bancos son .zip en la carpeta `bancos/` del repositorio.** No se suben: los ignora `.gitignore` (pesan 1,65 GB
+y varios pasan los 100 MB que acepta GitHub). El repositorio lleva `bancos/plantel.json`, el plantel de siempre, y
+`bancos/LEEME.md`, que dice de dónde bajar cada banco. La página publicada los trae recortados y en Opus, con permiso
+de sus autores, que piden que se los mencione con un link (`herramientas/construir.mjs`, `npm run publicar`).
 - **El plantel** tiene:
   - los bancos: archivo, nombre, autor, idioma, de dónde bajarlo y sus condiciones;
   - las voces que salen de cada uno: «MIKE», «MIKE grave» (capa `_dp`)… y sus valores;

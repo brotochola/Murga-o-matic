@@ -15,12 +15,13 @@
 // escuchar.
 //
 //   node herramientas/utau_recortar.mjs [--bancos carpeta] [--salida carpeta] [--piezas 60] [--kbps 96] [--wav] [banco.zip ...]
-//   (por defecto, de bancos/ a ../Murga-o-matic-offline/bancos/; los de bancos/ no se tocan. --wav: sin Opus)
+//   (por defecto, de bancos/ a offline/bancos/, la versión liviana; los de bancos/ no se tocan. --wav: sin Opus)
 import { readFileSync, writeFileSync, mkdirSync, statSync, existsSync, renameSync, rmSync } from 'node:fs';
 import { spawn, execFileSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { archivosDelBanco, RAIZ } from './banco_node.mjs';
 import { escribirZip } from './zip_escribir.mjs';
+import { SALIDA } from './liviana.mjs';
 import { crearBanco, frasesDe, cantarBanco, texto, NIVELES } from '../motor/cantor/banco.js';
 import { correr } from '../motor/cantor/difonos.js';
 import { medirAlturas } from '../motor/cantor/bancos.js';
@@ -30,7 +31,7 @@ import { CLAVES } from '../motor/cantor/lexico.js';
 import { MODELO } from '../motor/modelo.js';
 
 const args = process.argv.slice(2), arg = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : d; };
-const DE = resolve(arg('bancos', join(RAIZ, 'bancos'))), A = resolve(arg('salida', join(RAIZ, '..', 'Murga-o-matic-offline', 'bancos')));
+const DE = resolve(arg('bancos', join(RAIZ, 'bancos'))), A = resolve(arg('salida', join(SALIDA, 'bancos')));
 const N = +arg('piezas', 60);
 const SOLO_WAV = args.includes('--wav'), KBPS = arg('kbps', '96') + 'k';
 const AB = resolve(arg('ab', join(RAIZ, 'murga_trabajo', 'utau', 'opus_ab')));   // frases con .wav y con Opus, para escuchar

@@ -5,6 +5,7 @@
   "scripts": {
     "bancos": "node herramientas/utau_recortar.mjs",
     "offline": "node herramientas/construir.mjs",
+    "verificar": "node herramientas/verificar.mjs",
     "publicar": "node herramientas/publicar.mjs"
   }
 }

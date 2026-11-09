@@ -33,8 +33,11 @@ murga_trabajo/jurado/
 murga_trabajo/un_archivo/
 # Las pruebas con bancos de UTAU (herramientas/utau_prueba.mjs): audio hecho con bancos ajenos, que no se redistribuyen.
 murga_trabajo/utau/
-# Los bancos de voces de UTAU (bancos/*.zip): cada uno tiene sus condiciones de uso y no se redistribuyen. Van en
-# esta carpeta en la compu de cada uno; el repositorio sólo lleva bancos/plantel.json (qué bancos y voces hay) y
-# bancos/LEEME.md (de dónde bajarlos).
+# Los bancos de voces de UTAU enteros (bancos/*.zip): pesan 1,65 GB y varios pasan los 100 MB que acepta GitHub. Van
+# en esta carpeta en la compu de cada uno; el repositorio lleva bancos/plantel.json (qué bancos y voces hay, y sus
+# autores) y bancos/LEEME.md (de dónde bajarlos). La página publicada los lleva recortados y en Opus (offline/).
 bancos/*.zip
 bancos/*.uar
+# La versión liviana (herramientas/construir.mjs, npm run offline): se arma de lo commiteado y se publica en la rama
+# gh-pages (npm run publicar), no en main.
+/offline/

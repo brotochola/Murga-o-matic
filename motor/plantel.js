@@ -1,8 +1,11 @@
 // plantel.js — el plantel de la murga en la página: los bancos de voces de UTAU (bancos/plantel.json) y las voces que
 // salen de cada uno (docs/plan_cantantes.md). Cada banco es un .zip:
-//   - si está en la carpeta bancos/ de la página (en la compu, con herramientas/servir.js), se lee de ahí, de a pedazos;
-//   - si no (la página publicada no los trae: no se redistribuyen), queda apagado y se puede buscar el .zip en la
-//     compu; Chrome y Edge recuerdan el archivo elegido (su llave, en IndexedDB) para la próxima vez.
+//   - si está en la carpeta bancos/ de la página (la publicada los trae recortados y en Opus, herramientas/construir.mjs;
+//     en la compu, con herramientas/servir.js, los enteros), se lee de ahí, de a pedazos;
+//   - si no, queda apagado y se puede buscar el .zip en la compu; Chrome y Edge recuerdan el archivo elegido (su llave,
+//     en IndexedDB) para la próxima vez.
+// Los bancos se usan con permiso de sus autores, que piden que se los mencione con un link: cada banco del plantel
+// muestra el suyo, y «Cómo funciona» los nombra a todos (#creditosBancos).
 // Todos los bancos que estén vienen marcados; desmarcarlos saca sus voces. Las voces de banco se eligen en el inspector
 // de cada murguista («banco:MIKE»), y cantan en los obreros con el motor de bancos (cantor/obrero.js).
 import { guardarBanco, listarBancos, guardarDato, leerDato, permiso } from './cantor/bancos.js';
@@ -122,7 +125,7 @@ const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
 const ESTADO = {
   buscando: ['buscando…', 'Buscando el .zip en la carpeta bancos/ de la página.'],
   listo: ['listo', ''],
-  falta: ['falta el archivo', 'No está en la carpeta bancos/ de la página (la página publicada no trae los bancos: no se pueden redistribuir). Bajalo de la página de su autor y elegilo con «Buscar el archivo».'],
+  falta: ['falta el archivo', 'No está en la carpeta bancos/ de la página. Bajalo de la página de su autor y elegilo con «Buscar el archivo».'],
   permiso: ['falta el permiso', 'Ya lo elegiste antes: el navegador pide un clic para volver a leerlo.'],
 };
 export function dibujar() {
@@ -130,7 +133,7 @@ export function dibujar() {
   if (P.error) { caja.innerHTML = `<p class="hint">No encontré el plantel (bancos/plantel.json): ${esc(P.error)}.</p>`; return; }
   const n = P.bancos.filter(b => b.estado === 'listo' && P.activos[b.archivo] !== false).length;
   caja.innerHTML = `<div class="pl-cab"><h3>El plantel</h3><span class="hint">${n} de ${P.bancos.length} bancos cantando</span></div>
-    <p class="hint">Los bancos de voces que puede usar la murga: grabaciones de cantantes de verdad (UTAU), cada una en un .zip. Marcá los que querés; sus voces aparecen en «Voz» de cada murguista, y por defecto cada lugar canta con la voz que le toca. Un banco que no está se apaga y sus lugares cantan con MBROLA. Pasá el mouse por cada uno para ver quién lo grabó y sus condiciones de uso.</p>
+    <p class="hint">Los bancos de voces que puede usar la murga: grabaciones de cantantes de verdad (UTAU), cada una en un .zip. Marcá los que querés; sus voces aparecen en «Voz» de cada murguista, y por defecto cada lugar canta con la voz que le toca. Un banco que no está se apaga y sus lugares cantan con MBROLA. Cada uno se usa con permiso de quien lo grabó: su nombre lleva a su página.</p>
     <ul class="pl-lista"></ul>`;
   const ul = caja.querySelector('.pl-lista');
   for (const b of P.bancos) {
@@ -139,6 +142,7 @@ export function dibujar() {
     li.className = 'pl-banco ' + b.estado + (ok && P.activos[b.archivo] === false ? ' apagado' : '');
     li.title = `${b.nombre} — ${b.autor || ''}${b.idioma ? ` · ${b.idioma}` : ''}\nVoces: ${voces.join(', ')}\nCondiciones: ${b.condiciones || '—'}\nArchivo: bancos/${b.archivo}${b.donde === 'archivo' ? ' (elegido de la compu)' : b.donde === 'sesion' ? ' (elegido por esta sesión)' : ''}`;
     li.innerHTML = `<label class="chk"><input type="checkbox" ${ok && P.activos[b.archivo] !== false ? 'checked' : ''} ${ok ? '' : 'disabled'}> <b>${esc(b.nombre)}</b></label>
+      ${b.autor ? `<span class="pl-autor">de ${b.web ? `<a href="${esc(b.web)}" target="_blank" rel="noopener" title="La página de ${esc(b.autor)}">${esc(b.autor)}</a>` : esc(b.autor)}</span>` : ''}
       <small>${esc(b.idioma || '')} · ${voces.length === 1 ? 'una voz' : voces.length + ' voces'}: ${esc(voces.join(', '))}</small>
       <span class="pl-estado" title="${esc(ayuda)}">${esc(rot)}</span>
       <span class="pl-acc"></span>`;
@@ -151,10 +155,20 @@ export function dibujar() {
       bt.title = b.estado === 'permiso' ? 'El navegador pregunta si la página puede leer el .zip que elegiste la otra vez' : `Elegir ${b.archivo} (o el .zip tal como lo baja su autor) desde la compu`;
       bt.onclick = () => (b.estado === 'permiso' ? darPermiso(b) : buscarArchivo(b)); acc.append(bt);
     }
-    if (b.web) { const a = document.createElement('a'); a.href = b.web; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'de dónde bajarlo'; a.title = 'La página del autor del banco'; acc.append(a); }
     if (b.error) { const e = document.createElement('small'); e.className = 'pl-error'; e.textContent = b.error; li.append(e); }
     ul.append(li);
   }
+  creditos();
+}
+// los créditos de los bancos en «Cómo funciona»: cada autor con un link a su página y sus bancos
+function creditos() {
+  const p = document.getElementById('creditosBancos'); if (!p) return;
+  const autores = new Map();
+  for (const b of P.bancos) if (b.autor) { const k = b.autor + '|' + (b.web || ''); if (!autores.has(k)) autores.set(k, { autor: b.autor, web: b.web, bancos: [] }); autores.get(k).bancos.push(b.nombre); }
+  const y = l => (l.length > 1 ? l.slice(0, -1).join(', ') + ' y ' + l[l.length - 1] : l[0]);
+  const items = [...autores.values()].map(a => `${esc(y(a.bancos))}, de ${a.web ? `<a href="${esc(a.web)}" target="_blank" rel="noopener">${esc(a.autor)}</a>` : esc(a.autor)}`);
+  p.innerHTML = items.length ? `Bancos de voces de UTAU, con permiso de sus autores: ${items.join('; ')}.` : '';
+  p.hidden = !items.length;
 }
 // los estilos del plantel, con las variables de la página
 const css = document.createElement('style');
@@ -162,7 +176,7 @@ css.textContent = `.plantel{border:1px solid var(--line);border-radius:12px;padd
 .plantel .pl-cab{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.plantel h3{margin:0;font-size:15px}
 .pl-lista{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
 .pl-banco{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:6px 10px}
-.pl-banco label{font-size:14px}.pl-banco small{color:var(--muted);flex:1 1 220px;min-width:0}
+.pl-banco label{font-size:14px}.pl-banco small{color:var(--muted);flex:1 1 220px;min-width:0}.pl-autor{font-size:12px;color:var(--muted)}.pl-autor a{color:inherit}
 .pl-estado{font-size:12px;font-weight:600;color:var(--ok)}.pl-banco.falta .pl-estado,.pl-banco.permiso .pl-estado{color:var(--mal)}.pl-banco.buscando .pl-estado{color:var(--muted)}
 .pl-banco.falta,.pl-banco.permiso,.pl-banco.apagado{opacity:.75}.pl-banco.falta b,.pl-banco.permiso b{text-decoration:line-through;text-decoration-thickness:1px}
 .pl-acc{display:flex;gap:8px;align-items:center}.pl-acc a{font-size:12px;color:var(--muted)}.pl-error{color:var(--mal);flex-basis:100%}`;

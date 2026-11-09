@@ -2,7 +2,7 @@
 // voces, con el botón «Cantar las voces»), las caras (con la regla COEP que bloqueaba las de
 // DiceBear), toda la murga con una voz (MBROLA, muestras de coro, formantes, un banco) y cuánto suena cada una, y cuánto
 // tarda en volver a cantar cuando se cambia un solo murguista (su volumen, su voz).
-//   node herramientas/probar_voces.mjs [--sin-coep] [--voces es2,muestras,formantes,banco:MIKE] [--carpeta liviana]
+//   node herramientas/probar_voces.mjs [--sin-coep] [--voces es2,muestras,formantes,banco:MIKE] [--carpeta offline]
 // Sirve la carpeta con herramientas/servir.js (los bancos de bancos/*.zip, si están); con --carpeta, una versión
 // liviana (herramientas/construir.mjs) con su servir.mjs. Sale con 1 si algo falla.
 // Lo que mide sirve para NIVEL_MOTOR (motor/app.js): cuánto más fuerte o más bajo sale cada motor que MBROLA.
