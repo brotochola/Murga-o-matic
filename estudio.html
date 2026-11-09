@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Estudio de voces</title>
+<meta name="description" content="Armar la murga con bancos de UTAU y las voces de MBROLA: cada voz con sus valores, los trece lugares, y la murga entera en mp3.">
+<style>
+:root{--fondo:#f6f5f2;--tarjeta:#fff;--texto:#1f2328;--suave:#5f6670;--linea:#dcd9d2;--acento:#b5371c;--acento-texto:#fff;--aviso:#fff3d6;
+  --bajos:#c0392b;--segundos:#c97a12;--primos:#2b2e6e;--sobreprimos:#0f8a7e;--tercia:#8e3fb3}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--fondo:#16181b;--tarjeta:#202328;--texto:#e6e6e3;--suave:#9aa1a9;--linea:#363a40;--acento:#e0613f;--acento-texto:#111;--aviso:#3a3220;
+  --primos:#7b80d6}}
+:root[data-theme="dark"]{--fondo:#16181b;--tarjeta:#202328;--texto:#e6e6e3;--suave:#9aa1a9;--linea:#363a40;--acento:#e0613f;--acento-texto:#111;--aviso:#3a3220;--primos:#7b80d6}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--texto);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{padding:14px 16px 6px;max-width:1500px;margin:0 auto}
+h1{font-size:22px;margin:0}h2{font-size:18px;margin:0 0 6px}h3{font-size:15px;margin:0}
+.sub{color:var(--suave);margin:4px 0 0}
+section.parte{max-width:1500px;margin:0 auto;padding:12px 16px 18px;border-top:1px solid var(--linea)}
+.fila{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+input[type=text],input[type=number],select{padding:7px 9px;border:1px solid var(--linea);border-radius:6px;background:var(--tarjeta);color:var(--texto);font:inherit;min-width:0}
+input[type=text]{flex:1 1 260px}input[type=number]{width:90px}
+button,.boton{padding:7px 12px;border:1px solid var(--linea);border-radius:6px;background:var(--tarjeta);color:var(--texto);font:inherit;cursor:pointer;text-decoration:none;display:inline-block}
+button.fuerte{background:var(--acento);border-color:var(--acento);color:var(--acento-texto);font-weight:600}
+button:disabled{opacity:.5;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--acento);outline-offset:2px}
+.estado{font-size:13px;color:var(--suave)}
+.aviso{background:var(--aviso);border:1px solid var(--linea);border-radius:8px;padding:10px 12px;margin:8px 0}
+.lista-bancos{display:grid;gap:8px}
+.banco{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;background:var(--tarjeta);border:1px solid var(--linea);border-radius:8px;padding:8px 12px}
+.banco .que{flex:1 1 300px;min-width:0}.banco small{color:var(--suave);display:block}
+.voces{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr))}
+.voz{background:var(--tarjeta);border:1px solid var(--linea);border-radius:10px;padding:12px 14px}
+.voz.cambiada{box-shadow:inset 4px 0 0 var(--acento)}
+.voz .cabeza{display:flex;gap:8px;align-items:center}.voz .cabeza input{flex:1;font-weight:600}
+.voz .info{color:var(--suave);font-size:13px;margin:4px 0 8px}
+.param{display:grid;grid-template-columns:150px 1fr 74px;gap:8px;align-items:center;margin:3px 0}
+.param span{font-size:13px}.param.tocado span{font-weight:600}
+.param output{font-size:12px;color:var(--suave);text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--acento)}
+.acciones{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
+audio{width:100%;margin-top:8px;height:36px}
+.lugares{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr))}
+.lugar{display:flex;gap:8px;align-items:center;background:var(--tarjeta);border:1px solid var(--linea);border-radius:8px;padding:6px 10px}
+.lugar b{min-width:110px;font-size:13px}.lugar i{width:10px;height:10px;border-radius:50%;flex:none}
+.lugar select{flex:1;min-width:0}
+pre{white-space:pre-wrap;font-size:12px;color:var(--suave);margin:6px 0 0;max-height:180px;overflow:auto}
+@media (max-width:520px){.param{grid-template-columns:105px 1fr 62px}.lugar b{min-width:84px}}
+</style>
+</head>
+<body>
+<header>
+<h1>Estudio de voces</h1>
+<p class="sub">Las voces del plantel, cada una con sus valores; quién canta en cada uno de los trece lugares; y la murga entera. Los bancos de UTAU se leen de su carpeta en tu compu (no se copian) y todo queda guardado en este navegador.</p>
+<div class="aviso" id="sinLlaves" hidden>Este navegador no recuerda carpetas (eso es de Chrome y Edge): los bancos se eligen cada vez que abrís el estudio.</div>
+<div class="aviso" id="sinServidor" hidden>El estudio tiene que abrirse desde una dirección web, no como archivo suelto: en la carpeta del Murga-o-matic, <code>node herramientas/servir.js</code> y abrí <a href="http://localhost:8123/estudio.html">http://localhost:8123/estudio.html</a> (o la página publicada en GitHub Pages).</div>
+</header>
+
+<section class="parte" aria-labelledby="t-bancos">
+<h2 id="t-bancos">Los bancos</h2>
+<p class="sub">Elegí la carpeta de cada banco de UTAU (la que tiene su <code>oto.ini</code> o su <code>character.txt</code>). La primera vez el navegador pide permiso para leerla; elegí «permitir siempre» y la próxima vez va solo a buscar los archivos.</p>
+<div class="fila"><button class="fuerte" id="agregarBanco">Agregar un banco</button><input type="file" id="carpetaSesion" webkitdirectory hidden><button id="permisos" hidden>Dar permiso a las carpetas</button><span class="estado" id="estadoBancos" role="status"></span></div>
+<div class="lista-bancos" id="bancos"></div>
+</section>
+
+<section class="parte" aria-labelledby="t-voces">
+<h2 id="t-voces">Las voces (el plantel)</h2>
+<div class="fila">
+<input type="text" id="frase" aria-label="La frase que cantan" value="Llegó el carnaval con su bombo y platillo">
+<select id="cuerda" aria-label="En qué registro cantan"><option value="bajos">bajos</option><option value="segundos">segundos</option><option value="primos" selected>primos</option><option value="sobreprimos">sobreprimos</option><option value="agudo">agudo (hasta Do 5)</option></select>
+<label class="estado"><input type="checkbox" id="auto" checked> cantar al soltar</label>
+</div>
+<div class="fila">
+<button class="fuerte" id="enojados">Enojados y gritando</button>
+<button id="comoEstaban">Como estaban al abrir</button>
+<button id="todas">Cantar todas</button>
+<button id="exportar">Exportar el plantel</button>
+<label class="boton">Importar un plantel<input type="file" id="importar" accept=".json,application/json" hidden></label>
+<span class="estado" id="estadoVoces" role="status"></span>
+</div>
+<div class="voces" id="voces"></div>
+</section>
+
+<section class="parte" aria-labelledby="t-murga">
+<h2 id="t-murga">La murga</h2>
+<div class="fila">
+<label class="estado">Forma <select id="forma"><option value="retirada" selected>retirada</option><option value="presentacion">presentación</option></select></label>
+<label class="estado">Estilo <select id="estilo"><option>trasnochada</option><option>catalina</option><option>muneca</option><option>pasteles</option><option>bastarda</option><option>asaltantes</option><option>milonga</option><option>cabra</option><option>todas</option></select></label>
+<label class="estado">Semilla <input type="number" id="semilla" value="56" min="1" step="1"></label>
+<label class="estado">Hasta el segundo <input type="number" id="hasta" value="60" min="0" step="5"></label>
+</div>
+<div class="lugares" id="lugares"></div>
+<div class="fila">
+<button id="repartir">Repartir solo</button>
+<button class="fuerte" id="cantarMurga">Cantar la murga</button>
+<span class="estado" id="estadoMurga" role="status"></span>
+</div>
+<audio id="murgaAudio" controls hidden></audio>
+<div class="fila" id="bajar" hidden><a class="boton" id="bajarMp3" download>Bajar el mp3</a><a class="boton" id="bajarWav" download>Bajar el wav</a></div>
+<pre id="murgaLetra" hidden></pre>
+</section>
+<script type="module" src="motor/estudio.js"></script>
+</body>
+</html>

@@ -1,7 +1,53 @@
 # Plan: armar la murga eligiendo a cada cantante
 
-Para charlar antes de codear. Lo que se quiere es elegir qué voz canta en cada uno de los 13 lugares del coro y
-ajustar los valores de cada uno. Las voces son las de MBROLA o las de los bancos de UTAU (`docs/utau.md`).
+Lo que se quiere es elegir qué voz canta en cada uno de los 13 lugares del coro y ajustar los valores de cada uno. Las
+voces son las de MBROLA o las de los bancos de UTAU (`docs/utau.md`).
+
+## Lo que ya está: el estudio (`estudio.html`)
+
+Lo decidido el 9 de noviembre de 2026:
+- **El plantel es un .json** con las propiedades de cada voz:
+  `[{ "nombre": "MIKE grave", "banco": "Mike_Normal", "capa": "_dp", "grito": 1.1, "tension": .6, ... },
+  { "nombre": "MBROLA es2", "mbrola": "es2" }]`. En Node, los bancos van por su carpeta (`"carpeta"`) en vez de
+  `"banco"`.
+- **Todo web, sin servidor que cante:** el estudio usa el mismo motor que la página, en sus obreros.
+- **Los bancos no se copian.** Se guarda la llave de la carpeta de cada uno (`FileSystemDirectoryHandle`) en el
+  navegador, y la próxima vez va solo a buscar los .wav. Chrome y Edge la recuerdan, y piden un clic para dar permiso
+  si no se eligió «permitir siempre». Firefox y Safari no la tienen: ahí la carpeta se elige cada vez.
+
+**Lo que tiene el estudio:**
+- **Los bancos:** agregar la carpeta de cada uno y ver su reclist, sus alturas grabadas y sus colores. Si un banco no
+  dice su altura, se mide de una vocal.
+- **Las voces:** cada una con sus deslizadores (garganta, afinación, vibrato, grito, tensión, ronquera, aire,
+  esfuerzo, dicción, golpe, pique, caída, temblor de la grabación) y «Cantar», que canta una frase en el registro
+  elegido. Arriba:
+  - «Enojados y gritando» y «Como estaban al abrir»;
+  - «Cantar todas»;
+  - exportar e importar el plantel (también el de Node: su carpeta se busca entre los bancos cargados).
+- **La murga:** los 13 lugares, cada uno con su voz; «Repartir solo» (la voz grabada más cerca del registro de su
+  cuerda, sin repetir si se puede); y «Cantar la murga», que da el mp3, el wav y la letra.
+- **Lo que queda guardado** en el navegador: el plantel, la murga y las opciones.
+
+**Cómo se abre:** desde una dirección web, no como archivo suelto. Puede ser `node herramientas/servir.js` y
+<http://localhost:8123/estudio.html>, o la página publicada (`…github.io/Murga-o-matic/estudio.html`).
+
+**Las piezas:**
+- `motor/estudio.js`: la página.
+- `motor/cantor/bancos.js`: las llaves de las carpetas, IndexedDB, y leer un banco desde el obrero.
+- el motor `banco` de `motor/cantor/obrero.js`: canta un cantor con un banco, leyendo antes del disco los .wav que va
+  a usar (`archivosQueUsa`).
+- `motor/cantor/murga_bancos.js`: las opciones de cada cantor según su voz, la pieza con su letra, el reparto y la
+  mezcla. Es lo mismo que usa `herramientas/murga_bancos.mjs` en Node.
+- `herramientas/probar_estudio.mjs <banco>`: la prueba de punta a punta en Chrome sin ventana.
+
+**La prueba, con Sheep Oveja:**
+- el banco se abre desde una carpeta del sitio;
+- una frase tarda 2,7 s;
+- la murga hasta la primera sección (37 s, 12 cantores) tarda **16 s** con los obreros de esta compu, contra 92 s
+  en Node en un solo hilo;
+- al recargar, el banco se abre solo.
+
+Lo que sigue, abajo, es el plan para la página principal.
 
 ## Lo que hay hoy en la página
 
@@ -195,9 +241,9 @@ Hay que medirlo en el navegador.
 
 ## Lo que hay que decidir
 
-1. **es4:** ¿se saca del plantel y del reparto de siempre (el tercer cantor de cada cuerda)?
-2. **Cargar los bancos:** ¿de a uno, o un .zip con varios bancos adentro? Para usarlo en tu compu da igual: no se
-   redistribuye.
+1. **es4:** ¿se saca del reparto de siempre de la página (el tercer cantor de cada cuerda)? En el estudio ya no está.
+2. **Cargar los bancos:** decidido: la carpeta de cada uno, recordada por su llave (ver arriba). Queda: ¿también un
+   .zip, para los que vienen así?
 3. **El inspector:** ¿todos los deslizadores a la vista, o los comunes a la vista y los de banco en «Más»?
 4. **Repartir las voces:** ¿automático al cargar el primer banco, o sólo con el botón?
 5. **Ronquera y grito:** ¿se miden contra el coro real antes de ponerlos, o primero de oído?

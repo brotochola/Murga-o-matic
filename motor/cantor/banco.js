@@ -123,8 +123,10 @@ export function crearBanco(rutas, leer) {
   for (const c of capas) {
     const ms = [...c.notas].sort((a, b) => a - b);
     c.midi = notaEn(c.sufijo) ?? notaEn(c.prefijo) ?? (!ms.length ? 60 : ms[ms.length - 1] >= 100 ? ms[0] : ms[0] <= 25 ? ms[ms.length - 1] : ms[ms.length >> 1]);
+    // supuesta: ni el nombre ni las notas dicen la altura (un banco de una sola altura, sin prefix.map): hay que medirla
+    c.supuesta = notaEn(c.sufijo) == null && notaEn(c.prefijo) == null && !ms.length;
   }
-  if (!capas.length) capas.push({ prefijo: '', sufijo: '', color: '', notas: new Set(), midi: 60 });
+  if (!capas.length) capas.push({ prefijo: '', sufijo: '', color: '', notas: new Set(), midi: 60, supuesta: true });
   const alturas = capas;
   const colores = new Set(capas.map(c => c.color).filter(Boolean));
   const sufijoDe = midi => (capas.find(c => c.notas.has(Math.round(midi))) || capas[0]).sufijo;
@@ -163,6 +165,9 @@ export function crearBanco(rutas, leer) {
         const k = Math.max(1, Math.round(e.length * .3)); let s = 0; for (let j = 0; j < k; j++) s += e[j];
         w.nivel = Math.sqrt(s / k) || 1e-3;
       }
+      // (lo que no se pudo leer no se recuerda: en el navegador los .wav se leen del disco antes de cantar, y uno que
+      // todavía no estaba puede llegar después; ver archivosQueUsa)
+      if (!w) return null;
       wavs.set(archivo, w);
     }
     return wavs.get(archivo);
@@ -173,7 +178,7 @@ export function crearBanco(rutas, leer) {
     : existe.has('-b a') && existe.has('b a') ? 'brapa'
     : existe.has('-ka') && existe.has('a R') && existe.has('a rr') ? 'makku'
     : existe.has('a R') && existe.has('- a') ? 'akup' : existe.has('a -') && existe.has('- a') && existe.has('a b') ? 'cvvc' : 'njokis';
-  return { nombre, entradas, indice, prefijos, alturas, buscar, existe: a => existe.has(a), wav, sufijoDe, reclist, sinArchivo };
+  return { nombre, entradas, indice, prefijos, alturas, buscar, existe: a => existe.has(a), wav, yaLeido: a => wavs.has(a), sufijoDe, reclist, sinArchivo };
 }
 
 // ── de nuestras sílabas a los alias (reclist VCCV de nJokis) ──────────────
@@ -634,6 +639,28 @@ function analisis(cache, world, banco, e, len) {
   return r;
 }
 
+// las frases de un cantor (notas ligadas) y, en cada una, sus unidades con el pedazo del banco que le toca
+function frasesDe(banco, notas, o) {
+  const frases = [[]];
+  notas.forEach((n, i) => { if (i && n.t0 - notas[i - 1].t1 >= .02) frases.push([]); frases[frases.length - 1].push(n); });
+  return frases.map(F => {
+    const U = aliasFrase(F, banco.existe, { reclist: banco.reclist, ...o });
+    // capa: una grabación entera del banco, con otro color (MIKE grave «_dp»). No es el `color` de difonos.js (las
+    // ondas del timbre de cada cantor de MBROLA), que llega en las mismas opciones. esfuerzo (semitonos, el SHFT de
+    // OpenUtau): la grabación de una altura más aguda que la nota (más esforzada) o más grave (más relajada)
+    for (const u of U) u.e = banco.buscar(u.alias, F[u.nota].midi + (o.esfuerzo || 0), o.evitar, o.capa);
+    return { F, U };
+  });
+}
+// los .wav que va a usar un cantor: en el navegador se leen del disco antes de cantar (bancos.js), porque
+// cantarBanco los pide de una
+export function archivosQueUsa(banco, notas, opc = {}) {
+  const o = { ...opc };
+  const s = new Set();
+  for (const { U } of frasesDe(banco, correr(notas, o), o)) for (const u of U) if (u.e) s.add(u.e.archivo);
+  return [...s];
+}
+
 // notas: [{t0, t1, midi, vel, sil}] como en difonos.js. Devuelve { x, sr, inicio }.
 export function cantarBanco(banco, world, notas, opc = {}) {
   const o = { modulacion: 1, cache: new Map(), ...opc };
@@ -645,20 +672,11 @@ export function cantarBanco(banco, world, notas, opc = {}) {
   const tA0 = g.inicio, nA = Math.ceil((g.fin + .5 - tA0) / (PERIODO / 1000)) + 2, alt = new Float64Array(nA);
   for (let k = 0; k < nA; k++) alt[k] = g.altura(tA0 + k * PERIODO / 1000);
   const alturaEn = t => { const x = (t - tA0) / (PERIODO / 1000), k = Math.max(0, Math.min(nA - 2, Math.floor(x))), f = Math.max(0, Math.min(1, x - k)); return alt[k] * (1 - f) + alt[k + 1] * f; };
-  // las frases: notas ligadas
-  const frases = [[]];
-  notas.forEach((n, i) => { if (i && n.t0 - notas[i - 1].t1 >= .02) frases.push([]); frases[frases.length - 1].push(n); });
   const piezas = [], faltan = [];
   let sr = 44100;
-  for (const F of frases) {
-    const U = aliasFrase(F, banco.existe, { reclist: banco.reclist, ...o });
+  for (const { F, U } of frasesDe(banco, notas, o)) {
     faltan.push(...U.faltan);
     for (const u of U) {
-      // capa: una grabación entera del banco, con otro color (MIKE grave «_dp»). No es el `color` de difonos.js (las
-      // ondas del timbre de cada cantor de MBROLA), que llega en las mismas opciones
-      // esfuerzo (semitonos, el SHFT de OpenUtau): la grabación de una altura más aguda que la nota (más esforzada) o
-      // más grave (más relajada), llevada a la nota
-      u.e = banco.buscar(u.alias, F[u.nota].midi + (o.esfuerzo || 0), o.evitar, o.capa);
       if (!u.e) { faltan.push(u.alias); continue; }
       const w = banco.wav(u.e.archivo); if (w) sr = w.sr;
       // dicción (consonantes, el VEL de UTAU al revés): la parte fija del pedazo (la consonante y el paso a la vocal)
