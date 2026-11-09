@@ -162,7 +162,34 @@ a{color:var(--sobreprimos)}
 .sinred progress{width:100%;height:6px;accent-color:var(--accent)}
 .cantantes .cabeza{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;margin-bottom:6px}
 .cantantes .cabeza h2{margin:0}
-.lista-cantantes{display:grid;gap:6px;margin-top:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr))}
+.lista-cantantes{display:grid;gap:8px;margin-top:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr))}
+.tarjeta{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel);cursor:pointer}
+.tarjeta:hover{border-color:var(--muted)}
+.tarjeta:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tarjeta.cambiado{border-color:var(--accent)}
+.tarjeta.abierta{box-shadow:inset 0 0 0 2px var(--accent)}
+.tarjeta.callado{opacity:.55}
+.tarjeta img{width:44px;height:44px;border-radius:50%;background:var(--well)}
+.tarjeta b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tarjeta small{display:flex;gap:6px;align-items:center;font:12px var(--mono);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tarjeta small i{width:9px;height:9px;border-radius:2px;flex:none}
+.tarjeta .acc{display:flex;gap:4px}
+.tarjeta .acc button{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:4px 7px;font-size:12px;font-weight:600;cursor:pointer}
+.tarjeta .acc button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.cantantes .cabeza .botones{margin:0}
+.insp-cantante{display:grid;gap:10px}
+.ic-cabeza{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:12px;align-items:center}
+.ic-cabeza img{width:72px;height:72px;border-radius:50%;background:var(--well)}
+.ic-quien input{width:100%;font:600 20px var(--body);background:transparent;border:0;border-bottom:1px dashed var(--line);padding:2px 0;color:var(--ink)}
+.ic-quien input:focus{outline:none;border-bottom-color:var(--accent)}
+.ic-cerrar{padding:4px 11px;font-size:18px;line-height:1}
+.insp-cantante .botones{margin:0}
+.insp-cantante .btn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.insp-cantante label.btn{display:inline-flex;align-items:center}
+.insp-cantante .params{display:grid;gap:8px}
+.insp-cantante .param{display:grid;grid-template-columns:110px minmax(0,1fr) 80px;gap:8px;align-items:center;font-size:13px}
+.insp-cantante .param output{font:12px var(--mono);color:var(--muted);text-align:right}
+.insp-cantante .param select{padding:5px 8px}
 .cantante{border:1px solid var(--line);border-radius:10px;background:var(--panel)}
 .cantante.cambiado{border-color:var(--accent)}
 .cantante summary{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 10px;cursor:pointer;list-style:none}
@@ -389,10 +416,9 @@ a{color:var(--sobreprimos)}
   <section class="pestana-panel cantantes" id="cantantes" hidden role="tabpanel" aria-labelledby="t-cantantes">
     <div class="cabeza">
       <h2 id="t-cantantes">Los cantantes</h2>
-      <button class="btn" id="cantantesReset">Volver a como salieron</button>
+      <div class="botones"><button class="btn" id="otrosCantantes">Otros cantantes</button><button class="btn" id="cantantesReset">Volver a como salieron</button></div>
     </div>
-    <p class="hint">Los trece cantores de difonos, cada uno con su voz y sus mañas. Abrí uno para cambiarlo; con «Solo» se escucha él solo (canta en un par de segundos). Los cambios se guardan en este navegador y valen para cualquier pieza.</p>
-    <div class="aviso" id="avisoCantantes" hidden><span>Cambiaste cantantes.</span><button class="btn fuerte" id="recantarCantantes">Cantar con estos cambios</button></div>
+    <p class="hint">Los trece murguistas, cada uno con su nombre, su voz y sus mañas. Tocá uno para verlo y cambiarlo en el inspector: al cambiar algo, en un momento vuelve a cantar él solo. Son los mismos aunque cambies la música; con «Otros cantantes» viene otro coro. Se guardan en este navegador.</p>
     <div class="lista-cantantes" id="listaCantantes"></div>
   </section>
   <section class="pestana-panel grabada" id="grabada" role="tabpanel" aria-labelledby="t-grabada">
@@ -466,6 +492,18 @@ a{color:var(--sobreprimos)}
       <p class="hint">Elegí un verso, en la letra o en la partitura, y acá aparece cada paso con sus datos: qué pide la melodía, cómo eligió el letrista, cómo caen las sílabas en las notas y qué canta cada voz.</p>
       <div id="proceso"></div>
     </section>
+      <section class="insp-cantante" id="inspCantante" hidden aria-label="El cantante elegido">
+        <div class="ic-cabeza">
+          <img id="icCara" alt="" width="72" height="72">
+          <div class="ic-quien"><input id="icNombre" maxlength="40" aria-label="Nombre del cantante" autocomplete="off"><p class="sub" id="icCuerda"></p></div>
+          <button class="btn ic-cerrar" id="icCerrar" aria-label="Volver a cómo se hace el verso" title="Volver a cómo se hace el verso">×</button>
+        </div>
+        <div class="botones"><button class="btn" id="icSolo" aria-pressed="false">Escucharlo solo</button><button class="btn" id="icMudo" aria-pressed="false">Callarlo</button><button class="btn" id="icCaraOtra">Otra cara</button></div>
+        <p class="hint" id="icRango"></p>
+        <div class="params" id="icParams"></div>
+        <div class="botones"><button class="btn" id="icReiniciar">Volver a como salió</button><button class="btn" id="icExportar">Exportar</button><label class="btn">Importar<input type="file" id="icImportar" accept=".json,application/json" hidden></label></div>
+        <p class="hint">Exportar baja un archivo con este murguista; Importar pone acá a uno exportado (de esta murga o de otra).</p>
+      </section>
       <p class="hint" id="inspectorVacio">Con cantores que cantan una letra (Formantes o Difonos), acá aparece paso a paso cómo se hizo el verso que elijas en la letra o en la partitura.</p>
     </aside>
   </div>
