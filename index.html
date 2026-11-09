@@ -194,6 +194,15 @@ dialog .cabeza h2{font-family:var(--display);font-weight:400;font-size:18px;marg
 .murga-fila em{font-size:12px;color:var(--muted)}
 .murga-fila .btn{padding:5px 10px;font-size:13px}
 .insp-cantante{display:grid;gap:10px}
+.insp-nota{display:grid;gap:10px}
+.ic-cabeza.sin-cara{grid-template-columns:minmax(0,1fr) auto}
+.insp-nota h2{margin:0}
+.nota-grande{font:600 26px var(--body);margin:0}
+.nota-grande small{font:500 13px var(--mono);color:var(--muted);margin-left:8px}
+.rejilla-nota{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.rejilla-nota .btn{font-size:13px;padding:7px 8px}
+.insp-nota .botones{margin:0}
+.fuera{color:var(--mal)}
 .ic-cabeza{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:12px;align-items:center}
 .ic-cabeza img{width:72px;height:72px;border-radius:50%;background:var(--well)}
 .ic-quien input{width:100%;font:600 20px var(--body);background:transparent;border:0;border-bottom:1px dashed var(--line);padding:2px 0;color:var(--ink)}
@@ -524,6 +533,22 @@ dialog .cabeza h2{font-family:var(--display);font-weight:400;font-size:18px;marg
         <div class="params" id="icParams"></div>
         <div class="botones"><button class="btn" id="icReiniciar">Volver a como salió</button><button class="btn" id="icExportar">Exportar</button><label class="btn">Importar<input type="file" id="icImportar" accept=".json,application/json" hidden></label></div>
         <p class="hint">Exportar baja un archivo con este murguista; Importar pone acá a uno exportado (de esta murga o de otra).</p>
+      </section>
+      <section class="insp-nota" id="inspNota" hidden aria-labelledby="t-nota">
+        <div class="ic-cabeza sin-cara">
+          <div><h2 id="t-nota">La nota</h2><p class="sub" id="inCual"></p></div>
+          <button class="btn ic-cerrar" id="inCerrar" aria-label="Volver a cómo se hace el verso" title="Volver a cómo se hace el verso">×</button>
+        </div>
+        <p class="nota-grande" id="inNota"></p>
+        <p class="hint" id="inRango"></p>
+        <label class="chk" id="inJuntasCampo"><input type="checkbox" id="inJuntas" checked> <span id="inJuntasTexto"></span></label>
+        <div class="rejilla-nota">
+          <button class="btn" data-op="p+1">Un semitono arriba</button><button class="btn" data-op="p-1">Un semitono abajo</button>
+          <button class="btn" data-op="p+12">Una octava arriba</button><button class="btn" data-op="p-12">Una octava abajo</button>
+          <button class="btn" data-op="d+1">Más larga</button><button class="btn" data-op="d-1">Más corta</button>
+        </div>
+        <div class="botones"><button class="btn" data-op="borrar">Borrar la nota</button><button class="btn" id="inDeshacer" disabled>Deshacer</button><button class="btn" id="inEscuchar">Escuchar desde acá</button></div>
+        <p class="hint">También en la partitura: arrastrá la nota para arriba o abajo, o usá las flechas del teclado (con Mayúscula, una octava), Suprimir para borrarla y Ctrl+Z para deshacer. Después de cambiarla vuelven a cantar sólo las frases que la tocan.</p>
       </section>
       <p class="hint" id="inspectorVacio">Con cantores que cantan una letra (Formantes o Difonos), acá aparece paso a paso cómo se hizo el verso que elijas en la letra o en la partitura.</p>
     </aside>

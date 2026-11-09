@@ -12,8 +12,10 @@ const NOMBRE_NOTA = ['Do', 'Do#', 'Re', 'Mib', 'Mi', 'Fa', 'Fa#', 'Sol', 'Lab', 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
 // ───────────────────────── Partitura ─────────────────────────
-export function crearPartitura({ lienzo, mapa, leyenda, alBuscar, alElegir }) {
-  const E = { datos: null, t: 0, vista0: 0, pps: 70, seguir: true, mudas: {}, sel: null, arrastre: null };
+// alElegirNota(nota): se tocó una nota (sin moverla); alMoverNota(nota, semitonos): se la arrastró para arriba o abajo.
+// Cada nota de `datos` trae su cuerda y su lugar en la pieza (i), para poder cambiarla.
+export function crearPartitura({ lienzo, mapa, leyenda, alBuscar, alElegir, alElegirNota, alMoverNota }) {
+  const E = { datos: null, t: 0, vista0: 0, pps: 70, seguir: true, mudas: {}, sel: null, arrastre: null, selNota: null, geo: null };
   const css = () => getComputedStyle(document.documentElement);
   const color = tok => css().getPropertyValue(tok).trim() || '#888';
 
@@ -38,6 +40,7 @@ export function crearPartitura({ lienzo, mapa, leyenda, alBuscar, alElegir }) {
     const X = t => IZQ + (t - t0) * E.pps;
     const pMin = D.pMin - 1, pMax = D.pMax + 1, alto = H_roll / (pMax - pMin + 1);
     const Y = p => ARRIBA + (pMax - p) * alto;
+    E.geo = { IZQ, ARRIBA, alto, pMax, t0, H_roll };
     // fondo de las octavas (Do) y compases
     g.font = `10px ${fUi}`; g.fillStyle = tenue; g.strokeStyle = linea; g.lineWidth = 1;
     for (let p = Math.ceil(pMin); p <= pMax; p++) if (p % 12 === 0) { g.globalAlpha = .6; g.beginPath(); g.moveTo(IZQ, Y(p) + alto); g.lineTo(W, Y(p) + alto); g.stroke(); g.globalAlpha = 1; g.fillText(`${NOMBRE_NOTA[0]}${Math.floor(p / 12) - 1}`, 2, Y(p) + alto); }
@@ -61,11 +64,13 @@ export function crearPartitura({ lienzo, mapa, leyenda, alBuscar, alElegir }) {
       const col = color(c.token);
       for (const n of D.notas) {
         if (n.cuerda !== c.k || n.t1 < t0 || n.t0 > t1) continue;
-        const x = X(n.t0), w = Math.max(2, (n.t1 - n.t0) * E.pps - 1.5), y = Y(n.p) + 1, h = Math.max(3, alto - 2);
-        const suena = ahora >= n.t0 && ahora < n.t1;
-        g.globalAlpha = muda ? .16 : suena ? 1 : .8; g.fillStyle = col;
+        const arr = E.arrastre?.nota === n ? E.arrastre.d || 0 : 0;
+        const x = X(n.t0), w = Math.max(2, (n.t1 - n.t0) * E.pps - 1.5), y = Y(n.p + arr) + 1, h = Math.max(3, alto - 2);
+        const suena = ahora >= n.t0 && ahora < n.t1, elegida = E.selNota && E.selNota.cuerda === n.cuerda && E.selNota.i === n.i;
+        g.globalAlpha = muda ? .16 : suena || elegida ? 1 : .8; g.fillStyle = col;
         g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, Math.min(3, h / 2)) : g.rect(x, y, w, h); g.fill();
-        if (suena && !muda) { g.globalAlpha = 1; g.strokeStyle = tinta; g.lineWidth = 1.5; g.stroke(); }
+        if (elegida) { g.globalAlpha = 1; g.strokeStyle = acento; g.lineWidth = 3; g.stroke(); g.strokeStyle = tinta; g.lineWidth = 1; g.stroke(); }
+        else if (suena && !muda) { g.globalAlpha = 1; g.strokeStyle = tinta; g.lineWidth = 1.5; g.stroke(); }
       }
     }
     g.globalAlpha = 1;
@@ -113,14 +118,29 @@ export function crearPartitura({ lienzo, mapa, leyenda, alBuscar, alElegir }) {
 
   function limitar() { const span = (lienzo.getBoundingClientRect().width - 34) / E.pps; E.vista0 = Math.max(0, Math.min(E.vista0, (E.datos?.total || 0) - span * .6)); }
 
-  // tocar o arrastrar la partitura
-  lienzo.addEventListener('pointerdown', ev => { E.arrastre = { x: ev.clientX, v0: E.vista0, movio: false }; lienzo.setPointerCapture(ev.pointerId); });
+  // la nota que está debajo del puntero (la de arriba de todo si hay varias: la última que se dibujó)
+  function notaEn(ev) {
+    const G = E.geo, D = E.datos; if (!G || !D || !alElegirNota) return null;
+    const r = lienzo.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
+    if (x < G.IZQ || y < G.ARRIBA || y > G.ARRIBA + G.H_roll) return null;
+    const t = G.t0 + (x - G.IZQ) / E.pps, p = G.pMax - Math.floor((y - G.ARRIBA) / G.alto);
+    let mejor = null;
+    for (const c of CUERDAS) { if (E.mudas[c.k]) continue; for (const n of D.notas) if (n.cuerda === c.k && n.p === p && t >= n.t0 && t <= n.t1) mejor = n; }
+    return mejor;
+  }
+  // tocar o arrastrar la partitura; tocar una nota la elige, y arrastrarla para arriba o abajo le cambia la altura
+  lienzo.addEventListener('pointerdown', ev => { const nota = notaEn(ev); E.arrastre = { x: ev.clientX, y: ev.clientY, v0: E.vista0, movio: false, nota, d: 0 }; lienzo.setPointerCapture(ev.pointerId); });
   lienzo.addEventListener('pointermove', ev => {
-    if (!E.arrastre) return; const dx = ev.clientX - E.arrastre.x;
-    if (Math.abs(dx) > 4) { E.arrastre.movio = true; E.vista0 = E.arrastre.v0 - dx / E.pps; E.seguirPausa = performance.now(); limitar(); dibujar(); }
+    const a = E.arrastre;
+    if (!a) { lienzo.style.cursor = notaEn(ev) ? 'ns-resize' : ''; return; }
+    if (a.nota) { const d = Math.round(-(ev.clientY - a.y) / (E.geo?.alto || 10)); if (d !== a.d) { a.d = d; a.movio = d !== 0 || a.movio; dibujar(); } return; }
+    const dx = ev.clientX - a.x;
+    if (Math.abs(dx) > 4) { a.movio = true; E.vista0 = a.v0 - dx / E.pps; E.seguirPausa = performance.now(); limitar(); dibujar(); }
   });
   lienzo.addEventListener('pointerup', ev => {
-    const a = E.arrastre; E.arrastre = null; if (!a || a.movio || !E.datos) return;
+    const a = E.arrastre; E.arrastre = null; if (!a || !E.datos) return;
+    if (a.nota) { if (a.d) alMoverNota?.(a.nota, a.d); else alElegirNota?.(a.nota); dibujar(); return; }
+    if (a.movio) return;
     const r = lienzo.getBoundingClientRect(), t = E.vista0 + (ev.clientX - r.left - 34) / E.pps;
     // la sílaba más cercana a donde se tocó elige el verso
     let mejor = null, d = 1e9; for (const s of E.datos.silabas) { const e = Math.abs(s.t0 - t); if (e < d) { d = e; mejor = s; } }
@@ -149,6 +169,7 @@ export function crearPartitura({ lienzo, mapa, leyenda, alBuscar, alElegir }) {
       dibujar();
     },
     elegir(i, k) { E.sel = i == null ? null : { i, k }; dibujar(); },
+    elegirNota(n) { E.selNota = n ? { cuerda: n.cuerda, i: n.i } : null; dibujar(); },
     silenciar(m) { E.mudas = { ...m }; dibujar(); },
     irA(t) { const span = (lienzo.getBoundingClientRect().width - 34) / E.pps; E.vista0 = t - span * .15; limitar(); dibujar(); },
     zoom(f) { const span = (lienzo.getBoundingClientRect().width - 34) / E.pps, centro = E.vista0 + span / 2; E.pps = Math.max(25, Math.min(400, E.pps * f)); const s2 = (lienzo.getBoundingClientRect().width - 34) / E.pps; E.vista0 = centro - s2 / 2; limitar(); dibujar(); },

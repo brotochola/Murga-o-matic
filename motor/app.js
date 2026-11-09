@@ -307,9 +307,10 @@ const NO_CANTAN=new Set(["nombre","cara"]);
 let temporizadorCanto=null;
 function programarCanto(){clearTimeout(temporizadorCanto);temporizadorCanto=setTimeout(()=>{if(S.pieza&&sint())cantarDeNuevo()},900)}
 function cambiarCantante(clave,k,v){S.ajustes={...S.ajustes,[clave]:{...(S.ajustes[clave]||{}),[k]:v}};guardarAjustes();dibujarCantantes();if(!NO_CANTAN.has(k))programarCanto()}
-let cantanteAbierto=null,inspModo="verso";
-function actualizarInspector(){const cant=inspModo==="cantante"&&cantanteAbierto&&difonos();
-  $("inspCantante").hidden=!cant;$("procesoBloque").hidden=cant||!sint();$("inspectorVacio").hidden=cant||sint()}
+let cantanteAbierto=null,inspModo="verso",notaAbierta=null;const deshacer=[];
+function actualizarInspector(){const cant=inspModo==="cantante"&&cantanteAbierto&&difonos(),nota=inspModo==="nota"&&!!notaAbierta,otro=cant||nota;
+  $("inspCantante").hidden=!cant;$("inspNota").hidden=!nota;$("procesoBloque").hidden=otro||!sint();$("inspectorVacio").hidden=otro||sint();
+  if(!nota)partitura.elegirNota(null)}
 function abrirCantante(clave){cantanteAbierto=clave;inspModo="cantante";actualizarInspector();dibujarCantantes();
   if(matchMedia("(max-width:1279px)").matches)$("inspector").scrollIntoView({behavior:"smooth",block:"start"})}
 function dibujarInspCantante(){
@@ -404,6 +405,7 @@ async function generar(opc={}){
   const gen=++S.gen;detener(true);S.mp3=null;ocupado("Componiendo…");avance(.02,"Componiendo…");
   try{
     const C=S.version===1?await version1():{componer,MODELO};if(gen!==S.gen)return;
+    if(!opc.pieza){notaAbierta=null;deshacer.length=0;if(inspModo==="nota")inspModo="verso"}
     const pieza=opc.pieza||C.componer(C.MODELO,{forma:S.forma,estilo:S.estilo,tonica:S.tonica,modo:S.modo,semilla:S.seed,largo:S.largo,tempo:S.tempo||null,ritmo:S.ritmo||null,clarinada:S.clarinada,cancionFinal:S.cancionFinal,modula:S.modula,tercia:S.tercia,recita:S.recita,llamadas:LLAMADAS,acordes:S.acordes});
     const{T,fin}=mapaTiempo(pieza);const total=fin+2.5;
     const P={T,total,seed:S.seed,brillo:S.brillo};
@@ -480,7 +482,9 @@ const unicos=l=>l.filter((a,i)=>i===0||a!==l[i-1]);
 function nomTono(s){return `${NOTAS[s.tonica]} ${s.modo}`}
 const partitura=crearPartitura({lienzo:$("roll"),mapa:$("mapa"),leyenda:$("legend"),
   alBuscar:t=>{if(S.P)saltar(t)},
-  alElegir:(i,k)=>{if(sint())elegir(i,k,false,true)}});
+  alElegir:(i,k)=>{if(sint())elegir(i,k,false,true)},
+  alElegirNota:n=>abrirNota(n),
+  alMoverNota:(n,d)=>{abrirNota(n);cambiarNota({op:"p",v:d})}});
 $("zoomMas").onclick=()=>partitura.zoom(1.4);$("zoomMenos").onclick=()=>partitura.zoom(1/1.4);$("seguir").onchange=e=>partitura.seguir(e.target.checked);
 
 function dibujarTodo(){
@@ -530,7 +534,7 @@ function editorAcordes(s){
 }
 function datosPartitura(){
   const P=S.P,T=P.T,pieza=S.pieza,L=S.letra;
-  const notas=[];for(const k of ORDEN)for(const[q,d,p]of pieza.ev[k])notas.push({t0:T(q),t1:T(q+d),p,cuerda:k});
+  const notas=[];for(const k of ORDEN)pieza.ev[k].forEach(([q,d,p],i)=>notas.push({t0:T(q),t1:T(q+d),p,cuerda:k,i}));
   const silabas=[];
   if(sint()&&L.sil)for(const s of pieza.secs){const i=L.partes.findIndex(p=>p.secciones.includes(s.nombre));if(i<0)continue;
     for(let k=0;L.sil.detalle.has(s.nombre+"|"+k);k++){const det=L.sil.detalle.get(s.nombre+"|"+k),esc=escritas(L.textos[i][k],det.reparto);
@@ -613,7 +617,7 @@ function proceso(){const L=S.letra,{i,k}=L.sel,p=L.partes[i];if(!p){$("proceso")
     const pos=lista.findIndex(([ii,kk])=>ii===i&&kk===k),sig=lista[Math.max(0,Math.min(lista.length-1,pos+ +b.dataset.ir))];
     elegir(sig[0],sig[1],false,false,true)})}
 function elegir(i,k,desdeLetra,desdePartitura,mover){
-  S.letra.sel={i,k};if(inspModo!=="verso"){inspModo="verso";actualizarInspector();dibujarCantantes()}
+  S.letra.sel={i,k};if(inspModo==="cantante"){inspModo="verso";actualizarInspector();dibujarCantantes()}
   document.querySelectorAll(".verso.elegido").forEach(e=>e.classList.remove("elegido"));
   document.querySelector(`.verso[data-i="${i}"][data-k="${k}"]`)?.classList.add("elegido");
   partitura.elegir(i,k);
@@ -858,7 +862,7 @@ async function abrirMurga(m){
   for(const k of CLAVES_PIEZA)if(m.ajustesPieza?.[k]!==undefined)S[k]=m.ajustesPieza[k];
   S.acordes=m.acordes||{};S.editando=null;S.soloCantor=null;if(m.voces)S.voces=m.voces;
   S.semCoro=m.semCoro||1;S.ajustes=m.ajustes||{};Object.assign(S,m.coro||{});S.mix={...S.mix,...(m.mix||{})};S.mute={...(m.mute||{})};
-  cantanteAbierto=null;inspModo="verso";S.firmas=null;S.pv=null;
+  cantanteAbierto=null;notaAbierta=null;deshacer.length=0;inspModo="verso";S.firmas=null;S.pv=null;
   sincronizarControles();try{localStorage.setItem("murga.actual",m.id)}catch(e){}
   await generar({pieza:m.pieza,letra:m.letra})}
 async function arrancar(){
@@ -884,3 +888,47 @@ function cerrarMurgas(){const d=$("dialogoMurgas");if(d.open)d.close()}
 $("misMurgas").onclick=()=>{guardarYa();$("dialogoMurgas").showModal();mostrarMurgas()};
 $("nuevaMurga").onclick=nuevaMurga;$("cerrarMurgas").onclick=cerrarMurgas;
 $("dialogoMurgas").addEventListener("click",e=>{if(e.target===$("dialogoMurgas"))cerrarMurgas()});
+
+// ============================================================ editar las notas
+// Tocar una nota en la partitura la abre en el inspector; se le cambia la altura (también arrastrándola) o el largo, o
+// se la borra. Por defecto el cambio va también a las otras cuerdas que cantan esa misma nota en ese momento (en el
+// unísono, la melodía es de todos). Se cambia S.pieza.ev, se guarda, y vuelven a cantar sólo las frases que la tocan.
+function notasJuntas(k,i){const e=S.pieza.ev[k][i];if(!e)return[];const out=[[k,i]];
+  for(const c of ORDEN){if(c===k)continue;const j=S.pieza.ev[c].findIndex(x=>x[0]===e[0]&&x[2]===e[2]);if(j>=0)out.push([c,j])}return out}
+function abrirNota(n){if(!S.pieza?.ev[n.cuerda]?.[n.i])return;notaAbierta={cuerda:n.cuerda,i:n.i};inspModo="nota";actualizarInspector();partitura.elegirNota(notaAbierta);dibujarInspNota();
+  if(matchMedia("(max-width:1279px)").matches)$("inspector").scrollIntoView({behavior:"smooth",block:"nearest"})}
+function dibujarInspNota(){const a=notaAbierta;if(!a)return;const e=S.pieza.ev[a.cuerda][a.i];if(!e){notaAbierta=null;inspModo="verso";actualizarInspector();return}
+  const[q,d,p]=e,T=S.P.T,sec=S.pieza.secs.find(s=>q>=s.inicio&&q<s.inicio+s.largo);
+  $("inCual").textContent=`${NOMBRES_CUERDA[a.cuerda]}${sec?` · ${sec.nombre}`:""} · ${fmt(T(q))}`;
+  $("inNota").innerHTML=`${nombreNota(p)}<small>${d} semicorchea${d===1?"":"s"}</small>`;
+  const[r0,r1]=RANGOS[a.cuerda];$("inRango").innerHTML=p<r0||p>r1?`<span class="fuera">Fuera del rango de los ${NOMBRES_CUERDA[a.cuerda].toLowerCase()} (${nombreNota(r0)} a ${nombreNota(r1)}).</span>`:`Rango de los ${NOMBRES_CUERDA[a.cuerda].toLowerCase()}: ${nombreNota(r0)} a ${nombreNota(r1)}.`;
+  const j=notasJuntas(a.cuerda,a.i);$("inJuntasCampo").hidden=j.length<2;$("inJuntasTexto").textContent=`También en ${j.slice(1).map(([c])=>NOMBRES_CUERDA[c].toLowerCase()).join(", ")}, que cantan la misma nota`;
+  $("inDeshacer").disabled=!deshacer.length}
+function cambiarNota({op,v}){const a=notaAbierta;if(!a||!S.pieza)return;
+  const lugares=$("inJuntas").checked?notasJuntas(a.cuerda,a.i):[[a.cuerda,a.i]];if(!lugares.length)return;
+  const antes=lugares.map(([c,i])=>({c,i,e:[...S.pieza.ev[c][i]]}));
+  if(op==="borrar"){for(const[c,i]of lugares.slice().sort((x,y)=>y[1]-x[1]))S.pieza.ev[c].splice(i,1);deshacer.push({tipo:"borrar",antes});notaAbierta=null;inspModo="verso";actualizarInspector()}
+  else{for(const[c,i]of lugares){const e=S.pieza.ev[c][i];
+      if(op==="p")e[2]=Math.max(36,Math.min(84,e[2]+v));
+      else if(op==="d"){const sig=S.pieza.ev[c].filter(x=>x[0]>e[0]).reduce((m,x)=>Math.min(m,x[0]),Infinity);e[1]=Math.max(1,Math.min(e[1]+v,sig-e[0]))}}
+    deshacer.push({tipo:"cambiar",antes});dibujarInspNota()}
+  if(deshacer.length>200)deshacer.shift();
+  notasCambiadas()}
+function deshacerNota(){const u=deshacer.pop();if(!u||!S.pieza)return;
+  if(u.tipo==="borrar"){for(const{c,i,e}of u.antes.slice().sort((x,y)=>x.i-y.i))S.pieza.ev[c].splice(i,0,e)}
+  else for(const{c,i,e}of u.antes)S.pieza.ev[c][i]=e;
+  const x=u.antes[0];notaAbierta={cuerda:x.c,i:x.i};inspModo="nota";actualizarInspector();partitura.elegirNota(notaAbierta);dibujarInspNota();notasCambiadas()}
+let temporizadorNotas=null;
+function notasCambiadas(){S.mp3=null;actualizarVistas();if(notaAbierta)partitura.elegirNota(notaAbierta);guardarLuego();
+  clearTimeout(temporizadorNotas);temporizadorNotas=setTimeout(()=>{if(sint())cantarDeNuevo();else generar({pieza:S.pieza,letra:fotoLetra()})},900)}
+document.querySelectorAll("#inspNota [data-op]").forEach(b=>b.onclick=()=>{const o=b.dataset.op;cambiarNota(o==="borrar"?{op:"borrar"}:{op:o[0],v:+o.slice(1)})});
+$("inDeshacer").onclick=deshacerNota;
+$("inEscuchar").onclick=()=>{const a=notaAbierta;if(!a)return;const e=S.pieza.ev[a.cuerda][a.i];if(!e)return;saltar(Math.max(0,S.P.T(e[0])-1.5));if(!S.tocando)tocar()};
+$("inCerrar").onclick=()=>{notaAbierta=null;inspModo="verso";actualizarInspector()};
+document.addEventListener("keydown",e=>{
+  if(e.target.closest?.("input,textarea,select,[contenteditable]"))return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"&&deshacer.length){e.preventDefault();deshacerNota();return}
+  if(inspModo!=="nota"||!notaAbierta)return;
+  if(e.key==="ArrowUp"||e.key==="ArrowDown"){e.preventDefault();cambiarNota({op:"p",v:(e.key==="ArrowUp"?1:-1)*(e.shiftKey?12:1)})}
+  else if(e.key==="Delete"||e.key==="Backspace"){e.preventDefault();cambiarNota({op:"borrar"})}
+  else if(e.key==="Escape"){notaAbierta=null;inspModo="verso";actualizarInspector()}});
