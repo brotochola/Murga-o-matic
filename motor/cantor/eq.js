@@ -38,3 +38,29 @@ export function ecualizar(x, sr, curva) {
   }
   return y;
 }
+
+// Ponderación A (cuánto se oye cada frecuencia a volumen medio: IEC 61672), para medir el volumen como lo oye el oído.
+// pesoA(f): en potencia, 1 en 1 kHz. ponderarA(x, sr): la señal filtrada (los polos de la norma, de primer orden y por
+// transformada bilineal; los de 12,2 kHz sólo si entran debajo de la mitad de sr).
+export function pesoA(f) {
+  const f2 = f * f, r = (12194 ** 2 * f2 * f2) / ((f2 + 20.6 ** 2) * Math.sqrt((f2 + 107.7 ** 2) * (f2 + 737.9 ** 2)) * (f2 + 12194 ** 2));
+  return (r / 0.7943) ** 2;   // r(1 kHz) = 0,7943
+}
+export function ponderarA(x, sr) {
+  let y = Float32Array.from(x);
+  const pasa = (fc, alto) => {
+    const k = Math.tan(Math.PI * fc / sr), b0 = alto ? 1 / (1 + k) : k / (1 + k), b1 = alto ? -b0 : b0, a1 = (k - 1) / (k + 1);
+    let x1 = 0, y1 = 0; for (let i = 0; i < y.length; i++) { const v = y[i], w = b0 * v + b1 * x1 - a1 * y1; x1 = v; y1 = w; y[i] = w; }
+  };
+  pasa(20.6, true); pasa(20.6, true); pasa(107.7, true); pasa(737.9, true);
+  if (12194 < sr * .45) { pasa(12194, false); pasa(12194, false); }
+  // 1 en 1 kHz
+  const w = 2 * Math.PI * 1000 / sr; let g = 1;
+  for (const [fc, alto] of [[20.6, 1], [20.6, 1], [107.7, 1], [737.9, 1], ...(12194 < sr * .45 ? [[12194, 0], [12194, 0]] : [])]) {
+    const k = Math.tan(Math.PI * fc / sr), b0 = alto ? 1 / (1 + k) : k / (1 + k), b1 = alto ? -b0 : b0, a1 = (k - 1) / (k + 1);
+    const nr = b0 + b1 * Math.cos(w), ni = -b1 * Math.sin(w), dr = 1 + a1 * Math.cos(w), di = -a1 * Math.sin(w);
+    g *= Math.hypot(nr, ni) / Math.hypot(dr, di);
+  }
+  for (let i = 0; i < y.length; i++) y[i] /= g;
+  return y;
+}

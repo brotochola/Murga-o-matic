@@ -14,11 +14,11 @@
 // limpia. De ahí sale la envolvente de cada momento (predicción lineal), y a la versión aguda se le lleva cada armónico
 // a esa envolvente, en tramos de 32 ms cada 16 ms (FFT con ventana de Hann; la ganancia se interpola entre armónicos y
 // se suaviza en el tiempo). Los formantes quedan donde los pone la vocal y sólo sube la nota. Entra de a poco entre
-// `desde` y `entero` Hz (la altura que canta MBROLA) y sólo en los sonidos con voz.
-import { fftIn } from './eq.js';
+// `desde` y `entero` Hz (la altura que canta MBROLA) y sólo en el medio de las vocales.
+import { fftIn, pesoA } from './eq.js';
 
-export const AGUDO = { desde: 230, entero: 330, ref: 120, max: 18, orden: 20 };
-const CON_VOZ = new Set(['a', 'e', 'i', 'o', 'u', 'w', 'm', 'n', 'J', 'l', 'L', 'r', 'rr', 'b', 'd', 'g', 'jj']);
+export const AGUDO = { desde: 230, entero: 330, ref: 120, max: 18, orden: 20, vol: 12 };
+const VOCAL = p => 'aeiou'.includes(p);
 
 // el mismo guion con todas las alturas en hz
 export function phoGrave(pho, hz) {
@@ -55,22 +55,29 @@ export function hayAgudo(pho, A = AGUDO) {
 // Devuelve x corregido (un Float32Array nuevo, del mismo largo).
 export function corregirAgudo(x, ref, sr, g, A = AGUDO) {
   const N = 512, H = N / 2, P = A.orden, n = x.length, f0 = alturas(g.pho, sr);
-  const voz = new Uint8Array(n);
-  for (const s of g.segs) if (CON_VOZ.has(s.p)) { const a = Math.max(0, Math.round((s.t0 - g.inicio) * sr)), b = Math.min(n, Math.round((s.t1 - g.inicio) * sr)); voz.fill(1, a, b); }
+  // sólo en las vocales, y no en sus bordes: las consonantes y el paso a la vocal son lo que hace entender la palabra, y
+  // corregidos (aunque sean sonoras: b, d, g, l, m, n, r) se entendía menos (Whisper: de 44 a 49 % de palabras mal).
+  // Entra de a poco en los primeros y en los últimos 24 ms de la vocal.
+  const voz = new Float32Array(n), R = Math.round(.024 * sr);
+  for (const s of g.segs) if (VOCAL(s.p)) {
+    const a = Math.max(0, Math.round((s.t0 - g.inicio) * sr)), b = Math.min(n, Math.round((s.t1 - g.inicio) * sr));
+    for (let k = a; k < b; k++) voz[k] = Math.max(0, Math.min(1, (k - a) / R, (b - k) / R));
+  }
   const ven = new Float64Array(N); for (let i = 0; i < N; i++) ven[i] = .5 - .5 * Math.cos(2 * Math.PI * (i + .5) / N);
   const lag = new Float64Array(P + 1); for (let k = 0; k <= P; k++) lag[k] = Math.exp(-.5 * (2 * Math.PI * 60 * k / sr) ** 2);
   const y = new Float64Array(n + N), norma = new Float64Array(n + N);
   const re = new Float64Array(N), im = new Float64Array(N), r = new Float64Array(P + 1), a = new Float64Array(P + 1), t = new Float64Array(P + 1), seg = new Float64Array(N);
-  let Gprev = null, hzG = 0; const al = 1 - Math.exp(-H / sr / .015);
+  const rr = new Float64Array(N), ri = new Float64Array(N), Ab = new Float64Array(N / 2 + 1);
+  for (let b = 1; b <= N / 2; b++) Ab[b] = pesoA(b * sr / N);
+  let Gprev = null, Lsm = 0; const al = 1 - Math.exp(-H / sr / .015);
   for (let c = -N / 2; c < n; c += H) {
     const k0 = c, centro = Math.min(n - 1, Math.max(0, c + N / 2));
     const hz = f0(centro), u = Math.max(0, Math.min(1, (hz - A.desde) / (A.entero - A.desde))), w = u * u * (3 - 2 * u) * voz[centro];
-    if (hz > 0) hzG = hz;   // (donde el guion no tiene altura, la ganancia que se va apagando sigue en los armónicos de antes)
     // donde no hay nada que corregir, la muestra pasa tal cual (sin FFT)
-    if (w <= 0 && !Gprev) { for (let i = 0; i < N; i++) { const k = k0 + i; if (k >= 0 && k < n) { y[k] += x[k] * ven[i] * ven[i]; norma[k] += ven[i] * ven[i]; } } continue; }
+    if (w <= 0) { Gprev = null; Lsm = 0; for (let i = 0; i < N; i++) { const k = k0 + i; if (k >= 0 && k < n) { y[k] += x[k] * ven[i] * ven[i]; norma[k] += ven[i] * ven[i]; } } continue; }
     for (let i = 0; i < N; i++) { const k = k0 + i; re[i] = (k >= 0 && k < n ? x[k] : 0) * ven[i]; im[i] = 0; }
     fftIn(re, im);
-    let G = null;
+    let G = null, PAref = -1;
     if (w > 0) {
       // la envolvente de la versión grave: predicción lineal con ventana de retardos (no se queda con sus armónicos)
       for (let i = 0; i < N; i++) { const k = k0 + i; seg[i] = (k >= 0 && k < ref.length ? ref[k] : 0) * ven[i]; }
@@ -90,10 +97,13 @@ export function corregirAgudo(x, ref, sr, g, A = AGUDO) {
         }
         G = new Float64Array(K);
         for (let h = 0; h < K; h++) G[h] = w * Math.max(-A.max, Math.min(A.max, 10 * Math.log10(Q[h] * sP / sQ / Pm[h])));
+        // y cuánto se oye la versión grave en este momento (ponderación A)
+        for (let i = 0; i < N; i++) { rr[i] = seg[i]; ri[i] = 0; }
+        fftIn(rr, ri); PAref = 0; for (let b = 1; b <= N / 2; b++) PAref += (rr[b] * rr[b] + ri[b] * ri[b]) * Ab[b];
       }
     }
-    // suavizado en el tiempo, armónico por armónico (donde no corrige, vuelve a 0 dB de a poco)
-    if (!G && Gprev) G = new Float64Array(Gprev.length);
+    // suavizado en el tiempo, armónico por armónico, sólo adentro de la vocal: fuera de ella no queda nada (la cola
+    // del suavizado caía en la consonante de después y se la comía: «tres copas» → «tre copa»)
     if (G && Gprev) for (let h = 0; h < G.length; h++) { const p = h < Gprev.length ? Gprev[h] : 0; G[h] = p + (G[h] - p) * al; }
     Gprev = G && G.some(v => Math.abs(v) > .05) ? G : null;
     if (Gprev) {
@@ -101,11 +111,17 @@ export function corregirAgudo(x, ref, sr, g, A = AGUDO) {
       for (let h = 0; h < L; h++) gk[h] = Math.pow(10, G[h] / 20);
       gk[L] = 1;   // un armónico más arriba del último, ya sin corregir
       for (let b = 0; b <= N / 2; b++) {
-        const fh = b * sr / N / hzG - 1, h = Math.floor(fh), fr = fh - h;
+        const fh = b * sr / N / hz - 1, h = Math.floor(fh), fr = fh - h;
         const gn = h < 0 ? gk[0] : h >= L ? 1 : gk[h] * (1 - fr) + gk[h + 1] * fr;
         re[b] *= gn; im[b] *= gn; if (b > 0 && b < N / 2) { re[N - b] = re[b]; im[N - b] = -im[b]; }
       }
     }
+    // El volumen: MBROLA canta el agudo más bajo (con la voz cruda, de La 4 para arriba unos 5 dB(A) menos que en Sol 3).
+    // Cada momento corregido suena tan fuerte como la misma frase grave, medido con ponderación A.
+    let Lobj = 0;
+    if (PAref > 0) { let pc = 0; for (let b = 1; b <= N / 2; b++) pc += (re[b] * re[b] + im[b] * im[b]) * Ab[b]; Lobj = w * Math.max(-A.vol, Math.min(A.vol, 10 * Math.log10(PAref / (pc + 1e-20)))); }
+    Lsm = PAref > 0 ? Lsm + (Lobj - Lsm) * al : 0;
+    if (Math.abs(Lsm) > .01) { const gl = Math.pow(10, Lsm / 20); for (let b = 0; b < N; b++) { re[b] *= gl; im[b] *= gl; } }
     fftIn(re, im, true);
     for (let i = 0; i < N; i++) { const k = k0 + i; if (k >= 0 && k < n) { y[k] += re[i] * ven[i]; norma[k] += ven[i] * ven[i]; } }
   }

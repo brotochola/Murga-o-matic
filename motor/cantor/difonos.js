@@ -19,7 +19,7 @@ export const DURACION = {
 const VOCAL = p => 'aeiou'.includes(p);
 import { VARIACION } from './variacion.js';
 import * as TIMBRES from './timbre.js';
-import { ecualizar } from './eq.js';
+import { ecualizar, ponderarA } from './eq.js';
 import { adornar, cuantoAdorna } from './adornos.js';
 import { AGUDO, hayAgudo, phoGrave, corregirAgudo } from './agudo.js';
 
@@ -230,6 +230,10 @@ export function terminar(x, sr, g, opc = {}) {
   if (o.grito > 0 && g.notas?.length) esforzar(voz === pre ? (voz = Float32Array.from(pre)) : voz, sr, g, o);
   // el timbre del coro real (curva medida en herramientas/curva_difonos.py): las vocales mucho más brillantes
   const y = o.curva ? ecualizar(voz, sr, o.curva) : Float32Array.from(voz);
+  // La curva cambia el color, no el volumen de cada momento: es de tercios de octava y muy dentada, y en el agudo, con
+  // pocos armónicos, cada nota cae en otro pozo o en otro pico (de Fa# 4 a La 4, 2 a 4 dB(A) menos que en Re 5). Se le
+  // devuelve a cada momento el volumen que tenía antes de la curva (ponderación A, 25 ms), relativo al de toda la frase.
+  if (o.curva) igualarVolumen(y, voz, sr);
   // Las eses: más bajas y filtradas, sin el silbido de arriba de 4 kHz. Las aspiradas, más todavía: un soplo. La sh: un
   // ruido un poco más fuerte que la s, en una banda de 2 a 4 kHz con el pico en 2,5 kHz (sin lo agudo de la s).
   for (const { s, a, b } of lasEses) {
@@ -283,6 +287,27 @@ export function terminar(x, sr, g, opc = {}) {
   return y;
 }
 
+// una ganancia en dB por tramo de `paso` muestras, interpolada (en amplitud) entre tramos
+function aplicarDb(y, db, paso) {
+  const g = Float32Array.from(db, v => Math.pow(10, v / 20));
+  for (let k = 0; k < y.length; k++) { const u = k / paso, j = u | 0, f = u - j; y[k] *= g[j] + (g[Math.min(g.length - 1, j + 1)] - g[j]) * f; }
+}
+// y tiene que sonar, momento a momento, como x (ponderación A, tramos de 32 muestras suavizados `tau` s de ida y vuelta),
+// con el mismo volumen total que tenía y: se corrige sólo la forma, como mucho ±`max` dB, donde x suena.
+function igualarVolumen(y, x, sr, tau = .025, max = 6) {
+  const PASO = 32, xA = ponderarA(x, sr), yA = ponderarA(y, sr), nb = Math.ceil(y.length / PASO), ex = new Float64Array(nb), ey = new Float64Array(nb);
+  for (let j = 0; j < nb; j++) { const k1 = Math.min(y.length, (j + 1) * PASO); for (let k = j * PASO; k < k1; k++) { ex[j] += xA[k] * xA[k]; ey[j] += yA[k] * yA[k]; } }
+  let tx = 0, ty = 0; for (let j = 0; j < nb; j++) { tx += ex[j]; ty += ey[j]; }
+  if (!(tx > 0 && ty > 0)) return;
+  const al = 1 - Math.exp(-PASO / sr / tau);
+  for (const e of [ex, ey]) { let v = e[0]; for (let j = 0; j < nb; j++) { v += (e[j] - v) * al; e[j] = v; } v = e[nb - 1]; for (let j = nb - 1; j >= 0; j--) { v += (e[j] - v) * al; e[j] = v; } }
+  let mx = 0; for (const v of ex) mx = Math.max(mx, v);
+  const k0 = ty / tx, gd = new Float32Array(nb + 1);
+  for (let j = 0; j < nb; j++) gd[j] = ex[j] > mx * 1e-4 && ey[j] > 0 ? Math.max(-max, Math.min(max, 10 * Math.log10(ex[j] * k0 / ey[j]))) : 0;
+  gd[nb] = gd[nb - 1];
+  aplicarDb(y, gd, PASO);
+}
+
 // El grito: cantar con esfuerzo. Las voces de MBROLA son de habla, a un esfuerzo tranquilo; el coro de murga canta al
 // máximo, al aire libre. Comparado con el coro real (La Trasnochada 2020, nivel de los armónicos por bandas, coro
 // contra coro), el de difonos tenía los agudos que hacían falta (la curva de timbre ya los pone), pero le faltaban de
@@ -319,7 +344,7 @@ function esforzar(x, sr, g, o) {
   for (let j = 1; j < nc; j++) if (!f0[j]) f0[j] = f0[j - 1];
   for (let j = nc - 2; j >= 0; j--) if (!f0[j]) f0[j] = f0[j + 1];
   const efz = k => { const u = k / PASO, j = Math.min(nc - 2, u | 0), f = u - j; return esf[j] * (1 - f) + esf[j + 1] * f; };
-  let rms0 = 0; for (let k = 0; k < x.length; k++) rms0 += x[k] * x[k];
+  const xA = ponderarA(x, sr);
 
   // 1. el primer formante, cada 10 ms (ventana de 25 ms, preénfasis, orden sr/1000 + 2, ventana de retardos de 60 Hz)
   const H = Math.round(.01 * sr), W = Math.round(.025 * sr), P = Math.round(sr / 1000) + 2, nf = Math.ceil(x.length / H) + 1;
@@ -396,6 +421,20 @@ function esforzar(x, sr, g, o) {
     const w2 = pb0 * w1 + pb1 * p1 + pb2 * p2 - pa1 * q1 - pa2 * q2; p2 = p1; p1 = w1; q2 = q1; q1 = w2;
     y[k] = w2;
   }
+  // el volumen, momento a momento: el pozo saca fundamental, más en las notas agudas, y si se repone el volumen del
+  // cantor entero las agudas quedan de 2 a 4 dB(A) más bajas. Se compara lo que se oye (ponderación A) antes y después de
+  // los filtros, en tramos de 32 muestras suavizados 25 ms de ida y vuelta, y se le devuelve a cada momento lo que perdió.
+  {
+    const yA = ponderarA(y, sr), nb = Math.ceil(y.length / PASO), ex = new Float64Array(nb), ey = new Float64Array(nb);
+    for (let j = 0; j < nb; j++) { const k1 = Math.min(y.length, (j + 1) * PASO); for (let k = j * PASO; k < k1; k++) { ex[j] += xA[k] * xA[k]; ey[j] += yA[k] * yA[k]; } }
+    const al = 1 - Math.exp(-PASO / sr / .025);
+    for (const e of [ex, ey]) { let v = e[0]; for (let j = 0; j < nb; j++) { v += (e[j] - v) * al; e[j] = v; } v = e[nb - 1]; for (let j = nb - 1; j >= 0; j--) { v += (e[j] - v) * al; e[j] = v; } }
+    let mx = 0; for (const v of ex) mx = Math.max(mx, v);
+    const gd = new Float32Array(nb + 1);
+    for (let j = 0; j < nb; j++) gd[j] = ex[j] > mx * 1e-5 && ey[j] > 0 ? Math.max(-6, Math.min(8, 10 * Math.log10(ex[j] / ey[j]))) : 0;
+    gd[nb] = gd[nb - 1];
+    aplicarDb(y, gd, PASO);
+  }
   // 3. parejo: las consonantes sonoras (m n l b d g r) con la voz entera, no 15 o 20 dB abajo de la vocal como en el
   //    habla (eran el 60 a 90 % de los cortes del coro). Lo que queda más de `hueco` dB abajo de la vocal de al lado
   //    (el máximo en ±150 ms) sube hasta parejo × esfuerzo dB; lo que está más de `puerta` dB abajo (silencio, el
@@ -411,11 +450,11 @@ function esforzar(x, sr, g, o) {
     }
     G[nb] = G[nb - 1];
     { const al = 1 - Math.exp(-PASO / sr / .008); let v = G[0]; for (let j = 0; j <= nb; j++) { v += (G[j] - v) * al; G[j] = v; } v = G[nb]; for (let j = nb; j >= 0; j--) { v += (G[j] - v) * al; G[j] = v; } }
-    for (let k = 0; k < y.length; k++) { const u = k / PASO, j = u | 0, f = u - j; y[k] *= Math.pow(10, (G[j] * (1 - f) + G[j + 1] * f) / 20); }
+    aplicarDb(y, G, PASO);
   }
-  // el mismo volumen que antes (la mezcla ya tiene sus niveles)
-  let rms1 = 0; for (let k = 0; k < y.length; k++) rms1 += y[k] * y[k];
-  const kg = rms1 > 0 ? Math.sqrt(rms0 / rms1) : 1;
+  // el mismo volumen que antes, como lo oye el oído (la mezcla ya tiene sus niveles)
+  const yA = ponderarA(y, sr); let e0 = 0, e1 = 0; for (let k = 0; k < y.length; k++) { e0 += xA[k] * xA[k]; e1 += yA[k] * yA[k]; }
+  const kg = e1 > 0 ? Math.sqrt(e0 / e1) : 1;
   for (let k = 0; k < x.length; k++) x[k] = y[k] * kg;
 }
 
@@ -494,7 +533,7 @@ function correr(notas, opc) {
 }
 
 // Un cantor entero: guion → MBROLA (y en las frases agudas, el color corregido: agudo.js) → volumen, eses, aire y
-// emisión. mb: lo que devuelve crearMbrola. opc.agudo = false: sin corregir el agudo.
+// emisión. mb: lo que devuelve crearMbrola. opc.agudo = false (o 0): sin corregir el agudo.
 // Devuelve { x, sr, inicio }: las muestras a la frecuencia `sr`, empezando en el segundo `inicio` de la pieza.
 // El largo del tracto (opc.tracto) se hace como con una cinta: MBROLA canta más agudo y más largo, y las muestras se
 // tocan más rápido (sr más alta); la altura y los tiempos vuelven a su lugar y los formantes suben `tracto` veces.
@@ -513,7 +552,7 @@ export function cantarDifonos(mb, notas, opc = {}) {
     const crudo = mb.cantar(g.pho); let x = new Float32Array(crudo.length);
     for (let j = 0; j < x.length; j++) x[j] = crudo[j] / 32768;
     // en el agudo MBROLA le cambia el color a la vocal: se corrige con la misma frase cantada grave (agudo.js)
-    if (o.agudo !== false && hayAgudo(g.pho)) {
+    if ((o.agudo ?? true) && hayAgudo(g.pho)) {
       const gr = mb.cantar(phoGrave(g.pho, AGUDO.ref)), ref = new Float32Array(gr.length);
       for (let j = 0; j < ref.length; j++) ref[j] = gr[j] / 32768;
       x = corregirAgudo(x, ref, F, g);
