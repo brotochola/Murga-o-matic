@@ -34,6 +34,11 @@ if (typeof document !== 'undefined' && !document.getElementById('mt-cantor-css')
   document.head.append(st);
 }
 
+// Una sola parada de tabulador por fila: en cada fila de bloques (secciones, acordes, letra, batería, voces de un
+// cantante) sólo uno se alcanza con Tab (el elegido, o el primero) y con ← → se pasa al de al lado, como en una barra de
+// herramientas. Si el multipista se arma de nuevo (cambió un acorde, el zoom…), el foco vuelve a donde estaba.
+const RODAR = { 'mt-secs': '.mt-sec', 'mt-acs': '.mt-ac', 'mt-letra': '.mt-verso', 'mt-bateria': '.mt-bat', 'mt-cantor': '.mt-voz' };
+
 export function crearMultipista(raiz, cb = {}) {
   const E = { D: null, bw: 64, zoom: 2, mudas: {}, solos: {}, vols: {}, sel: null, selNota: null, selSec: null, t: 0, seguir: true, sonando: false, arrastre: null, lienzos: [] };
   raiz.innerHTML = `<div class="mt" tabindex="-1"><div class="mt-in"><div class="mt-cabezal" aria-hidden="true"></div></div></div>`;
@@ -59,9 +64,28 @@ export function crearMultipista(raiz, cb = {}) {
     inn.insertBefore(f, cabezal); return f;
   }
 
+  function rodar(f, tipo, preferido) {
+    const items = [...f.querySelectorAll(RODAR[tipo])]; if (!items.length) return;
+    const i0 = Math.max(0, preferido ? items.findIndex(preferido) : 0);
+    items.forEach((b, i) => { b.tabIndex = i === i0 ? 0 : -1; });
+    f.addEventListener('focusin', ev => {
+      const i = items.indexOf(ev.target); if (i < 0) return;
+      items.forEach((b, k) => { b.tabIndex = k === i ? 0 : -1; });
+      E.ultimo = { tipo, clave: f.dataset.clave || '', i, t: performance.now() };
+    });
+    f.addEventListener('keydown', ev => {
+      if (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft') return;
+      const i = items.indexOf(ev.target); if (i < 0) return;
+      ev.preventDefault(); items[Math.max(0, Math.min(items.length - 1, i + (ev.key === 'ArrowRight' ? 1 : -1)))].focus();
+    });
+  }
+
   function armar() {
     const D = E.D; if (!D) return;
     E.bw = anchoCompas();
+    // si el foco estaba en un bloque (o se perdió hace un instante, como al elegir algo en un globito), vuelve ahí
+    const a = document.activeElement, perdido = !a || a === document.body || inn.contains(a) || !!a.closest('[hidden]');   // (el globito recién cerrado todavía figura con el foco)
+    const queda = E.ultimo && perdido && performance.now() - E.ultimo.t < 4000 ? { ...E.ultimo } : null;
     for (const f of [...inn.querySelectorAll('.mt-row')]) f.remove();
     E.lienzos = [];
     const W = X(D.totalQ);
@@ -75,6 +99,7 @@ export function crearMultipista(raiz, cb = {}) {
     D.secciones.forEach((s, i) => { secs += `<button class="mt-sec${E.selSec === s.nombre ? ' elegida' : ''}${s.bateria ? '' : ' capela'}${s.cantada ? ' cantada' : ''}" data-i="${i}" style="left:${X(s.q0) + 1}px;width:${Math.max(4, X(s.q1) - X(s.q0) - 2)}px;--c:var(${COLOR_TIPO[s.tipo] || '--muted'})" title="${esc(s.nombre)} · ${esc(s.textura)}">${esc(s.nombre)}</button>`; });
     const fs = fila('mt-secs', '<b>Secciones</b>', secs);
     fs.querySelectorAll('.mt-sec').forEach(b => b.onclick = () => cb.alElegirSeccion?.(D.secciones[+b.dataset.i].nombre));
+    rodar(fs, 'mt-secs', b => b.classList.contains('elegida'));
     // acordes (dos por compás)
     let acs = '';
     for (const s of D.secciones) s.acordes.forEach((a, j) => {
@@ -87,6 +112,7 @@ export function crearMultipista(raiz, cb = {}) {
     });
     const fa = fila('mt-acs', '<b>Acordes</b>', acs);
     fa.querySelectorAll('.mt-ac').forEach(b => b.onclick = ev => { ev.stopPropagation(); cb.alAcorde?.(b.dataset.s, +b.dataset.j, b); });
+    rodar(fa, 'mt-acs', b => b.dataset.s === E.selSec && +b.dataset.j === 0);
     // la letra
     if (D.versos.length) {
       let le = '';
@@ -97,6 +123,7 @@ export function crearMultipista(raiz, cb = {}) {
       });
       const fl = fila('mt-letra' + (E.bw < 120 ? '' : ' silabas'), '<b>Letra</b>', le);
       fl.querySelector('.mt-c').onclick = ev => { const b = ev.target.closest('[data-i]'); if (b) cb.alElegirVerso?.(+b.dataset.i, +b.dataset.k, +b.dataset.q); };
+      rodar(fl, 'mt-letra', b => b.classList.contains('elegido'));
     }
     // una pista por cuerda
     for (const k of ARRIBA_ABAJO) {
@@ -126,6 +153,7 @@ export function crearMultipista(raiz, cb = {}) {
         fc.querySelector('.mt-h b').onclick = () => cb.alCantor?.(ct.clave);
         fc.querySelector('.mt-m').onclick = () => cb.alMudoCantor?.(ct.clave); fc.querySelector('.mt-s').onclick = () => cb.alSoloCantor?.(ct.clave);
         fc.querySelectorAll('.mt-voz').forEach(b => b.onclick = ev => { ev.stopPropagation(); if (b.dataset.estado === 'cantada') cb.alElegirSeccion?.(b.dataset.sec); else cb.alCantor?.(ct.clave, b.dataset.sec); });
+        rodar(fc, 'mt-cantor');
       }
     }
     // la batería: el loop de cada compás
@@ -136,9 +164,14 @@ export function crearMultipista(raiz, cb = {}) {
     fb.querySelector('.mt-m').onclick = () => cb.alMudo?.('bateria'); fb.querySelector('.mt-s').onclick = () => cb.alSolo?.('bateria');
     const vb = fb.querySelector('input'); vb.oninput = () => cb.alVolumen?.('bateria', +vb.value); vb.onchange = () => cb.alVolumenFin?.('bateria');
     fb.querySelectorAll('.mt-bat').forEach(b => b.onclick = ev => { ev.stopPropagation(); cb.alBateria?.(+b.dataset.q, b); });
+    rodar(fb, 'mt-bateria', b => { const s = D.secciones.find(x => x.nombre === E.selSec); return !!s && +b.dataset.q === s.q0; });
     inn.style.width = (HEAD() + W) + 'px';
     E.escalaV = 1; ajustarAlto(true);
     dibujarPistas(); moverCabezal();
+    if (queda) {
+      const f = inn.querySelector(`.mt-row.${queda.tipo}${queda.clave ? `[data-clave="${CSS.escape(queda.clave)}"]` : ''}`), items = f ? [...f.querySelectorAll(RODAR[queda.tipo])] : [];
+      items[Math.min(queda.i, items.length - 1)]?.focus({ preventScroll: true });
+    }
   }
 
   // Las pistas de las cuerdas se escalan parejo para llenar el alto que hay: si no entran, se achican (hasta un mínimo)
@@ -220,6 +253,15 @@ export function crearMultipista(raiz, cb = {}) {
     if (cambio && !ZOOMS[E.zoom]) { armar(); return; }
     cancelAnimationFrame(cuadro); cuadro = requestAnimationFrame(() => ajustarAlto());
   }).observe(mt);
+
+  // Ctrl + rueda (o pellizcar en un trackpad): un paso de zoom (la rueda larga manda varios eventos juntos)
+  let rueda = 0;
+  mt.addEventListener('wheel', ev => {
+    if (!ev.ctrlKey) return;
+    ev.preventDefault();
+    const t = performance.now(); if (t - rueda < 160) return;
+    rueda = t; cb.alZoom?.(ev.deltaY < 0 ? 1 : -1);
+  }, { passive: false });
 
   return {
     datos(D) { E.D = D; armar(); },

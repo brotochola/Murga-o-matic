@@ -178,6 +178,11 @@ progress{accent-color:var(--accent)}
 .mt-bat.sin{background:transparent;border-style:dashed;color:var(--muted)}
 .mt-bat.cambiado{border-color:var(--accent)}
 .mt-cabezal{position:absolute;top:0;bottom:0;left:0;width:2px;background:var(--accent);pointer-events:none;z-index:2}
+/* con el teclado: el bloque con foco se ve (anillo hacia adentro, que la fila no lo corta) y no queda tapado por la cabeza fija */
+.mt-sec,.mt-ac,.mt-verso,.mt-bat,.mt-voz{scroll-margin-left:calc(var(--mt-head) + 12px);scroll-margin-right:12px}
+.mt-sec:focus-visible,.mt-ac:focus-visible,.mt-verso:focus-visible,.mt-bat:focus-visible,.mt-voz:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;z-index:1}
+.zoom-ctl .btn{padding:1px 9px;font-size:17px;line-height:1.3}
+.zoom-ctl .btn:disabled{opacity:.35}
 /* la sección elegida */
 .sec-caja{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:24px}
 .sec-cabeza{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;margin-bottom:10px}
@@ -514,7 +519,7 @@ p.elegido{font-size:16px;font-weight:600}
       <section class="mt-caja" aria-label="La pieza como multipista">
         <div class="mt-barra">
           <label class="chk tg" title="Mientras suena, la partitura y la sección de abajo siguen lo que suena"><input type="checkbox" id="seguir" checked> Seguir</label>
-          <label class="ctl">Zoom <select id="zoom"><option value="0">toda</option><option value="1">chico</option><option value="2" selected>medio</option><option value="3">sílabas</option><option value="4">enorme</option></select></label>
+          <span class="ctl zoom-ctl"><label for="zoom">Zoom</label><button class="btn ghost icono" id="zoomMenos" type="button" aria-label="Alejar" title="Alejar: más compases a la vista (tecla «-» o Ctrl y la rueda)">−</button><select id="zoom"><option value="0">toda</option><option value="1">chico</option><option value="2" selected>medio</option><option value="3">sílabas</option><option value="4">enorme</option></select><button class="btn ghost icono" id="zoomMas" type="button" aria-label="Acercar" title="Acercar: menos compases, más grandes (tecla «+» o Ctrl y la rueda)">+</button></span>
           <progress id="avance" max="1" value="0" hidden></progress>
           <p class="status" id="status" role="status"></p>
         </div>
@@ -748,7 +753,7 @@ p.elegido{font-size:16px;font-weight:600}
       <div class="cabeza"><h2 id="t-tabAcerca" tabindex="-1">Cómo funciona</h2><button class="btn ghost cerrar-panel" aria-label="Cerrar">×</button></div>
       <p class="tag"><b>Cómo se usa:</b> Tocá un compás para escuchar desde ahí · una sección para verla abajo · un acorde o el loop de un compás para cambiarlo · una nota para editarla (o arrastrala para arriba o abajo) · la letra para ver cómo se hizo ese verso.</p>
       <p class="tag"><b>La pantalla:</b> arriba la barra y los tres pasos (música, letra, voces); en el medio el multipista; abajo la sección elegida, que se abre y se cierra con su botón o con la manija. Los paneles (La pieza, Mezcla, Cantantes, Letra, Partitura, Exportar y éste) se abren a la derecha, de a uno: el ancho se cambia arrastrando su borde izquierdo y Escape lo cierra.</p>
-      <p class="tag"><b>Atajos:</b> Espacio toca o pausa · Inicio vuelve al principio · «,» y «.» pasan a la sección anterior o siguiente · Escape cierra el panel · Ctrl+Z deshace el último cambio de una nota.</p>
+      <p class="tag"><b>Atajos:</b> Espacio toca o pausa · Inicio vuelve al principio · «,» y «.» pasan a la sección anterior o siguiente · «+» y «-» (o Ctrl y la rueda sobre el multipista) acercan y alejan · en una fila del multipista, Tab entra y ← → pasan de un bloque al otro · Escape cierra el panel · Ctrl+Z deshace el último cambio de una nota.</p>
 
       
       <p class="tag">Generador de murga uruguaya. Aprendió de presentaciones y retiradas reales transcriptas nota por nota; la batería son los loops de La Tríada. Puede cantar con muestras de coro o con cantores sintéticos que cantan una letra escrita para la melodía.</p>

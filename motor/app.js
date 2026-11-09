@@ -829,11 +829,15 @@ const multipista=crearMultipista($("multipista"),{
   alDesplegar:k=>{if(S.desplegadas.has(k))S.desplegadas.delete(k);else S.desplegadas.add(k);try{localStorage.setItem("murga.desplegadas",[...S.desplegadas].join(","))}catch(e){}actualizarVistas()},
   alCantor:(clave,seccion)=>{if(seccion)pedirSecciones([seccion],{primero:true});else abrirCantante(clave)},
   alMudoCantor:clave=>cambiarCantante(clave,"mudo",!(S.ajustes[clave]||{}).mudo),
-  alSoloCantor:clave=>alternarSolo(clave)});
+  alSoloCantor:clave=>alternarSolo(clave),
+  alZoom:d=>ponerZoom(multipista.nivelZoom+d)});
 try{for(const k of(localStorage.getItem("murga.desplegadas")||"").split(","))if(ORDEN.includes(k))S.desplegadas.add(k)}catch(e){}
 {let z=(()=>{try{return localStorage.getItem("murga.zoom")}catch(e){return null}})();if(z==null&&matchMedia("(max-width:620px)").matches)z="1";   // en el teléfono, de entrada más compases
  if(z!=null&&+z>=0&&+z<=4){$("zoom").value=z;multipista.zoom(+z)}}
-$("zoom").onchange=e=>{multipista.zoom(+e.target.value);try{localStorage.setItem("murga.zoom",e.target.value)}catch(x){}};
+// el zoom: el selector, los botones − y +, Ctrl y la rueda, y las teclas «+» y «-» van al mismo lugar
+function pintarZoom(){const n=multipista.nivelZoom;$("zoomMenos").disabled=n<=0;$("zoomMas").disabled=n>=4}
+function ponerZoom(n){n=Math.max(0,Math.min(4,n));$("zoom").value=n;multipista.zoom(n);try{localStorage.setItem("murga.zoom",String(n))}catch(x){}pintarZoom()}
+$("zoom").onchange=e=>ponerZoom(+e.target.value);$("zoomMenos").onclick=()=>ponerZoom(multipista.nivelZoom-1);$("zoomMas").onclick=()=>ponerZoom(multipista.nivelZoom+1);pintarZoom();
 $("seguir").onchange=e=>multipista.seguir(e.target.checked);
 $("detener").onclick=()=>{if(!S.P)return;detener(true);pintarCursor()};
 $("mas").onclick=()=>{const a=$("barraMas").classList.toggle("abierta");$("mas").setAttribute("aria-expanded",a)};
@@ -1348,13 +1352,15 @@ function ponerTema(t,guardarlo){if(t)document.documentElement.dataset.theme=t;el
 ponerTema(temaColor);
 $("temaColor").onclick=()=>{temaColor=TEMAS_COLOR[(TEMAS_COLOR.indexOf(temaColor)+1)%TEMAS_COLOR.length];ponerTema(temaColor,true)};
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",()=>multipista.redibujar());
-// la barra espaciadora toca o pausa; Escape cierra el panel
-// atajos: Espacio toca o pausa, Inicio vuelve al principio, «,» y «.» pasan a la sección anterior o siguiente
+// atajos: Espacio toca o pausa, Inicio vuelve al principio, «,» y «.» pasan a la sección anterior o siguiente, «+» y «-»
+// acercan y alejan el zoom (Escape, que cierra el panel, está arriba, con el cajón)
 document.addEventListener("keydown",e=>{if(e.ctrlKey||e.metaKey||e.altKey||e.defaultPrevented)return;
   const t=e.target.closest?.bind(e.target);if(!t||t("input,textarea,select,[contenteditable],dialog,.popover,.sep-cajon,.manija"))return;
   if(e.key===" "){if(t("button")||$("play").disabled)return;e.preventDefault();$("play").click()}
   else if(e.key==="Home"){if(!S.P)return;e.preventDefault();$("detener").click()}
-  else if(e.key===","||e.key==="."){if(!S.pieza)return;e.preventDefault();$(e.key===","?"secAnt":"secSig").click()}});
+  else if(e.key===","||e.key==="."){if(!S.pieza)return;e.preventDefault();$(e.key===","?"secAnt":"secSig").click()}
+  else if(e.key==="+"||e.key==="="){e.preventDefault();ponerZoom(multipista.nivelZoom+1)}
+  else if(e.key==="-"||e.key==="_"){e.preventDefault();ponerZoom(multipista.nivelZoom-1)}});
 async function bajarPdf(){if(!S.pieza)return;avisoExport("Armando el PDF…");
   try{const blob=await pdfPartitura(datosPapeles());avisoExport(await guardar(blob,base()+"_partitura.pdf"))}catch(e){errorExport(e)}}
 $("pdf").onclick=bajarPdf;$("pdf2").onclick=bajarPdf;
