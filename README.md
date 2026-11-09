@@ -83,8 +83,14 @@ También hay una versión en **un solo archivo HTML** (25 MB) que se abre con do
 
 Y hay una **versión liviana para la compu**, con los bancos de UTAU adentro (son de uso personal: no se comparte). Los bancos se recortan una vez y la página se arma cada vez que cambia:
 
-    node herramientas/utau_recortar.mjs     # bancos/*.zip → ../Murga-o-matic-offline/bancos/, recortados y en Opus (unos 5 minutos)
-    node herramientas/construir.mjs         # la página → ../Murga-o-matic-offline/ (hacen falta bun y ffmpeg)
+    npm run bancos      # bancos/*.zip → ../Murga-o-matic-offline/bancos/, recortados y en Opus (unos 5 minutos)
+    npm run offline     # la página → ../Murga-o-matic-offline/ (hacen falta bun y ffmpeg)
+
+La misma versión liviana, **sin los bancos** (no se pueden publicar) y con las licencias de lo que se redistribuye, es la que va a GitHub Pages (17 MB):
+
+    npm run publicar    # la arma en ../Murga-o-matic-web y la sube a la rama gh-pages (un commit que reemplaza al anterior)
+
+Publica lo commiteado (con cambios sin commit, no publica). GitHub Pages tiene que servir la rama `gh-pages` (Settings → Pages → «Deploy from a branch», `gh-pages`, `/ (root)`).
 
 Queda en una carpeta aparte, al lado del repositorio, `Murga-o-matic-offline/` (159 MB: 142 de bancos y 17 del resto), sólo con lo que hace falta para usarla (sin herramientas, documentos, licencias ni el estudio de voces). Se abre con su `abrir.bat`, que arranca un servidor chico (`servir.mjs`, en el puerto 8124) y abre Chrome. El código va minificado archivo por archivo; los loops, las frases y las muestras del coro, en Opus (duran lo mismo que los WAV, a la muestra); las voces de MBROLA, comprimidas.
 

@@ -11,7 +11,12 @@
 //   - offline.json y sw.js de la carpeta, para que también ande cerrando el servidor (menos los bancos)
 //   - los bancos: los que deja herramientas/utau_recortar.mjs en su bancos/ (no se tocan al reconstruir)
 //
-//   node herramientas/construir.mjs [carpeta]      (por defecto ../Murga-o-matic-offline; hacen falta bun y ffmpeg)
+// Con --web, la versión para publicar (herramientas/publicar.mjs, en GitHub Pages): sin los bancos de UTAU (son de
+// uso personal: no se pueden publicar; el que los tiene los elige con «Buscar el archivo»), sin servidor, y con las
+// licencias de lo que se redistribuye (las voces de MBROLA las piden), cantada/ (direcciones viejas) y .nojekyll.
+//
+//   node herramientas/construir.mjs [carpeta] [--web]   (por defecto ../Murga-o-matic-offline, o ../Murga-o-matic-web;
+//                                                         hacen falta bun y ffmpeg)
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync, statSync, copyFileSync } from 'node:fs';
 import { join, dirname, resolve, sep } from 'node:path';
@@ -20,11 +25,12 @@ import { gzipSync } from 'node:zlib';
 import { armarOffline } from './offline.mjs';
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const SAL = resolve(process.argv[2] || join(RAIZ, '..', 'Murga-o-matic-offline'));
+const args = process.argv.slice(2), WEB = args.includes('--web');
+const SAL = resolve(args.find(a => !a.startsWith('--')) || join(RAIZ, '..', WEB ? 'Murga-o-matic-web' : 'Murga-o-matic-offline'));
 if (SAL === RAIZ || RAIZ.startsWith(SAL + sep)) throw new Error('la carpeta de salida no puede ser el repositorio ni contenerlo');
 // se vacía antes de armarla: sólo si es una que armó esta herramienta (o una nueva, o con los bancos solos)
-if (existsSync(SAL) && readdirSync(SAL).some(f => f !== 'bancos') && !existsSync(join(SAL, 'servir.mjs')))
-  throw new Error(`${SAL} no parece una carpeta de construir.mjs (no tiene servir.mjs): no la vacío`);
+if (existsSync(SAL) && readdirSync(SAL).some(f => f !== 'bancos') && !(existsSync(join(SAL, 'offline.json')) && existsSync(join(SAL, 'motor'))))
+  throw new Error(`${SAL} no parece una carpeta de construir.mjs (no tiene offline.json y motor/): no la vacío`);
 const PUERTO = 8124;
 const reloj = Date.now(), seg = () => ((Date.now() - reloj) / 1000).toFixed(0) + ' s';
 const MB = n => (n / 1e6).toFixed(2) + ' MB';
@@ -32,12 +38,14 @@ const MB = n => (n / 1e6).toFixed(2) + ' MB';
 // lo que va: la página y lo que pide (el código, menos el del estudio; de vendor/, las librerías, los WebAssembly y las
 // voces de MBROLA)
 const VAN = /^(index\.html|manifest\.webmanifest|sw\.js|iconos\/.+|motor\/(?!estudio\.js$)(?!vendor\/).+\.js|motor\/vendor\/[^/]+\.js|motor\/vendor\/mbrola\/(mbrola\.wasm|es\d+)|motor\/vendor\/world\/world\.wasm|loops\/.+\.wav|frases\/.+\.wav|coro\/.+\.mp3|bancos\/plantel\.json)$/;
+// en la web, además: las licencias y de dónde salen los WebAssembly, y las direcciones viejas
+const VAN_WEB = /^(motor\/vendor\/.*(LICEN[CS][EI]A?|LEEME|glue).*|cantada\/index\.html|bancos\/LEEME\.md)$/;
 const rutas = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], { cwd: RAIZ, encoding: 'utf8' })
-  .split('\n').filter(r => VAN.test(r) && existsSync(join(RAIZ, r))).sort();
+  .split('\n').filter(r => (VAN.test(r) || WEB && VAN_WEB.test(r)) && existsSync(join(RAIZ, r))).sort();
 
-// la carpeta, limpia (menos los bancos recortados, que son de utau_recortar.mjs)
+// la carpeta, limpia (menos los bancos recortados, que son de utau_recortar.mjs; en la web no van)
 mkdirSync(SAL, { recursive: true });
-for (const f of readdirSync(SAL)) if (f !== 'bancos') rmSync(join(SAL, f), { recursive: true, force: true });
+for (const f of readdirSync(SAL)) if (WEB || f !== 'bancos') rmSync(join(SAL, f), { recursive: true, force: true });
 
 // los audios cambian de nombre: el código los pide con el nuevo (y avisa si no encontró lo que esperaba)
 const AUDIO = [
@@ -81,8 +89,10 @@ const off = armarOffline(SAL, hechas);
 writeFileSync(join(SAL, 'offline.json'), off.json);
 writeFileSync(join(SAL, 'sw.js'), off.swNuevo);
 
-// el servidor y cómo se abre
-writeFileSync(join(SAL, 'servir.mjs'), `// servir.mjs — el Murga-o-matic liviano en http://localhost:${PUERTO} (abrir.bat lo arranca y abre Chrome).
+// en la web: que GitHub Pages no la pase por Jekyll
+if (WEB) writeFileSync(join(SAL, '.nojekyll'), '');
+// en la compu: el servidor y cómo se abre
+else writeFileSync(join(SAL, 'servir.mjs'), `// servir.mjs — el Murga-o-matic liviano en http://localhost:${PUERTO} (abrir.bat lo arranca y abre Chrome).
 // Sirve los archivos de esta carpeta; los bancos de voces (bancos/*.zip), de a pedazos.
 import http from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
@@ -112,7 +122,7 @@ const servidor = http.createServer((req, res) => {
 servidor.on('error', e => { if (e.code === 'EADDRINUSE') { console.log('Ya estaba andando en http://localhost:' + PUERTO); process.exit(0); } throw e; });
 servidor.listen(PUERTO, '127.0.0.1', () => console.log('Murga-o-matic en http://localhost:' + PUERTO + ' (cerrando esta ventana se apaga)'));
 `);
-writeFileSync(join(SAL, 'abrir.bat'), [
+if (!WEB) writeFileSync(join(SAL, 'abrir.bat'), [
   '@echo off',
   'rem Murga-o-matic sin internet: arranca el servidor de esta carpeta (si no estaba andando) y abre Chrome.',
   'rem Hace falta Node. El servidor queda en una ventana minimizada: cerrandola se apaga. Sin el servidor la',
@@ -132,6 +142,7 @@ const sumar = (k, b) => pesos.set(k, (pesos.get(k) || 0) + b);
 (function andar(d, rel) {
   for (const f of readdirSync(d)) {
     const p = join(d, f), r = rel ? rel + '/' + f : f;
+    if (f === '.git') continue;
     if (statSync(p).isDirectory()) andar(p, r);
     else sumar(r.startsWith('bancos/') && r.endsWith('.zip') ? 'bancos de UTAU' : r.startsWith('motor/vendor/mbrola/es') ? 'voces de MBROLA' : /^(loops|frases|coro)\//.test(r) ? 'loops, frases y coro' : r.startsWith('motor/vendor/') ? 'librerías y WebAssembly' : 'página y código', statSync(p).size);
   }
@@ -139,4 +150,4 @@ const sumar = (k, b) => pesos.set(k, (pesos.get(k) || 0) + b);
 const total = [...pesos.values()].reduce((a, b) => a + b, 0);
 for (const [k, b] of [...pesos].sort((a, b) => b[1] - a[1])) console.log(`  ${k.padEnd(24)} ${MB(b).padStart(10)}`);
 console.log(`→ ${SAL}: ${MB(total)} (sin los bancos ${MB(total - (pesos.get('bancos de UTAU') || 0))}; núcleo ${MB(off.nucleo)}) · ${seg()}`);
-if (!pesos.get('bancos de UTAU')) console.log('  (no hay bancos: node herramientas/utau_recortar.mjs los deja en la carpeta bancos/ de acá)');
+if (!WEB && !pesos.get('bancos de UTAU')) console.log('  (no hay bancos: node herramientas/utau_recortar.mjs los deja en la carpeta bancos/ de acá)');

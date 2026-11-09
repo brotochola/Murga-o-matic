@@ -1,5 +1,10 @@
 {
   "name": "murga-o-matic",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "bancos": "node herramientas/utau_recortar.mjs",
+    "offline": "node herramientas/construir.mjs",
+    "publicar": "node herramientas/publicar.mjs"
+  }
 }
