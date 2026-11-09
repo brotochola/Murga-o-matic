@@ -123,26 +123,39 @@ function pistaRebanada(ctx,buf,dur,rate){const sr=buf.sampleRate,n=Math.ceil(dur
   return out}
 
 // La batería son siempre los loops: cada sección con el suyo, a su tempo
-async function renderPercusion(P,secs){
+// La batería, sección por sección. Cada compás toca el loop de su sección, o el que se eligió para ese compás
+// (pieza.bateria[q del compás]: el número de ritmo, o 0 = sin batería; también en las partes a capela). Los compases
+// seguidos con el mismo loop son un tramo y el loop arranca al principio del tramo; el corte antes de una parte a
+// capela y la llamada siguen como estaban.
+const COMPAS=16;
+function loopDeCompas(pieza,s,q){const b=pieza.bateria||{};return q in b?b[q]:(s.bateria&&s.tipo!=="llamada"&&!s.golpe?s.loop:0)}
+async function renderPercusion(P,secs,bateria={}){
   const len=Math.ceil(P.total*SR);const ctx=new OAC(2,len,SR);
   const tocar=(buf,when,off=0,dur,fadeOut=0,decay=false,dest=ctx.destination,rate=1)=>{const s=ctx.createBufferSource();s.buffer=buf;s.playbackRate.value=rate;const g=ctx.createGain();s.connect(g).connect(dest);
     let w=when,o=off;if(w<0){o-=w*rate;w=0}const D=dur??((buf.duration-o)/rate);if(D<=0)return;
     g.gain.setValueAtTime(1,w);if(decay){g.gain.setTargetAtTime(0,w+.05,.35)}else if(fadeOut){g.gain.setValueAtTime(1,w+Math.max(0,D-fadeOut));g.gain.linearRampToValueAtTime(0,w+D)}
     s.start(w,o,D*rate)};
+  const pz={bateria};
   for(let i=0;i<secs.length;i++){const s=secs[i];const t0=s.t0,t1=s.t1;
-    const ritmo=DATOS.ritmos.find(r=>r.id===s.loop)||DATOS.ritmos[2];
-    const[,corte]=DATOS.acompana[ritmo.id]||[null,null];
+    const ritmoSec=DATOS.ritmos.find(r=>r.id===s.loop)||DATOS.ritmos[2];
     if(s.tipo==="llamada"){const sigR=secs[i+1]?.loop??s.loop;const[ll]=DATOS.acompana[sigR]||[null];if(ll){const f=DATOS.frases[ll];tocar(await cargar(f.archivo),t1-f.ultimo)}continue}   // su último golpe cae en el 1 que sigue
-    if(s.golpe){const b=await cargar(ritmo.archivo);tocar(b,t0,0,1.6,0,true);continue}
-    if(!s.bateria)continue;
-    const loop=await cargar(ritmo.archivo);const rate=s.tempo/ritmo.bpm;const ln=loop.duration/rate;
-    const sig=secs[i+1];const hayCorte=corte&&sig&&!sig.bateria&&sig.tipo!=="llamada"&&!sig.sinCorte;let finLoop=t1;
-    if(hayCorte)finLoop=t1-DATOS.frases[corte].ultimo;
+    if(s.golpe){const b=await cargar(ritmoSec.archivo);tocar(b,t0,0,1.6,0,true);continue}
+    // los tramos
+    const tramos=[];for(let q=s.inicio;q<s.inicio+s.largo;q+=COMPAS){const id=loopDeCompas(pz,s,q),u=tramos[tramos.length-1];if(u&&u.id===id)u.q1=q+COMPAS;else tramos.push({id,q0:q,q1:Math.min(q+COMPAS,s.inicio+s.largo)})}
+    if(!tramos.some(u=>u.id))continue;
     let dest=ctx.destination;
     if(s.fade){const g=ctx.createGain();g.gain.setValueAtTime(s.fadeFinal?.3:1,t0);g.gain.linearRampToValueAtTime(s.fadeFinal?.02:.3,t1);g.connect(ctx.destination);dest=g}   // la bajada se apaga
-    if(Math.abs(rate-1)>=.012){tocar(pistaRebanada(ctx,loop,finLoop-t0,rate),t0,0,finLoop-t0,(hayCorte||!sig||!sig.bateria)?.02:0,false,dest,1)}
-    else for(let t=t0;t<finLoop-1e-4;t+=ln){const d=Math.min(ln,finLoop-t);const ultimo=t+ln>=finLoop-1e-4;tocar(loop,t,0,d,(ultimo&&(hayCorte||!sig||!sig.bateria))?.02:0,false,dest,rate)}
-    if(hayCorte){const f=DATOS.frases[corte];tocar(await cargar(f.archivo),finLoop,0,Math.min(f.seg,f.ultimo+.9),.5)}}
+    const sig=secs[i+1];
+    for(let k=0;k<tramos.length;k++){const u=tramos[k];if(!u.id)continue;
+      const ritmo=DATOS.ritmos.find(r=>r.id===u.id)||ritmoSec,[,corte]=DATOS.acompana[ritmo.id]||[null,null];
+      const a=P.T(u.q0),z=P.T(u.q1),ultimoTramo=k===tramos.length-1,sigueSin=!tramos[k+1]?.id;
+      const loop=await cargar(ritmo.archivo);const rate=s.tempo/ritmo.bpm;const ln=loop.duration/rate;
+      const hayCorte=ultimoTramo&&corte&&sig&&!sig.bateria&&sig.tipo!=="llamada"&&!sig.sinCorte&&s.bateria;let finLoop=z;
+      if(hayCorte)finLoop=z-DATOS.frases[corte].ultimo;
+      const apagar=hayCorte||(ultimoTramo?(!sig||!sig.bateria):sigueSin);
+      if(Math.abs(rate-1)>=.012){tocar(pistaRebanada(ctx,loop,finLoop-a,rate),a,0,finLoop-a,apagar?.02:0,false,dest,1)}
+      else for(let t=a;t<finLoop-1e-4;t+=ln){const d=Math.min(ln,finLoop-t);const ultimo=t+ln>=finLoop-1e-4;tocar(loop,t,0,d,(ultimo&&apagar)?.02:0,false,dest,rate)}
+      if(hayCorte){const f=DATOS.frases[corte];tocar(await cargar(f.archivo),finLoop,0,Math.min(f.seg,f.ultimo+.9),.5)}}}
   return ctx.startRendering();
 }
 
@@ -422,7 +435,7 @@ async function generar(opc={}){
     const pieza=opc.pieza||C.componer(C.MODELO,{forma:S.forma,estilo:S.estilo,tonica:S.tonica,modo:S.modo,semilla:S.seed,largo:S.largo,tempo:S.tempo||null,ritmo:S.ritmo||null,clarinada:S.clarinada,cancionFinal:S.cancionFinal,modula:S.modula,tercia:S.tercia,recita:S.recita,llamadas:LLAMADAS,acordes:S.acordes});
     const{T,fin}=mapaTiempo(pieza);const total=fin+2.5;
     const P={T,total,seed:S.seed,brillo:S.brillo};
-    const percP=renderPercusion(P,pieza.secs);
+    const percP=renderPercusion(P,pieza.secs,pieza.bateria||{});
     let voces;
     if(sint()){
       avance(.04,"Escribiendo la letra…");await pausa();if(gen!==S.gen)return;
@@ -540,10 +553,10 @@ function editorAcordes(s){
       sel.innerHTML=ops.map(x=>`<option value="${x}"${x===g?" selected":""}>${nombreAcorde(x,s.tonica,s.modo)} (${x})</option>`).join("");
       if(i in propios)sel.classList.add("cambiado");else if(s.cambiados?.includes(i))sel.classList.add("auto");
       sel.onclick=e=>e.stopPropagation();
-      sel.onchange=()=>{S.acordes={...S.acordes,[s.nombre]:{...(S.acordes[s.nombre]||{}),[i]:sel.value}};generar({mantenerLetra:true})};
+      sel.onchange=()=>{S.acordes={...S.acordes,[s.nombre]:{...(S.acordes[s.nombre]||{}),[i]:sel.value}};recomponerSeccion(s.nombre)};
       c.append(sel)}
     grilla.append(c)}
-  if(Object.keys(propios).length){const r=document.createElement("button");r.className="btn";r.textContent="Volver a los acordes originales";r.onclick=e=>{e.stopPropagation();const a={...S.acordes};delete a[s.nombre];S.acordes=a;generar({mantenerLetra:true})};td.querySelector(".botones").append(r)}
+  if(Object.keys(propios).length){const r=document.createElement("button");r.className="btn";r.textContent="Volver a los acordes originales";r.onclick=e=>{e.stopPropagation();const a={...S.acordes};delete a[s.nombre];S.acordes=a;recomponerSeccion(s.nombre)};td.querySelector(".botones").append(r)}
   tr.onclick=e=>e.stopPropagation();
   return tr;
 }
@@ -949,3 +962,33 @@ document.addEventListener("keydown",e=>{
   if(e.key==="ArrowUp"||e.key==="ArrowDown"){e.preventDefault();cambiarNota({op:"p",v:(e.key==="ArrowUp"?1:-1)*(e.shiftKey?12:1)})}
   else if(e.key==="Delete"||e.key==="Backspace"){e.preventDefault();cambiarNota({op:"borrar"})}
   else if(e.key==="Escape"){notaAbierta=null;inspModo="verso";actualizarInspector()}});
+
+// ============================================================ cambiar una parte sin regenerar todo
+// El loop de un compás: se rearma sólo la batería (las voces quedan como están).
+async function cambiarBateria(q,id){if(!S.pieza)return;const s=S.pieza.secs.find(x=>q>=x.inicio&&q<x.inicio+x.largo);if(!s)return;
+  const b={...(S.pieza.bateria||{})};const def=loopDeCompas({bateria:{}},s,q);if(id===def)delete b[q];else b[q]=id;S.pieza.bateria=b;
+  await rearmarBateria()}
+async function rearmarBateria(){const gen=S.gen,t=posicion(),sonaba=S.tocando;estadoTexto("Armando la batería…");
+  try{const perc=await renderPercusion(S.P,S.pieza.secs,S.pieza.bateria||{});if(gen!==S.gen)return;procesar(perc,1/picoDe([perc]),1.05);
+    if(sonaba)detener();S.stems={...S.stems,bateria:perc};S.mp3=null;S.offset=t;if(sonaba)tocar();actualizarVistas();resumen();guardarLuego()}
+  catch(e){console.error(e);estadoTexto(`No se pudo armar la batería: ${e?.message||e}`,true)}}
+// Los acordes de una sección: se compone la pieza con los acordes nuevos y de ahí se toma sólo esa sección (sus notas y
+// sus golpes); el resto de la pieza queda igual, y vuelven a cantar sólo las frases de esa sección.
+async function recomponerSeccion(nombre){if(!S.pieza)return;
+  const C=S.version===1?await version1():{componer,MODELO};
+  const nueva=C.componer(C.MODELO,{...S.pieza.opciones,acordes:S.acordes}),vieja=S.pieza;
+  const igual=nueva.secs.length===vieja.secs.length&&nueva.secs.every((x,i)=>x.nombre===vieja.secs[i].nombre&&x.inicio===vieja.secs[i].inicio&&x.largo===vieja.secs[i].largo);
+  if(!igual){generar({mantenerLetra:true});return}
+  const i=vieja.secs.findIndex(x=>x.nombre===nombre);if(i<0)return;
+  const v=vieja.secs[i],q0=v.inicio,q1=q0+v.largo;
+  for(const k of ORDEN){vieja.ev[k]=vieja.ev[k].filter(e=>e[0]<q0||e[0]>=q1).concat(nueva.ev[k].filter(e=>e[0]>=q0&&e[0]<q1)).sort((a,b)=>a[0]-b[0]||b[2]-a[2])}
+  vieja.secs[i]={...nueva.secs[i],t0:v.t0,t1:v.t1,paso:v.paso};vieja.golpes=vieja.secs.flatMap(x=>x.golpes||[]);
+  vieja.opciones={...vieja.opciones,acordes:S.acordes};
+  notaAbierta=null;deshacer.length=0;if(inspModo==="nota")inspModo="verso";
+  // la letra: los versos de esa sección pueden cambiar de largo; lo escrito se queda donde encaja
+  if(sint()){const L=S.letra,antes=fotoLetra();armarLetra(vieja,S.P.T);
+    const encaja=t=>Array.isArray(t)&&t.length===L.partes.length&&t.every((x,j)=>Array.isArray(x)&&x.length===L.partes[j].versos.length);
+    if(antes&&encaja(antes.textos)){L.textos=antes.textos;L.diags=antes.diags;L.temas=antes.temas;L.editados=new Set(antes.editados);L.sel=antes.sel}else escribirLetra(vieja)}
+  dibujarTodo();guardarLuego();
+  if(sint())cantarDeNuevo();else generar({pieza:vieja})}
+window.murgaPrueba={cambiarBateria,recomponerSeccion,rearmarBateria};   // para las pruebas (herramientas y Playwright)
