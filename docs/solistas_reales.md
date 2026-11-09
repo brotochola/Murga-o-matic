@@ -176,6 +176,57 @@ No se tocó nada de `motor/`. Lo que sigue es para probar, y para juzgar de oíd
 | `ronquera` (bancos) | 0 | **0** | el temblor real es de 4 cents: no hay voz rajada para copiar (ronquera 1 hace temblar ±3,5 %, unos 60 cents) |
 | `esfuerzo` (bancos) | 0 | sin datos | esto no lo mide |
 
+## Lo que quedó en el motor (9 de noviembre de 2026)
+
+Se probó primero con el solista de las 24 frases, cambiando los valores hasta medir lo real. Después, con el coro
+entero en el banco del coro (`banco_medir.py`, 12 fragmentos reales) y con Whisper.
+
+**`guion()` (difonos.js), opciones nuevas.** Por defecto hacen lo mismo que antes:
+- `pasa`: se pasa de la nota al ligar un salto de 80 cents o más, y vuelve en 100 ms (como mucho, la mitad del salto);
+- `piqueVa`: hasta cuándo dura la entrada desde abajo, después del comienzo de la vocal;
+- `caidaProb`: qué parte de los finales de frase caen, cada uno a su azar;
+- `caidaLargo`: en cuánto tiempo caen;
+- `suelta`: en cuánto se apaga el final;
+- `crece`: los dB que crecen las notas largas.
+
+**Los valores** están en `variacion.js`:
+- `VARIACION_DIFONOS`: vibrato de 0,3 a 0,6 semitonos, de 4,8 a 5,7 Hz, que entra entre 0 y 0,15 s;
+- `ESTILO`, para MBROLA: dicción 1,2, pique 1,5 (cada cantor ±40 %), `piqueVa` 0,1, `pasa` 0,35, deriva 0,2, `crece` 0,5,
+  caída 2,5 (cada cantor de la mitad a una vez y media) en el 40 % de los finales, en 0,25 s, y golpe 4;
+- `ESTILO_BANCO`, para los bancos: dicción 1, pique 1,2, `pasa` 0,15 y caída 1,5.
+
+Los usan `cantorDifonos()`, `murga_bancos.opcionesDe()` y `plantel.opcionesBanco()`. Los cantores de formantes no
+cambian. En la página, el inspector de cada cantante tiene «Entrada desde abajo» y «Caída al final».
+
+**El solista**, medido contra los 208 pasajes. La última línea es Whisper (letras mal):
+
+| | real | MBROLA antes | MBROLA ahora | MIKE antes | MIKE ahora |
+|---|---|---|---|---|---|
+| vibrato ± cents | 40 | 13,3 | 40,8 | 12,7 | 38,6 |
+| vibrato: entra, ms | 260 | 443 | 266 | 390 | 263 |
+| se pasa al ligar, cents | 33,7 | 1 | 34 | 21,6 | 34,4 |
+| deriva, cents | 7,6 | 3,3 | 5,6 | 2,9 | 6,9 |
+| caída final, cents | 239 | 46 | 181 | 150 | 217 |
+| notas largas, dB/s | −0,7 | −0,3 | −1,1 | +1,8 | +0,1 |
+| Whisper, letras mal | — | 16,4 % | 9,2 % | 8,3 % | 8,7 % |
+
+**El pique medido salta.** Con valores parecidos dio de −25 a 630 cents, porque en 24 frases hay unas 8 entradas
+después de un silencio. Quedó en valores intermedios.
+
+**La dicción, en los bancos, no.** Con 1,2, MIKE se entiende menos (11,9 % contra 8,2 %), porque estira el pedazo
+grabado.
+
+**El coro**, distancia al coro real (ajuste · control):
+
+| | antes | con el estilo |
+|---|---|---|
+| MBROLA | 6,23 · 8,08 | 5,46 · 5,89 |
+| bancos (vibrato 0,28–0,56, pique 1,5) | 4,40 · 6,59 | 3,86 · 4,94 |
+
+**Whisper con el coro de MBROLA entero** (letras / palabras mal, tres semillas): antes 17,2 % / 44,2 %, con el estilo
+18,4 % / 43,8 % (sin la dicción 1,2). Es lo mismo, dentro del ruido. Con la dicción 1,2 de ESTILO, 18,6 % / 46,2 % en la semilla 7
+(sin ella, 19,3 % / 42,1 %; con 1,2 justo para todos, 17,0 % / 40,0 %).
+
 ## Cuidado con
 
 - **Demucs.** Deja pedacitos del coro y de los platillos, y ensucia la onda: sube la aperiodicidad y el temblor medidos, y puede ablandar los ataques. Lo real tiembla, como mucho, lo que dice la tabla.

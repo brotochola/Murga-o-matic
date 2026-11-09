@@ -298,18 +298,20 @@ async function cantarDifonosCoro(pieza,P,gen,solo,incremental){
 // ============================================================ los cantantes de difonos, uno por uno
 const NOMBRE_CANTOR={bajos:"Bajo",segundos:"Segundo",primos:"Primo",sobreprimos:"Sobreprimo",tercia:"Tercia"};
 const PARAMS=[
-  ["tracto","Garganta",.8,1.2,.01,v=>`${v<1?"":"+"}${Math.round((v-1)*100)} %`],
-  ["transporte","Afinación",-.5,.5,.01,v=>`${v>0?"+":""}${Math.round(v*100)} cents`],
-  ["vibrato","Vibrato",0,.5,.01,v=>`${v.toFixed(2)} st`],
-  ["vibVel","Velocidad vibrato",4,7.5,.1,v=>`${v.toFixed(1)} Hz`],
-  ["inclinacion","Brillo",-4,4,.1,v=>`${v>0?"+":""}${v.toFixed(1)} dB/oct`],
-  ["color","Color propio",0,10,.5,v=>`±${v} dB`],
-  ["consonantes","Dicción",.8,1.6,.01,v=>`× ${v.toFixed(2)}`],
-  ["adornos","Adornos",0,1,.05,v=>v<.01?"canta liso":`${Math.round(v*100)} % de las notas largas`],
-  ["grito","Grito",0,1.5,.05,v=>v<.01?"no grita":v<.45?"grita poco":v<.9?"grita":"grita mucho"],
-  ["retraso","Retraso",-.03,.06,.001,v=>`${Math.round(v*1000)} ms`],
-  ["db","Volumen",-12,6,.5,v=>`${v>0?"+":""}${v} dB`],
-  ["pan","Paneo",-1,1,.05,v=>v<-.02?`${Math.round(-v*100)} izq.`:v>.02?`${Math.round(v*100)} der.`:"centro"]];
+  ["tracto","Garganta",.8,1.2,.01,v=>`${v<1?"":"+"}${Math.round((v-1)*100)} %`,"El largo de la garganta: más corta, la voz más clara; más larga, más oscura."],
+  ["transporte","Afinación",-.5,.5,.01,v=>`${v>0?"+":""}${Math.round(v*100)} cents`,"Cuánto canta alto o bajo toda la pieza (100 cents son un semitono)."],
+  ["vibrato","Vibrato",0,.8,.01,v=>`${v.toFixed(2)} st`,"Cuánto ondula la nota en las notas largas. Los solistas de murga vibran unos 0,4 semitonos."],
+  ["vibVel","Velocidad vibrato",4,7.5,.1,v=>`${v.toFixed(1)} Hz`,"Cuántas veces por segundo ondula la nota. Los murguistas, unas 5."],
+  ["inclinacion","Brillo",-4,4,.1,v=>`${v>0?"+":""}${v.toFixed(1)} dB/oct`,"Más agudos (brillante) o menos (opaco)."],
+  ["color","Color propio",0,10,.5,v=>`±${v} dB`,"Su timbre propio: unas ondas en el espectro que lo hacen distinto de los demás."],
+  ["consonantes","Dicción",.8,1.6,.01,v=>`× ${v.toFixed(2)}`,"Consonantes más largas (más de 1) o más cortas. En las voces de banco conviene dejarla cerca de 1: estira la grabación."],
+  ["pique","Entrada desde abajo",0,3,.05,v=>v<.01?"entra justo":`${Math.round(v*100)} cents`,"Cuánto arranca desde abajo al entrar después de un silencio. Los murguistas de verdad, unos 2 semitonos."],
+  ["caida","Caída al final",0,4,.05,v=>v<.01?"no cae":`${Math.round(v*100)} cents`,"Cuánto cae la nota al final de algunas frases. Los de verdad, unos 2 semitonos en dos de cada tres finales."],
+  ["adornos","Adornos",0,1,.05,v=>v<.01?"canta liso":`${Math.round(v*100)} % de las notas largas`,"En las notas largas de las clarinadas y los finales: vibrato, trino, una vuelta o pasarse a otra voz del acorde."],
+  ["grito","Grito",0,1.5,.05,v=>v<.01?"no grita":v<.45?"grita poco":v<.9?"grita":"grita mucho","La boca más abierta y la voz apretada y pareja: grita como en el tablado."],
+  ["retraso","Retraso",-.03,.06,.001,v=>`${Math.round(v*1000)} ms`,"Cuánto entra tarde (o antes, si es negativo) respecto del coro."],
+  ["db","Volumen",-12,6,.5,v=>`${v>0?"+":""}${v} dB`,"Su volumen en la mezcla."],
+  ["pan","Paneo",-1,1,.05,v=>v<-.02?`${Math.round(-v*100)} izq.`:v>.02?`${Math.round(v*100)} der.`:"centro","Dónde suena, de izquierda a derecha."]];
 const CLAVES_CANTOR=["voz",...PARAMS.map(p=>p[0]).filter(k=>k!=="db"&&k!=="pan"),...plantel.PARAMS_BANCO.map(p=>p[0])];
 const elegidos=aj=>Object.fromEntries(CLAVES_CANTOR.filter(k=>aj[k]!=null).map(k=>[k,aj[k]]));
 function guardarAjustes(){try{localStorage.setItem("murga.cantantes",JSON.stringify(S.ajustes))}catch(e){}guardarLuego()}
@@ -360,8 +362,8 @@ function dibujarInspCantante(){
   sel.innerHTML=`<optgroup label="MBROLA (difonos de voces de habla)">${["es2","es1","es4"].map(v=>`<option value="${v}"${v===vv?" selected":""}>${v}${v==="es4"?" (la más pobre)":""}</option>`).join("")}</optgroup><optgroup label="Bancos de voz cantada (el plantel)">${plantel.vocesDeBanco().map(v=>`<option value="${esc(v.valor)}"${v.valor===vv?" selected":""}${v.disponible?"":" disabled"} title="${esc(v.disponible?v.nota:v.falta)}">${esc(v.nombre)}${v.disponible?"":" (no está)"}</option>`).join("")}</optgroup>`;
   sel.title="La voz de este murguista: los difonos de MBROLA (voces de habla) o una voz cantada de un banco del plantel (arriba, en «El plantel»). Las de banco que no están aparecen apagadas: buscá su archivo en el plantel.";
   sel.onchange=()=>cambiarCantante(x.clave,"voz",sel.value);fila("Voz",sel,plantel.esDeBanco(vv)&&!plantel.vozDisponible(vv)?"no está: canta MBROLA":"");
-  for(const[p,nombre,mn,mx,paso,fmt]of PARAMS){const r=document.createElement("input");r.type="range";r.min=mn;r.max=mx;r.step=paso;r.value=val(p);
-    const o=fila(nombre,r,fmt(+val(p)));r.oninput=()=>{o.textContent=fmt(+r.value)};r.onchange=()=>cambiarCantante(x.clave,p,+r.value)}
+  for(const[p,nombre,mn,mx,paso,fmt,ayuda]of PARAMS){const r=document.createElement("input");r.type="range";r.min=mn;r.max=mx;r.step=paso;r.value=val(p);
+    const o=fila(nombre,r,fmt(+val(p)));if(ayuda){r.title=ayuda;o.parentElement.title=ayuda}r.oninput=()=>{o.textContent=fmt(+r.value)};r.onchange=()=>cambiarCantante(x.clave,p,+r.value)}
   // las voces de banco tienen además los valores de los resamplers de UTAU (docs/plan_cantantes.md)
   if(plantel.esDeBanco(vv))for(const[p,nombre,mn,mx,paso,fmt,ayuda]of plantel.PARAMS_BANCO){const r=document.createElement("input");r.type="range";r.min=mn;r.max=mx;r.step=paso;
     const v0=aj[p]??plantel.valorDeVoz(vv,p)??(p==="modulacion"?1:0);r.value=v0;r.title=ayuda;

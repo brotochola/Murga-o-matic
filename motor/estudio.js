@@ -19,7 +19,7 @@ if (!hayLlaves()) $('sinLlaves').hidden = false;
 const VALORES = [
   ['tracto', 'Garganta', .85, 1.15, .01, 'todas', 'más de 1: los formantes más arriba (una garganta más chica)'],
   ['transporte', 'Afinación', -.5, .5, .01, 'todas', 'semitonos de más o de menos'],
-  ['vibrato', 'Vibrato', 0, .5, .01, 'todas', 'semitonos'],
+  ['vibrato', 'Vibrato', 0, .8, .01, 'todas', 'semitonos'],
   ['vibVel', 'Velocidad del vibrato', 4, 7.5, .1, 'todas', 'Hz'],
   ['grito', 'Grito', 0, 1.5, .05, 'todas', 'la boca más abierta, la voz apretada y pareja'],
   ['tension', 'Tensión', -1, 1, .05, 'banco', 'la voz apretada: menos fundamental, más agudos'],
@@ -28,8 +28,8 @@ const VALORES = [
   ['esfuerzo', 'Esfuerzo', -5, 7, 1, 'banco', 'semitonos: canta con la grabación de una nota más aguda (más esforzada)'],
   ['consonantes', 'Dicción', .7, 1.6, .01, 'todas', 'las consonantes más largas (más de 1) o más cortas'],
   ['golpe', 'Golpe', 0, 10, .5, 'todas', 'dB de más al entrar las sílabas acentuadas'],
-  ['pique', 'Pique', 0, 1.5, .05, 'todas', 'cuánto entra de abajo la nota, en semitonos'],
-  ['caida', 'Caída', 0, 2.5, .05, 'todas', 'cuánto cae al final de la frase, en semitonos'],
+  ['pique', 'Pique', 0, 3, .05, 'todas', 'cuánto entra de abajo la nota, en semitonos'],
+  ['caida', 'Caída', 0, 4, .05, 'todas', 'cuánto cae al final de la frase, en semitonos'],
   ['modulacion', 'Temblor de la grabación', 0, 1.5, .05, 'banco', 'cuánto del temblor de altura de la grabación queda'],
 ];
 // enojados y gritando: grito fuerte, la voz apretada y un poco rajada, la grabación más aguda (bancos), entradas con

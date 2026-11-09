@@ -11,7 +11,7 @@ import { escribirLetraLocal } from './letrista_local.js';
 import { DATOS } from './datos.js';
 import { sala, normalizar } from './mezcla.js';
 import { cantorDifonos, remuestrear } from './difonos.js';
-import { VARIACION, VARIACION_BANCO, GRITO_BANCO } from './variacion.js';
+import { VARIACION, VARIACION_DIFONOS, VARIACION_BANCO, GRITO_BANCO, ESTILO, ESTILO_BANCO } from './variacion.js';
 
 // los 13 lugares, en el orden de coro.js: bajos0, bajos1, segundos0...
 export const LUGARES = Object.entries(CORO).flatMap(([cuerda, cfg]) => Array.from({ length: cfg.cantores }, (_, n) => ({ cuerda, n, clave: cuerda + n })));
@@ -31,8 +31,8 @@ const GARGANTAS = [1, 1.04, .96, 1.07, .93];
 // parten de VARIACION_BANCO (más abiertos: variacion.js); los de MBROLA, de VARIACION.
 export function opcionesDe(c, voz, veces = 0, V = null) {
   const cuerda = c.cuerda === 'tercia' ? 'sobreprimos' : c.cuerda;
-  const Vb = voz.mbrola ? { ...VARIACION, ...(V || {}) } : { ...VARIACION, ...VARIACION_BANCO, ...(V || {}) };
-  const base = cantorDifonos(cuerda, c.semilla, { c: c.c || 0, V: Vb });
+  const Vb = voz.mbrola ? { ...VARIACION, ...VARIACION_DIFONOS, ...(V || {}) } : { ...VARIACION, ...VARIACION_DIFONOS, ...VARIACION_BANCO, ...(V || {}) };
+  const base = cantorDifonos(cuerda, c.semilla, { c: c.c || 0, V: Vb, E: voz.mbrola ? ESTILO : { ...ESTILO, ...ESTILO_BANCO } });
   const v = valoresDe(voz), retraso = (base.retraso || 0) + (c.retraso || 0) + (v.retraso || 0);
   if (voz.mbrola) return { motor: 'difonos', opc: { ...base, ...v, voz: voz.mbrola, w: voz.mbrola !== 'es4', tracto: base.tracto * (v.tracto ?? 1) * GARGANTAS[veces % GARGANTAS.length], retraso } };
   const { tracto, color, inclinacion, grito, ...b } = base;

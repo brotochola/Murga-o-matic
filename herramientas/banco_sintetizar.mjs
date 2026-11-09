@@ -22,7 +22,7 @@ import { CURVA } from '../motor/cantor/timbre.js';
 import { RANGOS } from '../motor/compositor.js';
 import { sala } from '../motor/cantor/mezcla.js';
 import { versosDe, silabasCantadas, alinear, partes } from '../motor/cantor/letra.js';
-import { VARIACION } from '../motor/cantor/variacion.js';
+import { VARIACION, VARIACION_DIFONOS } from '../motor/cantor/variacion.js';
 import { crearMbrola } from '../motor/cantor/mbrola.js';
 import { cantarDifonos, cantorDifonos, remuestrear, vozDelCantor } from '../motor/cantor/difonos.js';
 import { cantarBanco } from '../motor/cantor/banco.js';
@@ -122,7 +122,7 @@ for (const f of fragmentos) {
   for (const [k, ls] of Object.entries(lineas)) ls.forEach((notas, c) => {
     if (!notas.length) return;
     for (let i = 0; i + 1 < notas.length; i++) { const h = notas[i + 1].t0 - notas[i].t1; if (h > 0 && h < .25) notas[i].t1 = notas[i + 1].t0; }
-    const V = { ...VARIACION, ...(variacion || {}) }, lider = c === 0 && ls.length > 1;
+    const V = { ...VARIACION, ...(MOTOR === 'difonos' ? VARIACION_DIFONOS : {}), ...(variacion || {}) }, lider = c === 0 && ls.length > 1;
     const cfg = CORO[k], semilla = 1000 + idx * 7;
     const ganancia = cfg.ganancia / Math.sqrt(cfg.cantores) * (lider && V.liderDb ? Math.pow(10, V.liderDb / 20) : 1) * volumenDe(semilla, V);
     const ret = lider && V.liderAdelanto ? -V.liderAdelanto : 0;

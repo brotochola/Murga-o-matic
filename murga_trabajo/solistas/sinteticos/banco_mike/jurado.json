@@ -1,0 +1,177 @@
+{
+ "carpeta": "murga_trabajo\\solistas\\sinteticos\\banco_mike",
+ "motor": "banco",
+ "cer": 0.08310523189483882,
+ "wer": 0.323098544973545,
+ "cer_total": 0.08366533864541832,
+ "frases": [
+  {
+   "archivo": "01.wav",
+   "texto": "Vengo a cantarle al barrio que me vio crecer",
+   "oido": "Vengo a cantarle a Barrio que me vio crecer",
+   "cer": 0.027777777777777776,
+   "wer": 0.1111111111111111
+  },
+  {
+   "archivo": "02.wav",
+   "texto": "La luna se asoma detrás del tablado",
+   "oido": "La luna se asoma de pras de tablazo",
+   "cer": 0.10344827586206896,
+   "wer": 0.5714285714285714
+  },
+  {
+   "archivo": "03.wav",
+   "texto": "Los gurises corren descalzos por la vereda",
+   "oido": "Logurice corre descalzo por la veredad",
+   "cer": 0.16666666666666666,
+   "wer": 0.7142857142857143
+  },
+  {
+   "archivo": "04.wav",
+   "texto": "Mi vieja tendía la ropa en el fondo",
+   "oido": "Mi bella tendría la ropa en el fondo",
+   "cer": 0.17857142857142858,
+   "wer": 0.25
+  },
+  {
+   "archivo": "05.wav",
+   "texto": "Se apagan las luces y empieza la fiesta",
+   "oido": "Se apaga la luz y empieza la fiesta.",
+   "cer": 0.15625,
+   "wer": 0.375
+  },
+  {
+   "archivo": "06.wav",
+   "texto": "Un perro dormido junto a la parrilla",
+   "oido": "Un perro dormizo junto a la parrilla",
+   "cer": 0.03333333333333333,
+   "wer": 0.14285714285714285
+  },
+  {
+   "archivo": "07.wav",
+   "texto": "Llegó el carnaval con su bombo y platillo",
+   "oido": "Llevo el carnaval con su bombo latillo",
+   "cer": 0.08823529411764706,
+   "wer": 0.375
+  },
+  {
+   "archivo": "08.wav",
+   "texto": "Fumando en la esquina esperaba el ómnibus",
+   "oido": "Fumando el alquino esperaba el omnibus",
+   "cer": 0.11428571428571428,
+   "wer": 0.42857142857142855
+  },
+  {
+   "archivo": "09.wav",
+   "texto": "Con la garganta rota cantamos igual",
+   "oido": "Con la garganta ruta cantamos igual",
+   "cer": 0.03333333333333333,
+   "wer": 0.16666666666666666
+  },
+  {
+   "archivo": "10.wav",
+   "texto": "Que nadie nos quite la alegría del pueblo",
+   "oido": "Que nadie no quite la alegría del pueblo",
+   "cer": 0.029411764705882353,
+   "wer": 0.125
+  },
+  {
+   "archivo": "11.wav",
+   "texto": "El viento de enero nos trae la noticia",
+   "oido": "El viento de enero no trae la noticia",
+   "cer": 0.03225806451612903,
+   "wer": 0.125
+  },
+  {
+   "archivo": "12.wav",
+   "texto": "Tres copas de vino y un beso robado",
+   "oido": "Tres copas de vino y beso robado",
+   "cer": 0.07142857142857142,
+   "wer": 0.125
+  },
+  {
+   "archivo": "13.wav",
+   "texto": "Mañana temprano se va la comparsa",
+   "oido": "Mañana a temprano se va la comparsa",
+   "cer": 0.03571428571428571,
+   "wer": 0.16666666666666666
+  },
+  {
+   "archivo": "14.wav",
+   "texto": "El chiquilín vende diarios en la feria",
+   "oido": "Echiquilime desgario se la feria",
+   "cer": 0.21875,
+   "wer": 0.7142857142857143
+  },
+  {
+   "archivo": "15.wav",
+   "texto": "Pintamos la cara de blanco y de rojo",
+   "oido": "pintamos la cara de blanco y de rollo",
+   "cer": 0.06896551724137931,
+   "wer": 0.125
+  },
+  {
+   "archivo": "16.wav",
+   "texto": "Una gaviota cruzaba la rambla",
+   "oido": "¡Una gavió ta cruza bala rambla!",
+   "cer": 0.0,
+   "wer": 0.8
+  },
+  {
+   "archivo": "17.wav",
+   "texto": "La radio del almacén pasaba un tango",
+   "oido": "La radio del alma se empazaba a OTANGO",
+   "cer": 0.2,
+   "wer": 0.7142857142857143
+  },
+  {
+   "archivo": "18.wav",
+   "texto": "Juntamos las monedas para el colectivo",
+   "oido": "Juntamos la moneda para el colectivo",
+   "cer": 0.06060606060606061,
+   "wer": 0.3333333333333333
+  },
+  {
+   "archivo": "19.wav",
+   "texto": "Mi abuelo contaba historias del puerto",
+   "oido": "Mi abuelo contaba historia del puerto",
+   "cer": 0.030303030303030304,
+   "wer": 0.16666666666666666
+  },
+  {
+   "archivo": "20.wav",
+   "texto": "La lluvia golpeaba el techo de chapa",
+   "oido": "La lluvia golpeaba el techo de Champa",
+   "cer": 0.03333333333333333,
+   "wer": 0.14285714285714285
+  },
+  {
+   "archivo": "21.wav",
+   "texto": "Seguimos cantando aunque nadie nos mire",
+   "oido": "Seguimos cantando aunque nadie no mire",
+   "cer": 0.029411764705882353,
+   "wer": 0.16666666666666666
+  },
+  {
+   "archivo": "22.wav",
+   "texto": "El último tren se perdió en la neblina",
+   "oido": "El último trece perro en la neblina",
+   "cer": 0.12903225806451613,
+   "wer": 0.375
+  },
+  {
+   "archivo": "23.wav",
+   "texto": "Bailamos descalzos en medio de la calle",
+   "oido": "Balamo descalzo se medio de la calle",
+   "cer": 0.09090909090909091,
+   "wer": 0.42857142857142855
+  },
+  {
+   "archivo": "24.wav",
+   "texto": "Volvemos a casa con el sol en la espalda",
+   "oido": "Volvemos a casa con el sol y la espalda",
+   "cer": 0.0625,
+   "wer": 0.1111111111111111
+  }
+ ]
+}

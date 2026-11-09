@@ -17,7 +17,7 @@ export const DURACION = {
   m: .055, n: .05, J: .065, l: .05, L: .06, r: .028, rr: .075, jj: .065, i: .04, u: .04, w: .04,
 };
 const VOCAL = p => 'aeiou'.includes(p);
-import { VARIACION } from './variacion.js';
+import { VARIACION, VARIACION_DIFONOS, ESTILO } from './variacion.js';
 import * as TIMBRES from './timbre.js';
 import { ecualizar, ponderarA } from './eq.js';
 import { adornar, cuantoAdorna } from './adornos.js';
@@ -32,7 +32,12 @@ export function guion(notas, opc = {}) {
     vibrato: .14, vibVel: 5.5, vibEntra: .22, deriva: .05, temblor: 0, pique: .45, caida: .8, consonantes: 1, semilla: 1,
     // eses: 50 ms (esesCortas .57), más bajas y sin filtrar (en terminar: esesFiltro 0, esesDb 8). Cortas y filtradas
     // sonaban a t (Whisper oía «Te íbamos» por «Seguimos») y a chasquido.
-    w: true, transporte: 0, eses: 1, esesCortas: .57, acento: 1, sheismo: 1, golpe: 0, arco: 0, adornos: 0, ...opc,
+    w: true, transporte: 0, eses: 1, esesCortas: .57, acento: 1, sheismo: 1, golpe: 0, arco: 0, adornos: 0,
+    // lo que se midió en los solistas de verdad (docs/solistas_reales.md): pasa, semitonos que se pasa de la nota al
+    // ligar un salto y vuelve en 100 ms; piqueVa, segundos después del comienzo de la vocal en que termina de llegar
+    // desde abajo; caidaProb, qué parte de los finales de frase caen; caidaLargo, en cuántos segundos; suelta, en cuántos
+    // segundos se apaga (12 dB) el final de la frase; crece, dB que crecen las notas largas
+    pasa: 0, piqueVa: .08, caidaProb: 1, caidaLargo: .14, suelta: .12, crece: 1.5, ...opc,
   };
   const rng = new Rnd(o.semilla);
   // ll e y: la "sh" rioplatense ("shegó", "cashe"). Estas voces no la tienen: se canta la ll castellana (jj, que ya
@@ -98,6 +103,8 @@ export function guion(notas, opc = {}) {
   const sueltas = new Set(); // notas que empiezan después de un silencio
   for (let i = 0; i < N; i++) if (i === 0 || notas[i].t0 - notas[i - 1].t1 >= .02) sueltas.add(i);
   const finales = new Set(); for (let i = 0; i < N; i++) if (i === N - 1 || notas[i + 1].t0 - notas[i].t1 >= .02) finales.add(i);
+  // los finales que caen: cada uno a su azar (de la semilla y del momento de la nota, no del orden)
+  const caen = new Set([...finales].filter(i => o.caidaProb >= 1 || azarDe(Math.round(o.semilla * 31 + 5), Math.round(notas[i].t0 * 1000)) < o.caidaProb));
   const suave = x => x <= 0 ? 0 : x >= 1 ? 1 : .5 - .5 * Math.cos(Math.PI * x);
   const notaEn = t => { let lo = 0, hi = N - 1; while (lo < hi) { const m = (lo + hi + 1) >> 1; if (notas[m].t0 - tA[m] <= t) lo = m; else hi = m - 1; } return lo; };
   // temblor: una afinación que tiembla un poco, rápido (ruido filtrado, un valor cada 10 ms)
@@ -116,9 +123,18 @@ export function guion(notas, opc = {}) {
       const g0 = n.t0 - tA[i] - .02, x = (t - g0) / (n.t0 + .03 - g0);
       m = notas[i - 1].midi + (n.midi - notas[i - 1].midi) * suave(x);
     }
-    if (sueltas.has(i)) m -= o.pique * (1 - suave((t - (n.t0 - tA[i])) / Math.max(.06, tA[i] + .08)));
+    // al ligar un salto, se pasa de la nota y vuelve (como mucho la mitad del salto)
+    if (o.pasa && !sueltas.has(i) && i > 0) {
+      const d = n.midi - notas[i - 1].midi;
+      if (Math.abs(d) >= .8) {
+        const llega = n.t0 + .03, medio = (n.t0 - tA[i] - .02 + llega) / 2;
+        const h = t < medio ? 0 : t < llega ? suave((t - medio) / (llega - medio)) : 1 - suave((t - llega) / .1);
+        m += Math.sign(d) * Math.min(o.pasa, Math.abs(d) * .5) * h;
+      }
+    }
+    if (sueltas.has(i)) m -= o.pique * (1 - suave((t - (n.t0 - tA[i])) / Math.max(.06, tA[i] + o.piqueVa)));
     // la caída al final de la frase
-    if (finales.has(i) && n.t1 - n.t0 > .4) m -= o.caida * suave((t - (n.t1 - .14)) / .14) ** 1.5;
+    if (caen.has(i) && n.t1 - n.t0 > .4) m -= o.caida * suave((t - (n.t1 - o.caidaLargo)) / o.caidaLargo) ** 1.5;
     // vibrato: entra de a poco en las notas largas
     const enNota = t - n.t0;
     let vamp = suave((enNota - o.vibEntra) / .3) * (n.t1 - n.t0 > .3 ? 1 : 0);
@@ -154,8 +170,8 @@ export function guion(notas, opc = {}) {
     let db = 20 * Math.log10(.4 + .75 * vel) + arcoDe[i];
     if (o.golpe) db += n.sil.acento ? o.golpe * (.5 + (t < n.t0 - .01 ? 0 : Math.exp(-(t - n.t0 + .01) / .06))) : -o.golpe * .25;
     const largo = n.t1 - n.t0;
-    if (largo > .5) db += 1.5 * suave((t - n.t0 - .1) / .4);
-    if (finales.has(i)) db -= 12 * suave((t - (n.t1 - .12)) / .12);
+    if (largo > .5) db += o.crece * suave((t - n.t0 - .1) / .4);
+    if (finales.has(i)) db -= 12 * suave((t - (n.t1 - o.suelta)) / o.suelta);
     return Math.pow(10, db / 20);
   };
   // altura(t) en semitonos MIDI, con estado (la fase del vibrato): se pide con t creciente. La usa también banco.js.
@@ -500,24 +516,30 @@ export const TRACTO = [0, .07, -.06, .11, -.1];
 // tercero con es4 (otros dos hombres, grabados a 16 kHz); el cuarto primo, otra vez con es1.
 export const VOCES = ['es2', 'es1', 'es4', 'es1', 'es2'];
 export const vozDelCantor = c => VOCES[c % VOCES.length];
-export function cantorDifonos(cuerda, semilla, { c = 0, V = VARIACION, D = DIFERENCIA } = {}) {
+// V: la variación entre cantores (VARIACION con la de difonos encima); E: sus mañas (ESTILO, o ESTILO_BANCO encima).
+export function cantorDifonos(cuerda, semilla, { c = 0, V = { ...VARIACION, ...VARIACION_DIFONOS }, D = DIFERENCIA, E = ESTILO } = {}) {
   const r = new Rnd(semilla * 17 + 3), T = CUERDAS_DIFONOS[cuerda] || CUERDAS_DIFONOS.primos;
   return {
     semilla, tracto: T.tracto * (1 + (D.reparto ?? 1) * TRACTO[c % TRACTO.length]) * r.u(1 - D.garganta, 1 + D.garganta), color: D.timbre, inclinacion: r.u(-D.inclinacion, D.inclinacion),
     transporte: r.u(-V.desafinacion, V.desafinacion),
     vibrato: r.u(V.vibrato[0], V.vibrato[1]), vibVel: r.u(V.vibratoVel[0], V.vibratoVel[1]), vibEntra: r.u(V.vibratoEntra[0], V.vibratoEntra[1]),
-    pique: .45 * r.u(1 - V.pique, 1 + V.pique), consonantes: 1.1 * r.u(1 - V.diccion * .5, 1 + V.diccion * .5),
+    pique: E.pique * r.u(1 - V.pique, 1 + V.pique), consonantes: E.consonantes * r.u(1 - V.diccion * .5, 1 + V.diccion * .5),
     // los tiempos, la mitad que en el coro de formantes: con todo, el coro de difonos se entiende mucho menos (19 % de
     // letras mal contra 13 %, herramientas/coro_difonos.mjs)
     retraso: r.u(0, V.retraso * .5), desfase: V.desfase * .5,
     // el timbre del coro real, al 60 %: con la curva entera el coro se entiende un poco menos (15,6 % contra 12,4 %)
     temblor: .04, brillo: .6,
-    // los acentos con golpe de voz: el ataque se acerca al del coro real (de 31 a 18 ms de diferencia en el banco)
-    golpe: 3, arco: 1,
+    // los acentos con golpe de voz: el ataque se acerca al del coro real (de 31 a 18 ms de diferencia en el banco; con
+    // 4, el ataque de sílaba del solista baja de 55 a 45 ms, el real es de 35)
+    golpe: E.golpe, arco: 1,
     // cuánto adorna las notas largas de las clarinadas y de los finales (adornos.js; algunos nada)
     adornos: cuantoAdorna(cuerda, semilla, c),
     // cuánto grita (esforzar(): la boca más abierta, la voz apretada y pareja, más brillo); cada uno un poco distinto
     grito: +(.6 * new Rnd(semilla * 43 + 19).u(.8, 1.2)).toFixed(2), centro: T.centro,
+    // las mañas de los solistas de verdad (ESTILO, variacion.js); la caída, cada uno la suya (con el mismo azar, después
+    // de todo lo anterior: lo de arriba no cambia)
+    pasa: E.pasa, piqueVa: E.piqueVa, deriva: E.deriva, crece: E.crece, caidaProb: E.caidaProb, caidaLargo: E.caidaLargo,
+    caida: +(E.caida * r.u(.5, 1.5)).toFixed(2),
   };
 }
 

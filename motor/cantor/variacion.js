@@ -20,6 +20,30 @@ export const VARIACION = {
   liderAdelanto: 0.006,       // y tantos segundos adelantado
 };
 
+// Cómo canta un murguista, medido en los solistas de verdad (docs/solistas_reales.md: 208 pasajes de una sola voz de 14
+// murgas, con herramientas/solistas_medir.mjs), para los cantores de difonos y de banco (no para los de formantes, que
+// usan la variación de arriba). Vibran ±40 cents (de 26 a 55) a 5,2 Hz y el vibrato les entra a los 260 ms: los nuestros
+// vibraban ±13 y les entraba a los 390–440 ms. Medido la noche del 9 de noviembre de 2026
+// (murga_trabajo/plan/noche_2026-11-09.md): con esto y ESTILO, la distancia al coro real (banco del coro) bajó de 6,23 a
+// 5,82 (ajuste) y de 8,08 a 6,14 (control) con MBROLA, y de 4,40 a 3,86 y de 6,59 a 4,94 con los bancos.
+export const VARIACION_DIFONOS = {
+  vibrato: [0.30, 0.60],      // semitonos (lo pedido; MBROLA rinde un poco menos, WORLD casi igual)
+  vibratoVel: [4.8, 5.7],     // Hz
+  vibratoEntra: [0, 0.15],    // segundos (más los 0,3 s en que crece: llega a la mitad a los 250 ms)
+};
+// Y sus mañas (opciones de guion(), difonos.js): entran desde abajo (pique, semitonos; real: 219 cents, que llegan en
+// 80 ms), se pasan de la nota al ligar un salto (pasa; real: 34 cents, que vuelven), la nota se mueve (deriva; real 7,6
+// cents contra 3), las notas largas no crecen (crece, dB; real −0,7 dB/s, los bancos crecían +1,8), y caen al final de
+// algunas frases (caida, semitonos, cada cantor entre la mitad y una vez y media; caidaProb, qué parte de los finales;
+// real: el 68 % cae más de 50 cents, mediana 239), con golpe de voz en los acentos (golpe, dB). Los valores salen de
+// cantar el solista de prueba hasta medir lo real: con estos, Whisper erra el 9,2 % de las letras de MBROLA (antes 16,4)
+// y el 8,7 % de MIKE (antes 8,3).
+export const ESTILO = { consonantes: 1.2, pique: 1.5, piqueVa: 0.1, pasa: 0.35, deriva: 0.2, crece: 0.5, caida: 2.5, caidaProb: 0.4, caidaLargo: 0.25, golpe: 4 };
+// La dicción (consonantes, cuánto se alargan): con MBROLA, 1,2 hace entender más (coro entero: 17,0 % de letras mal contra
+// 19,3 %); con los bancos estira el pedazo grabado y se entiende menos (MIKE solo: 11,9 % contra 8,2 %), así que 1.
+// WORLD rinde distinto: con los bancos se mide más pique, más pasarse y la misma caída con menos
+export const ESTILO_BANCO = { consonantes: 1, pique: 1.2, pasa: 0.15, caida: 1.5 };
+
 // Los cantores de banco (voces de UTAU, motor/cantor/banco.js) cantaban demasiado juntos con la variación de arriba:
 // sus grabaciones, resintetizadas con WORLD, son más limpias que MBROLA, y en el banco del coro la energía de cada
 // armónico quedaba más pegada a la nota que en el coro real («una voz» 0,40–0,68 contra 0,30–0,44). Medido la noche del
@@ -27,8 +51,7 @@ export const VARIACION = {
 // (curvas_banco.js), la distancia al coro real bajó de 6,31 a 4,27 en los fragmentos de ajuste y de 9,77 a 6,01 en los
 // de control. Más apertura (0,30 y 0,08 por nota) mejoraba los de ajuste y empeoraba los de control.
 export const VARIACION_BANCO = {
-  desafinacion: 0.25,         // semitonos, en vez de 0,17
-  vibrato: [0.12, 0.30],      // en vez de 0,09–0,24
+  desafinacion: 0.25,         // semitonos, en vez de 0,17 (el vibrato, el de VARIACION_DIFONOS: antes 0,12–0,30)
   desafinaNota: 0.06,         // cada nota hasta este tanto alta o baja (banco.js)
   modulacion: 1.5,            // cuánto del temblor de altura de la grabación queda (1: el de la grabación)
   temblor: 0.08,              // semitonos de temblor rápido de la afinación (difonos.js guion), en vez de 0,04
