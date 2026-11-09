@@ -13,7 +13,8 @@ import { medir, versosDe } from './cantor/letra.js';
 import { partesAEscribir } from './cantor/letrista.js';
 import { escribirLetraLocal } from './cantor/letrista_local.js';
 import { CURVA } from './cantor/timbre.js';
-import { crearPartitura, mostrarProceso } from './vista.js';
+import { mostrarProceso } from './vista.js';
+import { crearMultipista } from './multipista.js';
 import { nombreAcorde, textoConAcordes, mostrarPartitura, pdfPartitura, cargarScript, escritas } from './papeles.js';
 import { guardarMurga, leerMurga, borrarMurga, listarMurgas, nuevoId } from './murgas.js';
 
@@ -333,15 +334,16 @@ const NO_CANTAN=new Set(["nombre","cara"]);
 let temporizadorCanto=null;
 function programarCanto(){clearTimeout(temporizadorCanto);temporizadorCanto=setTimeout(()=>{if(S.pieza&&sint())cantarDeNuevo()},900)}
 function cambiarCantante(clave,k,v){S.ajustes={...S.ajustes,[clave]:{...(S.ajustes[clave]||{}),[k]:v}};guardarAjustes();dibujarCantantes();if(!NO_CANTAN.has(k))programarCanto()}
-let cantanteAbierto=null,inspModo="verso",notaAbierta=null;const deshacer=[];
-function actualizarInspector(){const cant=inspModo==="cantante"&&cantanteAbierto&&difonos(),nota=inspModo==="nota"&&!!notaAbierta,otro=cant||nota;
-  $("inspCantante").hidden=!cant;$("inspNota").hidden=!nota;$("procesoBloque").hidden=otro||!sint();$("inspectorVacio").hidden=otro||sint();
-  if(!nota)partitura.elegirNota(null)}
-function abrirCantante(clave){cantanteAbierto=clave;inspModo="cantante";actualizarInspector();dibujarCantantes();
-  if(matchMedia("(max-width:1279px)").matches)$("inspector").scrollIntoView({behavior:"smooth",block:"start"})}
+let cantanteAbierto=null,notaAbierta=null;const deshacer=[];
+function actualizarInspector(){const cant=!!cantanteAbierto&&difonos(),nota=!!notaAbierta;
+  $("inspCantante").hidden=!cant;$("cantVacio").hidden=cant;$("devNota").hidden=!nota;$("inspNota").hidden=!nota;
+  $("procesoBloque").hidden=!sint();$("inspectorVacio").hidden=sint();
+  if(!nota)multipista.elegirNota(null)}
+function abrirCantante(clave){cantanteAbierto=clave;actualizarInspector();dibujarCantantes();abrirPanel("cantantes");
+  if(matchMedia("(max-width:999px)").matches)$("inspCantante").scrollIntoView({behavior:"smooth",block:"nearest"})}
 function dibujarInspCantante(){
   const x=losCantantes().find(y=>y.clave===cantanteAbierto);
-  if(!x){cantanteAbierto=null;inspModo="verso";actualizarInspector();return}
+  if(!x){cantanteAbierto=null;actualizarInspector();return}
   const aj=S.ajustes[x.clave]||{},val=k=>aj[k]??x.base[k],k=x.c.cuerda;
   ponerCara($("icCara"),x);if(document.activeElement!==$("icNombre"))$("icNombre").value=x.nombre;
   $("icCuerda").textContent=`${NOMBRE_CANTOR[k]}${CUERDAS[k].cantores>1?` ${x.n+1}`:""}${x.n===0&&CUERDAS[k].cantores>1?" · lleva la cuerda":""}`;
@@ -356,11 +358,11 @@ function dibujarInspCantante(){
 }
 function dibujarCantantes(){
   const caja=$("listaCantantes"),sec=$("cantantes");sec.hidden=!difonos()||!S.pieza;
-  if(sec.hidden){if(inspModo==="cantante"){inspModo="verso";actualizarInspector()}return}
+  if(sec.hidden){actualizarInspector();return}
   let lista=losCantantes();if(S.voces==="solista")lista=lista.filter(x=>x.clave==="primos0");
   caja.innerHTML="";
   for(const x of lista){const aj=S.ajustes[x.clave]||{},val=k=>aj[k]??x.base[k],k=x.c.cuerda;
-    const d=document.createElement("div");d.className="tarjeta"+(Object.keys(aj).some(q=>!["mudo","nombre","cara"].includes(q))?" cambiado":"")+(x.clave===cantanteAbierto&&inspModo==="cantante"?" abierta":"")+(aj.mudo?" callado":"");
+    const d=document.createElement("div");d.className="tarjeta"+(Object.keys(aj).some(q=>!["mudo","nombre","cara"].includes(q))?" cambiado":"")+(x.clave===cantanteAbierto?" abierta":"")+(aj.mudo?" callado":"");
     d.tabIndex=0;d.setAttribute("role","button");d.setAttribute("aria-label",`${x.nombre}, ${NOMBRE_CANTOR[k].toLowerCase()}: ver y cambiar`);
     d.innerHTML=`<img alt="" loading="lazy"><div><b>${esc(x.nombre)}</b><small><i style="background:var(--${k})"></i>${NOMBRE_CANTOR[k]}${CUERDAS[k].cantores>1?" "+(x.n+1):""} · ${val("voz")}</small></div>
       <span class="acc"><button class="solo" aria-pressed="${S.soloCantor===x.clave}" title="Escucharlo solo">Solo</button><button class="mudo" aria-pressed="${!!aj.mudo}" title="Que no cante">Callar</button></span>`;
@@ -369,7 +371,7 @@ function dibujarCantantes(){
     d.querySelector(".solo").onclick=e=>{e.stopPropagation();alternarSolo(x.clave)};
     d.querySelector(".mudo").onclick=e=>{e.stopPropagation();cambiarCantante(x.clave,"mudo",!aj.mudo)};
     caja.append(d)}
-  if(cantanteAbierto&&inspModo==="cantante")dibujarInspCantante()}
+  if(cantanteAbierto)dibujarInspCantante()}
 function alternarSolo(clave){S.soloCantor=S.soloCantor===clave?null:clave;dibujarCantantes();cantarDeNuevo()}
 // un murguista a un archivo, y de un archivo a un lugar del coro
 function exportarCantante(){const x=losCantantes().find(y=>y.clave===cantanteAbierto);if(!x)return;const aj=S.ajustes[x.clave]||{};
@@ -390,7 +392,7 @@ async function importarCantante(archivo){if(!archivo||!cantanteAbierto)return;
 // ============================================================ estado
 const ORDEN=["bajos","segundos","primos","sobreprimos","tercia"];
 const LLAMADAS=Object.fromEntries(DATOS.ritmos.map(r=>{const a=DATOS.acompana[r.id];if(!a||!a[0])return[r.id,0];const c4=r.compas*4/r.tpc;return[r.id,Math.ceil((DATOS.frases[a[0]].ultimo+.05)/c4)]}));
-const S={version:2,formacion:"union",adornos:"algunos",grito:"si",sala:.5,recita:0,forma:"retirada",estilo:"todas",tonica:9,modo:"menor",ritmo:0,tempo:0,largo:"normal",seed:1,brillo:1,clarinada:true,cancionFinal:true,modula:true,tercia:0,mix:{bajos:1,segundos:1,primos:1,sobreprimos:1,tercia:1,bateria:.42},mute:{},
+const S={version:2,formacion:"union",adornos:"algunos",grito:"si",sala:.5,recita:0,forma:"retirada",estilo:"todas",tonica:9,modo:"menor",ritmo:0,tempo:0,largo:"normal",seed:1,brillo:1,clarinada:true,cancionFinal:true,modula:true,tercia:0,mix:{bajos:1,segundos:1,primos:1,sobreprimos:1,tercia:1,bateria:.42},mute:{},solo:{},secElegida:null,
   voces:"muestras",semCoro:1,lugar:"teatro",acordes:{},editando:null,ajustes:{},soloCantor:null,pieza:null,stems:null,P:null,ac:null,nodos:null,inicio:0,offset:0,tocando:false,gen:0,mp3:null,
   letra:{partes:[],textos:[],diags:null,temas:null,editados:new Set(),sel:{i:0,k:0},sil:null,marcas:[],semLetra:1,pendiente:false,cantada:null}};
 const $=id=>document.getElementById(id);
@@ -428,10 +430,10 @@ function normalizarVoces(voces){const drive=sint()?1.02:1+.8*S.brillo;S.firmas=v
 
 const firmaLetra=()=>JSON.stringify(S.letra.partes.map(p=>[p.nombre,p.versos.map(v=>v.silabas)]));
 async function generar(opc={}){
-  const gen=++S.gen;detener(true);S.mp3=null;ocupado("Componiendo…");avance(.02,"Componiendo…");
+  const gen=++S.gen;detener(true);S.mp3=null;const que=opc.pieza?"Preparando…":"Componiendo…";ocupado(que);avance(.02,que);
   try{
     const C=S.version===1?await version1():{componer,MODELO};if(gen!==S.gen)return;
-    if(!opc.pieza){notaAbierta=null;deshacer.length=0;if(inspModo==="nota")inspModo="verso"}
+    if(!opc.pieza){notaAbierta=null;deshacer.length=0}
     const pieza=opc.pieza||C.componer(C.MODELO,{forma:S.forma,estilo:S.estilo,tonica:S.tonica,modo:S.modo,semilla:S.seed,largo:S.largo,tempo:S.tempo||null,ritmo:S.ritmo||null,clarinada:S.clarinada,cancionFinal:S.cancionFinal,modula:S.modula,tercia:S.tercia,recita:S.recita,llamadas:LLAMADAS,acordes:S.acordes});
     const{T,fin}=mapaTiempo(pieza);const total=fin+2.5;
     const P={T,total,seed:S.seed,brillo:S.brillo};
@@ -482,7 +484,7 @@ function grafo(ctx,dest,offset,when){
   const rev=ctx.createConvolver();rev.buffer=salaIR(ctx);const send=ctx.createGain();send.gain.value=envio();lejos.connect(send).connect(rev).connect(master);
   const sendBat=ctx.createGain();sendBat.gain.value=L.bateria*S.sala/.5;sendBat.connect(rev);
   const gains={},srcs=[];
-  for(const k of[...ORDEN,"bateria"]){const g=ctx.createGain();g.gain.value=S.mute[k]?0:S.mix[k]*(k==="bateria"?1:.9);g.connect(k==="bateria"?master:vozBus);if(k==="bateria")g.connect(sendBat);gains[k]=g;
+  for(const k of[...ORDEN,"bateria"]){const g=ctx.createGain();g.gain.value=ganancia(k);g.connect(k==="bateria"?master:vozBus);if(k==="bateria")g.connect(sendBat);gains[k]=g;
     const s=ctx.createBufferSource();s.buffer=S.stems[k];s.connect(g);s.start(when,offset);srcs.push(s)}
   return{gains,srcs,send,sendBat};
 }
@@ -508,82 +510,179 @@ $("play").onclick=()=>{try{S.tocando?detener():tocar()}catch(e){console.error(e)
 const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
 const unicos=l=>l.filter((a,i)=>i===0||a!==l[i-1]);
 function nomTono(s){return `${NOTAS[s.tonica]} ${s.modo}`}
-const partitura=crearPartitura({lienzo:$("roll"),mapa:$("mapa"),leyenda:$("legend"),
+const nombreRitmo=id=>id?DATOS.ritmos.find(r=>r.id===id)?.nombre||`Ritmo ${id}`:"Sin batería";
+const CORTO={3:"Camión 2/4",4:"Camión 4/4",6:"Base",8:"Candombe",9:"Pa'l costado",10:"Plena",11:"Bossa",13:"Conga",14:"Beat",15:"Bolero",17:"Son",18:"Montuno",19:"Rumba",20:"Miles"};
+const cortoRitmo=id=>id?CORTO[id]||nombreRitmo(id):"—";
+// El multipista (multipista.js): lo que se toca ahí llega acá
+const multipista=crearMultipista($("multipista"),{
   alBuscar:t=>{if(S.P)saltar(t)},
-  alElegir:(i,k)=>{if(sint())elegir(i,k,false,true)},
+  alElegirSeccion:nombre=>elegirSeccion(nombre),
+  alAcorde:(nombre,j,el)=>popAcorde(nombre,j,el),
+  alElegirVerso:(i,k,q)=>{const s=seccionDeQ(q);if(s&&s.nombre!==S.secElegida)elegirSeccion(s.nombre);if(sint())elegir(i,k,false,true)},
+  alMudo:k=>{S.mute={...S.mute,[k]:!S.mute[k]};aplicarMixTodo();guardarLuego()},
+  alSolo:k=>{S.solo={...S.solo,[k]:!S.solo[k]};aplicarMixTodo()},
+  alVolumen:(k,v)=>{S.mix[k]=v;aplicarMix(k)},
+  alVolumenFin:()=>{S.mp3=null;guardarLuego()},
+  alBateria:(q,el)=>popBateria(q,el),
   alElegirNota:n=>abrirNota(n),
-  alMoverNota:(n,d)=>{abrirNota(n);cambiarNota({op:"p",v:d})}});
-$("zoomMas").onclick=()=>partitura.zoom(1.4);$("zoomMenos").onclick=()=>partitura.zoom(1/1.4);$("seguir").onchange=e=>partitura.seguir(e.target.checked);
+  alMoverNota:(n,d)=>{abrirNota(n,false);cambiarNota({op:"p",v:d});popNota()}});
+{let z=(()=>{try{return localStorage.getItem("murga.zoom")}catch(e){return null}})();if(z==null&&matchMedia("(max-width:620px)").matches)z="1";   // en el teléfono, de entrada más compases
+ if(z!=null&&+z>=0&&+z<=4){$("zoom").value=z;multipista.zoom(+z)}}
+$("zoom").onchange=e=>{multipista.zoom(+e.target.value);try{localStorage.setItem("murga.zoom",e.target.value)}catch(x){}};
+$("seguir").onchange=e=>multipista.seguir(e.target.checked);
+$("detener").onclick=()=>{if(!S.P)return;detener(true);pintarCursor()};
+$("mas").onclick=()=>{const a=$("barraMas").classList.toggle("abierta");$("mas").setAttribute("aria-expanded",a)};
 
 function dibujarTodo(){
-  const P=S.P,secs=S.pieza.secs,tl=$("timeline");tl.innerHTML="";
-  const add=(nombre,t0,t1,cap)=>{const d=document.createElement("div");d.className="sec"+(cap?" cap":"");d.style.flex=`${t1-t0} 0 0`;d.textContent=nombre;d.title=`${nombre} · ${fmt(t0)}`;tl.appendChild(d)};
-  secs.forEach(s=>add(s.nombre,s.t0,s.t1,!s.bateria&&s.tipo!=="llamada"));
-  add("",secs[secs.length-1].t1,P.total,false);
-  const ph=document.createElement("div");ph.className="ph";ph.id="ph";tl.appendChild(ph);
-  const tb=$("tabla");tb.innerHTML="";
-  for(const s of secs){const tr=document.createElement("tr");
-    const ritmo=DATOS.ritmos.find(r=>r.id===s.loop);
-    const tex=`${TEXTO_TIPO[s.tipo]||"coro"} · ${nomTono(s)} · ${s.tempo} BPM${s.bateria&&ritmo?" · "+ritmo.nombre:""}`;
-    tr.innerHTML=`<td class="t">${fmt(s.t0)}</td><td>${s.nombre}</td><td><span class="pill${s.bateria||s.tipo==="llamada"?"":" cap"}">${tex}</span></td><td class="ac"></td>`;
-    const ac=tr.querySelector(".ac");
-    ac.textContent=s.acordes?.length?unicos(s.acordes.map(g=>nombreAcorde(g,s.tonica,s.modo))).join("  "):"—";
-    if(s.prepara){const n=document.createElement("small");n.className="prep";n.textContent=` · termina en ${nombreAcorde(s.prepara,s.tonica,s.modo)}, la dominante del tono que sigue`;ac.append(n)}
-    if(s.memoria&&s.acordes?.length>1){const b=document.createElement("button");b.className="btn editar";b.textContent=S.editando===s.nombre?"Listo":"Cambiar acordes";b.setAttribute("aria-expanded",S.editando===s.nombre);
-      b.onclick=e=>{e.stopPropagation();S.editando=S.editando===s.nombre?null:s.nombre;dibujarTodo()};ac.append(b)}
-    else if(s.repite){const n=document.createElement("small");n.className="prep";n.textContent=` · los acordes de «${s.repite}»`;ac.append(n)}
-    tr.style.cursor="pointer";tr.onclick=()=>saltar(s.t0);tb.appendChild(tr);
-    if(S.editando===s.nombre)tb.appendChild(editorAcordes(s))}
+  if(!S.pieza.secs.some(s=>s.nombre===S.secElegida))S.secElegida=S.pieza.secs[0].nombre;
+  $("posTotal").textContent=Math.ceil(totalQ()/16);
   $("cantada").hidden=!sint();actualizarInspector();dibujarCantantes();
-  $("notaRoll").textContent=sint()?"Cada color es una cuerda; abajo va la letra, cada sílaba donde se canta, en negrita las acentuadas. Tocá para escuchar desde ahí y ver cómo se hizo ese verso; arrastrá para moverte.":"Cada color es una cuerda. Tocá las notas o las secciones para escuchar desde ahí; arrastrá para moverte.";
   if(sint()){libreto();chips()}
   actualizarVistas();pintarCursor();
-  delete $("hoja").dataset.lista;if(pestanaActual==="grabada")verPartitura(false);
+  delete $("hoja").dataset.lista;if(panelAbierto==="grabada")verPartitura(false);
 }
-// ── cambiar los acordes: de a medio compás; la melodía y las voces se acomodan al acorde nuevo ──
+const totalQ=()=>{const u=S.pieza.secs[S.pieza.secs.length-1];return u.inicio+u.largo};
+const seccionDeQ=q=>S.pieza?.secs.find(s=>q>=s.inicio&&q<s.inicio+s.largo)||null;
+const seccionElegida=()=>S.pieza?.secs.find(s=>s.nombre===S.secElegida)||S.pieza?.secs[0];
+// los acordes se cambian donde la pieza guarda su tema (s.memoria); las bajadas que repiten la «Bajada» la siguen
+const editableAc=s=>!!s.memoria&&(s.acordes?.length||0)>1;
 const OPCIONES_ACORDE={mayor:["I","ii","iii","IV","V","V7","vi","viio","I7","II7","III7","VI7","iv","bVI","bVII","i"],menor:["i","iio","bIII","iv","v","V","V7","bVI","bVII","viio","I7","IV7","bII","I"]};
-function editorAcordes(s){
-  const tr=document.createElement("tr");tr.className="editor";const td=document.createElement("td");td.colSpan=4;tr.append(td);
-  const propios=S.acordes[s.nombre]||{};
-  td.innerHTML=`<p class="hint">Cada compás tiene dos acordes. Al cambiar uno, la melodía se corre a la nota del acorde más cercana en los tiempos fuertes, y las voces de abajo se arman de nuevo sobre él. El resto de la pieza no cambia.</p><div class="grilla"></div><div class="botones"></div>`;
-  const grilla=td.querySelector(".grilla");
-  for(let b=0;b<s.acordes.length;b+=2){const c=document.createElement("div");c.className="compas";c.innerHTML=`<span class="nb">${b/2+1}</span>`;
-    for(const i of[b,b+1]){if(i>=s.acordes.length)break;const g=s.acordes[i],sel=document.createElement("select");sel.setAttribute("aria-label",`Compás ${b/2+1}, ${i%2?"segunda":"primera"} mitad`);
-      const ops=[...new Set([g,...OPCIONES_ACORDE[s.modo]])];
-      sel.innerHTML=ops.map(x=>`<option value="${x}"${x===g?" selected":""}>${nombreAcorde(x,s.tonica,s.modo)} (${x})</option>`).join("");
-      if(i in propios)sel.classList.add("cambiado");else if(s.cambiados?.includes(i))sel.classList.add("auto");
-      sel.onclick=e=>e.stopPropagation();
-      sel.onchange=()=>{S.acordes={...S.acordes,[s.nombre]:{...(S.acordes[s.nombre]||{}),[i]:sel.value}};recomponerSeccion(s.nombre)};
-      c.append(sel)}
-    grilla.append(c)}
-  if(Object.keys(propios).length){const r=document.createElement("button");r.className="btn";r.textContent="Volver a los acordes originales";r.onclick=e=>{e.stopPropagation();const a={...S.acordes};delete a[s.nombre];S.acordes=a;recomponerSeccion(s.nombre)};td.querySelector(".botones").append(r)}
-  tr.onclick=e=>e.stopPropagation();
-  return tr;
-}
-function datosPartitura(){
-  const P=S.P,T=P.T,pieza=S.pieza,L=S.letra;
-  const notas=[];for(const k of ORDEN)pieza.ev[k].forEach(([q,d,p],i)=>notas.push({t0:T(q),t1:T(q+d),p,cuerda:k,i}));
-  const silabas=[];
-  if(sint()&&L.sil)for(const s of pieza.secs){const i=L.partes.findIndex(p=>p.secciones.includes(s.nombre));if(i<0)continue;
-    for(let k=0;L.sil.detalle.has(s.nombre+"|"+k);k++){const det=L.sil.detalle.get(s.nombre+"|"+k),esc=escritas(L.textos[i][k],det.reparto);
-      det.reparto.forEach((r,j)=>{const a=r.notas[0],b=r.notas[r.notas.length-1];silabas.push({t0:T(a.q),t1:T(b.q+b.d),texto:esc?.[j]?.replace(/\s+/g,"‿")||r.texto,acento:r.acento,melisma:r.notas.length>1,p:a.p,i,k,j})})}}
-  silabas.sort((a,b)=>a.t0-b.t0);
-  const compases=[];for(const s of pieza.secs)for(let q=s.inicio;q<s.inicio+s.largo;q+=16)compases.push(T(q));
-  return{notas,silabas,compases,secciones:pieza.secs.map(s=>({t0:s.t0,t1:s.t1,nombre:s.nombre,bateria:s.bateria,llamada:s.tipo==="llamada"})),total:P.total};
+const opcionesAcorde=(s,g)=>[...new Set([g,...OPCIONES_ACORDE[s.modo]])];
+const acordesOriginales=s=>s.memoria?.plan?.flatMap(u=>u.ac)||[];
+function cambiarAcorde(nombre,i,g){const s=S.pieza.secs.find(x=>x.nombre===nombre);if(!s)return;
+  const a={...(S.acordes[nombre]||{})};if(acordesOriginales(s)[i]===g)delete a[i];else a[i]=g;
+  const todos={...S.acordes};if(Object.keys(a).length)todos[nombre]=a;else delete todos[nombre];S.acordes=todos;recomponerSeccion(nombre)}
+function datosMultipista(){
+  const P=S.P,pieza=S.pieza,L=S.letra,secs=pieza.secs,tq=totalQ();
+  const notas=[];for(const k of ORDEN)pieza.ev[k].forEach(([q,d,p],i)=>notas.push({q,d,p,cuerda:k,i}));
+  const versos=[],silabas=[];
+  if(sint()&&L.sil)for(const s of secs){const i=L.partes.findIndex(p=>p.secciones.includes(s.nombre));if(i<0)continue;
+    for(let k=0;L.sil.detalle.has(s.nombre+"|"+k);k++){const det=L.sil.detalle.get(s.nombre+"|"+k);if(!det.reparto.length)continue;
+      const esc2=escritas(L.textos[i][k],det.reparto),r0=det.reparto[0].notas[0],rz=det.reparto[det.reparto.length-1],z=rz.notas[rz.notas.length-1];
+      versos.push({q0:r0.q,q1:z.q+z.d,texto:L.textos[i][k]?.trim()||"(la la la)",i,k});
+      det.reparto.forEach((r,j)=>{const a=r.notas[0],b=r.notas[r.notas.length-1];silabas.push({q0:a.q,q1:b.q+b.d,texto:esc2?.[j]?.replace(/\s+/g,"‿")||r.texto,acento:r.acento,i,k})})}}
+  const bateria=[];
+  for(const s of secs){let ant=null;for(let q=s.inicio;q<s.inicio+s.largo;q+=COMPAS){
+    if(s.tipo==="llamada"||s.golpe){bateria.push({q,id:0,fijo:true,nombre:s.golpe?"Un golpe de batería":"La llamada: la batería llama al ritmo que sigue",corto:s.golpe?"golpe":"llamada",igual:ant==="f"});ant="f";continue}
+    const id=loopDeCompas(pieza,s,q);bateria.push({q,id,propio:q in(pieza.bateria||{}),nombre:nombreRitmo(id),corto:cortoRitmo(id),igual:ant===id});ant=id}}
+  return{T:P.T,totalQ:tq,compases:Math.ceil(tq/16),notas,versos,silabas,bateria,
+    secciones:secs.map(s=>({nombre:s.nombre,tipo:s.tipo,q0:s.inicio,q1:s.inicio+s.largo,bateria:s.bateria||s.tipo==="llamada",textura:TEXTO_TIPO[s.tipo]||"coro",editable:editableAc(s),
+      acordes:(s.acordes||[]).map((g,j)=>({grado:g,nombre:nombreAcorde(g,s.tonica,s.modo),cambiado:j in(S.acordes[s.nombre]||{})}))}))};
 }
 function actualizarVistas(){
   if(!S.pieza)return;
   if(sint())S.letra.sil=silabear(S.pieza,letrasPorSeccion());
-  partitura.datos(datosPartitura());partitura.silenciar(S.mute);
-  if(sint()){partitura.elegir(S.letra.sel.i,S.letra.sel.k);proceso();estadoLetra()}else partitura.elegir(null);
+  multipista.volumenes(S.mix);multipista.silenciar(S.mute,S.solo);multipista.elegirSeccion(S.secElegida);
+  multipista.elegir(sint()?S.letra.sel.i:null,sint()?S.letra.sel.k:null);multipista.elegirNota(notaAbierta);
+  multipista.datos(datosMultipista());
+  if(sint()){proceso();estadoLetra()}
+  dibujarSeccion();
 }
 let temporizador=null;
 function actualizarLuego(){clearTimeout(temporizador);temporizador=setTimeout(actualizarVistas,350)}
 
-function pintarCursor(){if(!S.P)return;const t=posicion();$("time").textContent=`${fmt(t)} / ${fmt(S.P.total)}`;const ph=$("ph");if(ph)ph.style.left=`calc(${t/S.P.total*100}% - 1px)`;
-  partitura.tiempo(t,S.tocando);if(sint())seguirVerso(t)}
-function clickSeek(el,ev){const r=el.getBoundingClientRect();saltar((ev.clientX-r.left)/r.width*S.P.total)}
-$("timeline").onclick=e=>S.P&&clickSeek($("timeline"),e);
+function pintarCursor(){if(!S.P)return;const t=posicion();$("time").textContent=`${fmt(t)} / ${fmt(S.P.total)}`;
+  multipista.tiempo(t,S.tocando);$("posCompas").textContent=Math.floor(multipista.qEn(t)/16)+1;
+  if(S.tocando&&$("seguir").checked&&!$("secCaja").contains(document.activeElement)){const n=multipista.seccionEn(t);if(n&&n!==S.secElegida)elegirSeccion(n)}
+  if(sint())seguirVerso(t)}
+
+// ── la sección elegida, abajo del multipista: sus acordes, el loop de cada compás y su letra ──
+function elegirSeccion(nombre,mover){S.secElegida=nombre;multipista.elegirSeccion(nombre);dibujarSeccion();
+  if(mover){const s=seccionElegida();if(s)multipista.irA(s.t0)}}
+function dibujarSeccion(){const s=seccionElegida();if(!s)return;const secs=S.pieza.secs,ix=secs.indexOf(s);
+  const c0=Math.round(s.inicio/16)+1,c1=Math.ceil((s.inicio+s.largo)/16);
+  $("secNombre").textContent=s.nombre;
+  $("secInfo").textContent=`${TEXTO_TIPO[s.tipo]||"coro"} · ${nomTono(s)} · ${s.tempo} BPM · ${c1>c0?`compases ${c0} a ${c1}`:`compás ${c0}`} · empieza en ${fmt(s.t0)}`;
+  $("secAnt").disabled=ix<=0;$("secSig").disabled=ix>=secs.length-1;
+  acordesDeSeccion(s);bateriaDeSeccion(s);letraDeSeccion(s)}
+$("secAnt").onclick=()=>{const secs=S.pieza?.secs,i=secs?.indexOf(seccionElegida());if(i>0)elegirSeccion(secs[i-1].nombre,true)};
+$("secSig").onclick=()=>{const secs=S.pieza?.secs,i=secs?.indexOf(seccionElegida());if(secs&&i<secs.length-1)elegirSeccion(secs[i+1].nombre,true)};
+$("secEscuchar").onclick=()=>{const s=seccionElegida();if(!s||!S.P)return;saltar(s.t0);if(!S.tocando)tocar()};
+function acordesDeSeccion(s){const caja=$("secAcordes");caja.innerHTML="";
+  if(!s.acordes?.length){caja.innerHTML=`<p class="hint">${s.tipo==="llamada"?"Acá no canta nadie: la batería llama.":"Sin acordes."}</p>`;return}
+  if(!editableAc(s)){const p=document.createElement("p");p.className="lista-ac";p.textContent=unicos(s.acordes.map(g=>nombreAcorde(g,s.tonica,s.modo))).join(" · ");caja.append(p);
+    const h=document.createElement("p");h.className="hint";
+    if(s.repite){h.textContent=`Son los acordes de «${s.repite}»: se cambian ahí, y esta parte los sigue. `;const b=document.createElement("button");b.className="btn";b.textContent=`Ir a «${s.repite}»`;b.onclick=()=>elegirSeccion(s.repite,true);caja.append(h,b)}
+    else{h.textContent="Esta parte es un acorde solo: no se cambia.";caja.append(h)}
+    return}
+  const propios=S.acordes[s.nombre]||{},orig=acordesOriginales(s);
+  const h=document.createElement("p");h.className="hint";h.textContent="Dos acordes por compás. Al cambiar uno se rehace sólo esta sección (y las que la repiten): la melodía se corre a la nota del acorde más cercana en los tiempos fuertes y las voces se arman de nuevo; después vuelven a cantar sólo sus frases.";
+  const g=document.createElement("div");g.className="cards-ac";
+  for(let b=0;b<s.acordes.length;b+=2){const c=document.createElement("div");c.className="card-ac";c.innerHTML=`<span class="nb">compás ${Math.round(s.inicio/16)+b/2+1}</span><div class="dos"></div>`;
+    for(const i of[b,b+1]){if(i>=s.acordes.length)break;const gr=s.acordes[i],sel=document.createElement("select");
+      sel.setAttribute("aria-label",`Compás ${Math.round(s.inicio/16)+b/2+1}, ${i%2?"segunda":"primera"} mitad`);
+      sel.innerHTML=opcionesAcorde(s,gr).map(x=>`<option value="${x}"${x===gr?" selected":""}>${nombreAcorde(x,s.tonica,s.modo)}${x===orig[i]&&i in propios?" (el original)":""}</option>`).join("");
+      sel.title=`${nombreAcorde(gr,s.tonica,s.modo)} (${gr})`;if(i in propios)sel.classList.add("cambiado");
+      sel.onchange=()=>cambiarAcorde(s.nombre,i,sel.value);c.querySelector(".dos").append(sel)}
+    g.append(c)}
+  caja.append(h,g);
+  if(Object.keys(propios).length){const r=document.createElement("button");r.className="btn";r.style.marginTop="8px";r.textContent="Volver a los acordes originales";
+    r.onclick=()=>{const a={...S.acordes};delete a[s.nombre];S.acordes=a;recomponerSeccion(s.nombre)};caja.append(r)}}
+const OPCIONES_LOOP=()=>[...DATOS.ritmos.map(r=>r.id),0];
+function bateriaDeSeccion(s){const caja=$("secBateria");caja.innerHTML="";
+  if(s.tipo==="llamada"||s.golpe){caja.innerHTML=`<p class="hint">${s.golpe?"Un golpe de batería, para cerrar.":"La llamada: la batería llama, con la frase del ritmo que sigue."} No se cambia de a compás.</p>`;return}
+  const def=loopDeCompas({bateria:{}},s,s.inicio),qs=[];for(let q=s.inicio;q<s.inicio+s.largo;q+=COMPAS)qs.push(q);
+  const ids=qs.map(q=>loopDeCompas(S.pieza,s,q)),todos=ids.every(x=>x===ids[0])?ids[0]:null;
+  const opts=(corto,actual)=>OPCIONES_LOOP().map(x=>`<option value="${x}"${x===actual?" selected":""}>${corto&&x?cortoRitmo(x):nombreRitmo(x)}${x===def?(corto?" (sección)":" · el de la sección"):""}</option>`).join("");
+  const top=document.createElement("label");top.className="ctl todo-bat";top.innerHTML=`Toda la sección <select>${todos==null?'<option value="" selected>varios</option>':""}${opts(false,todos)}</select>`;
+  top.querySelector("select").onchange=e=>{if(e.target.value==="")return;cambiarBateria(qs,+e.target.value)};
+  const h=document.createElement("p");h.className="hint";h.textContent="El loop de cada compás (también en las partes a capela). Al cambiarlo se rearma sólo la batería.";
+  const l=document.createElement("div");l.className="lista-bat";
+  qs.forEach((q,j)=>{const lab=document.createElement("label");lab.innerHTML=`compás ${q/16+1}<select>${opts(true,ids[j])}</select>`;const sel=lab.querySelector("select");
+    if(q in(S.pieza.bateria||{}))sel.classList.add("cambiado");sel.onchange=()=>cambiarBateria(q,+sel.value);l.append(lab)});
+  caja.append(top,h,l);
+  if(qs.some(q=>q in(S.pieza.bateria||{}))){const r=document.createElement("button");r.className="btn";r.style.marginTop="8px";r.textContent="Volver al loop de la sección";r.onclick=()=>cambiarBateria(qs,def);caja.append(r)}}
+function letraDeSeccion(s){const caja=$("secLetra");
+  if(!sint()){caja.innerHTML=`<p class="hint">Las muestras de coro cantan «aah». Con Formantes o Difonos (en «La pieza») el coro canta una letra, y acá se escribe la de esta parte.</p>`;delete caja.dataset.parte;return}
+  const L=S.letra,i=L.partes.findIndex(p=>p.secciones.includes(s.nombre));
+  if(i<0){caja.innerHTML=`<p class="hint">${s.tipo==="llamada"?"En la llamada no se canta.":"Esta parte no tiene letra."}</p>`;delete caja.dataset.parte;return}
+  const p=L.partes[i];
+  if(caja.dataset.parte===String(i)&&caja.contains(document.activeElement)){caja.querySelectorAll("label[data-k]").forEach(lab=>cuenta(lab,L.textos[i][+lab.dataset.k],p.versos[+lab.dataset.k].silabas));return}
+  caja.dataset.parte=i;seguirVerso.u=null;
+  caja.innerHTML=`<p class="hint"><b>${esc(p.nombre)}</b>${p.secciones.length>1?` · se canta ${p.secciones.length} veces: ${p.secciones.map(esc).join(", ")}`:""}. Al terminar un verso (Enter, o al salir del renglón) vuelven a cantar sólo esas frases.</p><div class="sec-versos"></div>`;
+  const box=caja.querySelector(".sec-versos");
+  p.versos.forEach((v,k)=>{const lab=document.createElement("label");lab.dataset.i=i;lab.dataset.k=k;if(L.sel.i===i&&L.sel.k===k)lab.classList.add("elegido");
+    lab.innerHTML=`<span>${k+1}</span><input type="text" autocomplete="off" spellcheck="false" placeholder="${v.silabas} sílaba${v.silabas===1?"":"s"}"><span class="cuenta" title="sílabas cantadas / notas del verso"></span>`;
+    const inp=lab.querySelector("input");inp.value=L.textos[i][k];inp.setAttribute("aria-label",`Verso ${k+1} de ${p.nombre}`);
+    inp.addEventListener("input",()=>versoEscrito(i,k,inp.value,inp));inp.addEventListener("change",cantarPronto);
+    inp.addEventListener("focus",()=>elegir(i,k,true));inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const sig=box.querySelector(`label[data-k="${k+1}"] input`);if(sig)sig.focus();else inp.blur()}});
+    cuenta(lab,inp.value,v.silabas);box.append(lab)})}
+// un verso escrito (en la letra o en la sección): se copia al otro lugar, y al terminarlo vuelve a cantar
+function versoEscrito(i,k,texto,desde){const L=S.letra,v=L.partes[i].versos[k];L.textos[i][k]=texto;L.editados.add(i+"|"+k);
+  for(const inp of[$(`v-${i}-${k}`),document.querySelector(`#secLetra label[data-i="${i}"][data-k="${k}"] input`)]){if(!inp)continue;if(inp!==desde)inp.value=texto;cuenta(inp.closest("li,label"),texto,v.silabas)}
+  marcarPendiente();actualizarLuego()}
+let temporizadorLetra=null;
+function cantarPronto(){clearTimeout(temporizadorLetra);temporizadorLetra=setTimeout(()=>{if(S.letra.pendiente)cantarDeNuevo()},350)}
+
+// ── el globito del multipista: elegir un acorde o el loop de un compás ──
+const pop=$("popover");let popAncla=null;
+function abrirPopover(ancla,titulo,opciones,nota,extra,opc={}){pop.innerHTML="";pop.className="popover"+(opc.clase?" "+opc.clase:"");const h=document.createElement("h3");h.textContent=titulo;pop.append(h);
+  if(nota){const p=document.createElement("p");p.className="hint";p.textContent=nota;pop.append(p)}
+  for(const o of[...opciones,...(extra||[])]){const b=document.createElement("button");b.type="button";b.innerHTML=`${esc(o.texto)}${o.sub?`<small>${esc(o.sub)}</small>`:""}`;if(o.actual)b.setAttribute("aria-current","true");if(o.otro)b.className="otro";
+    b.onclick=()=>{if(!o.queda)cerrarPopover(false);o.hacer()};pop.append(b)}
+  pop.hidden=false;popAncla=ancla;pop.setAttribute("aria-label",titulo);
+  ubicarPopover();
+  (opc.foco&&[...pop.querySelectorAll("button")].find(b=>b.textContent===opc.foco)||pop.querySelector('[aria-current="true"]')||pop.querySelector("button"))?.focus({preventScroll:true})}
+function ubicarPopover(){if(pop.hidden||!popAncla)return;const r=popAncla.getBoundingClientRect();
+  if(!popAncla.isConnected||r.bottom<0||r.top>innerHeight||r.right<0||r.left>innerWidth){cerrarPopover(false);return}
+  const w=pop.offsetWidth,hh=pop.offsetHeight,x=Math.min(Math.max(8,r.left),innerWidth-w-8);let y=r.bottom+4;if(y+hh>innerHeight-8)y=Math.max(8,r.top-hh-4);
+  pop.style.left=x+"px";pop.style.top=y+"px"}
+function cerrarPopover(volver=true){if(pop.hidden)return;pop.hidden=true;const a=popAncla;popAncla=null;if(volver&&a?.isConnected)a.focus({preventScroll:true})}
+document.addEventListener("pointerdown",e=>{if(!pop.hidden&&!pop.contains(e.target)&&!popAncla?.contains(e.target))cerrarPopover(false)},true);
+pop.addEventListener("keydown",e=>{if(e.key==="Escape"){e.preventDefault();e.stopPropagation();cerrarPopover();return}
+  if(e.key!=="ArrowDown"&&e.key!=="ArrowUp")return;e.preventDefault();const bs=[...pop.querySelectorAll("button")],i=bs.indexOf(document.activeElement);bs[(i+(e.key==="ArrowDown"?1:bs.length-1))%bs.length]?.focus()});
+addEventListener("scroll",ubicarPopover,{passive:true});$("multipista").addEventListener("scroll",ubicarPopover,{capture:true,passive:true});
+addEventListener("resize",ubicarPopover);
+function popAcorde(nombre,j,el){const s=S.pieza?.secs.find(x=>x.nombre===nombre);if(!s)return;elegirSeccion(nombre);
+  const c=Math.floor((s.inicio+j*8)/16)+1,g=s.acordes[j],tit=`${nombreAcorde(g,s.tonica,s.modo)} · compás ${c}${s.acordes.length>1?`, ${j%2?"2.ª":"1.ª"} mitad`:""}`;
+  if(!editableAc(s)){abrirPopover(el,tit,[],s.repite?`Son los acordes de «${s.repite}»: se cambian ahí.`:"Esta parte es un acorde solo: no se cambia.",s.repite?[{texto:`Ir a «${s.repite}»`,otro:true,hacer:()=>elegirSeccion(s.repite,true)}]:[]);return}
+  const orig=acordesOriginales(s)[j],propio=j in(S.acordes[nombre]||{});
+  abrirPopover(el,tit,opcionesAcorde(s,g).map(x=>({texto:nombreAcorde(x,s.tonica,s.modo),sub:x+(propio&&x===orig?" · el original":""),actual:x===g,hacer:()=>{if(x!==g)cambiarAcorde(nombre,j,x)}})))}
+function popBateria(q,el){const s=seccionDeQ(q);if(!s)return;elegirSeccion(s.nombre);const c=q/16+1;
+  if(s.tipo==="llamada"||s.golpe){abrirPopover(el,`Batería · compás ${c}`,[],s.golpe?"Un golpe de batería: no se cambia.":"La llamada: la batería llama al ritmo que sigue. No se cambia.");return}
+  const id=loopDeCompas(S.pieza,s,q),def=loopDeCompas({bateria:{}},s,q),qs=[];for(let x=s.inicio;x<s.inicio+s.largo;x+=COMPAS)qs.push(x);
+  abrirPopover(el,`Batería · compás ${c}`,OPCIONES_LOOP().map(x=>({texto:nombreRitmo(x),sub:x===def?"el de la sección":"",actual:x===id,hacer:()=>{if(x!==id)cambiarBateria(q,x)}})),null,
+    id!==def||qs.some(x=>loopDeCompas(S.pieza,s,x)!==id)?[{texto:`${nombreRitmo(id)} en toda «${s.nombre}»`,otro:true,hacer:()=>cambiarBateria(qs,id)}]:[])}
 
 // ============================================================ la letra (cantores sintéticos)
 const TEMAS={
@@ -604,7 +703,7 @@ function letrasPorSeccion(){const L={};S.letra.partes.forEach((p,i)=>{for(const 
 function chips(){$("temas").innerHTML=TEMAS[S.forma].map(t=>`<button type="button" class="chip-tema">${t}</button>`).join("");
   $("temas").querySelectorAll("button").forEach(b=>b.onclick=()=>{$("tema").value=b.textContent;otraLetra()})}
 function libreto(){
-  const L=S.letra,box=$("libreto");box.innerHTML="";
+  const L=S.letra,box=$("libreto");box.innerHTML="";seguirVerso.u=null;
   L.partes.forEach((p,i)=>{
     const sec=document.createElement("section");sec.className="parte";
     const otras=p.secciones.length>1?`<p class="se-canta">Se canta ${p.secciones.length} veces: ${p.secciones.join(" · ")}</p>`:"";
@@ -614,7 +713,7 @@ function libreto(){
     p.versos.forEach((v,k)=>{const li=document.createElement("li");li.className="verso";li.dataset.i=i;li.dataset.k=k;const id=`v-${i}-${k}`;
       li.innerHTML=`<label class="sr" for="${id}">Verso ${k+1} de ${p.nombre}</label><input id="${id}" type="text" autocomplete="off" spellcheck="false" placeholder="${v.silabas} sílaba${v.silabas===1?"":"s"}${v.silabas>1?", "+v.tipo:""}"><span class="cuenta" title="sílabas cantadas / notas del verso"></span>`;
       const inp=li.querySelector("input");inp.value=L.textos[i][k];
-      inp.addEventListener("input",()=>{L.textos[i][k]=inp.value;L.editados.add(i+"|"+k);cuenta(li,inp.value,v.silabas);marcarPendiente();actualizarLuego()});
+      inp.addEventListener("input",()=>versoEscrito(i,k,inp.value,inp));inp.addEventListener("change",cantarPronto);
       inp.addEventListener("focus",()=>elegir(i,k,true));
       if(L.sel.i===i&&L.sel.k===k)li.classList.add("elegido");
       cuenta(li,inp.value,v.silabas);ol.append(li)});
@@ -634,9 +733,9 @@ function lailareo(){if(!S.pieza||!sint())return;const s=["la","ra","la","la","ra
   L.textos=L.partes.map(p=>p.versos.map(v=>Array.from({length:v.silabas},(_,j)=>s[j%s.length]).join(" ")));L.diags=null;L.editados.clear();
   libreto();actualizarVistas();cantarDeNuevo()}
 function seguirVerso(t){let m=null;for(const x of S.letra.marcas){if(x.t<=t+.05)m=x;else break}
-  document.querySelectorAll(".verso.sonando").forEach(e=>e.classList.remove("sonando"));
-  if(!m||(!S.tocando&&t===0))return;
-  document.querySelector(`.verso[data-i="${m.i}"][data-k="${m.k}"]`)?.classList.add("sonando")}
+  const clave=m&&(S.tocando||t>0)?m.i+"|"+m.k:"";if(seguirVerso.u===clave)return;seguirVerso.u=clave;
+  document.querySelectorAll(".sonando").forEach(e=>e.classList.remove("sonando"));if(!clave)return;
+  document.querySelectorAll(`.verso[data-i="${m.i}"][data-k="${m.k}"],#secLetra label[data-i="${m.i}"][data-k="${m.k}"]`).forEach(e=>e.classList.add("sonando"))}
 function proceso(){const L=S.letra,{i,k}=L.sel,p=L.partes[i];if(!p){$("proceso").innerHTML="";return}
   const texto=L.textos[i]?.[k]||"";
   mostrarProceso($("proceso"),{P:S.pieza,partes:L.partes,i,k,texto,n:medir(texto).n,diag:L.diags?.[i]?.[k],det:L.sil?.detalle.get(p.secciones[0]+"|"+k),temas:L.temas,editado:L.editados.has(i+"|"+k),forma:S.forma});
@@ -645,11 +744,11 @@ function proceso(){const L=S.letra,{i,k}=L.sel,p=L.partes[i];if(!p){$("proceso")
     const pos=lista.findIndex(([ii,kk])=>ii===i&&kk===k),sig=lista[Math.max(0,Math.min(lista.length-1,pos+ +b.dataset.ir))];
     elegir(sig[0],sig[1],false,false,true)})}
 function elegir(i,k,desdeLetra,desdePartitura,mover){
-  S.letra.sel={i,k};if(inspModo==="cantante"){inspModo="verso";actualizarInspector();dibujarCantantes()}
-  document.querySelectorAll(".verso.elegido").forEach(e=>e.classList.remove("elegido"));
-  document.querySelector(`.verso[data-i="${i}"][data-k="${k}"]`)?.classList.add("elegido");
-  partitura.elegir(i,k);
-  if(desdeLetra||mover){const m=S.letra.marcas.find(x=>x.i===i&&x.k===k);if(m)partitura.irA(m.t)}
+  S.letra.sel={i,k};
+  document.querySelectorAll(".verso.elegido,#secLetra label.elegido").forEach(e=>e.classList.remove("elegido"));
+  document.querySelectorAll(`.verso[data-i="${i}"][data-k="${k}"],#secLetra label[data-i="${i}"][data-k="${k}"]`).forEach(e=>e.classList.add("elegido"));
+  multipista.elegir(i,k);
+  if(desdeLetra||mover){const m=S.letra.marcas.find(x=>x.i===i&&x.k===k&&(!desdeLetra||!S.secElegida||seccionDeQ(multipista.qEn(x.t))?.nombre===S.secElegida))||S.letra.marcas.find(x=>x.i===i&&x.k===k);if(m)multipista.irA(m.t)}
   proceso()}
 $("otraLetra").onclick=otraLetra;$("lailareo").onclick=lailareo;$("recantar").onclick=cantarDeNuevo;
 $("cantantesReset").onclick=()=>{S.ajustes={};S.soloCantor=null;guardarAjustes();dibujarCantantes();programarCanto()};
@@ -662,7 +761,7 @@ $("icReiniciar").onclick=()=>{if(!cantanteAbierto)return;const a={...S.ajustes},
   const queda={};for(const k of["nombre","cara"])if(v[k]!=null)queda[k]=v[k];if(Object.keys(queda).length)a[cantanteAbierto]=queda;S.ajustes=a;guardarAjustes();dibujarCantantes();programarCanto()};
 $("icExportar").onclick=exportarCantante;
 $("icImportar").onchange=e=>{importarCantante(e.target.files[0]);e.target.value=""};
-$("icCerrar").onclick=()=>{inspModo="verso";actualizarInspector();dibujarCantantes()};
+$("icCerrar").onclick=()=>{cantanteAbierto=null;actualizarInspector();dibujarCantantes()};
 $("tema").addEventListener("keydown",e=>{if(e.key==="Enter")otraLetra()});
 
 // Se arranca por la mejor presentación: la clarinada a capela y la entrada de la batería
@@ -684,7 +783,7 @@ mostrarVoces();
 $("tonica").innerHTML=NOTAS.map((n,i)=>`<option value="${i}">${n}</option>`).join("");$("tonica").value=S.tonica;$("modo").value=S.modo;
 $("estilo").innerHTML=Object.entries(ESTILOS).filter(([k])=>MODELO.estilos[k]).map(([k,n])=>`<option value="${k}">${n}</option>`).join("");$("estilo").value=S.estilo;
 $("ritmo").innerHTML=`<option value="0">Como el corpus (Base de murga, sobre todo)</option>`+DATOS.ritmos.map(r=>`<option value="${r.id}">${r.nombre} · ${r.bpm} BPM</option>`).join("");$("ritmo").value=S.ritmo;
-let deb;const regen=(mantener)=>{if(mantener!==true){S.acordes={};S.editando=null}clearTimeout(deb);deb=setTimeout(generar,250)};
+let deb;const regen=(mantener)=>{if(mantener!==true){S.acordes={}}clearTimeout(deb);deb=setTimeout(generar,250)};
 const DEF={retirada:[9,"menor"],presentacion:[2,"mayor"]};
 // El modo que más usa cada murga en cada parte (en el corpus, la Trasnochada presenta en menor y se retira en mayor)
 const modoDe=(forma,estilo)=>{const h=MODELO.estilos[estilo]?.modo?.[forma];return h?(h.mayor>=h.menor?"mayor":"menor"):DEF[forma][1]};
@@ -702,7 +801,7 @@ $("recita").onchange=e=>{S.recita=+e.target.value;regen()};
 // Demos: las semillas que mejor le caen al jurado
 {const caja=$("demos");const NOM=ESTILOS;
  for(const d of DEMOS){const b=document.createElement("button");b.className="btn";b.textContent=`${d.forma==="retirada"?"Retirada":"Presentación"} · ${NOM[d.estilo]||d.estilo}`;
-  b.onclick=()=>{S.acordes={};S.editando=null;S.forma=d.forma;S.estilo=d.estilo;S.tonica=d.tonica;S.modo=d.modo;S.seed=d.semilla;S.largo="normal";S.tempo=0;S.recita=0;$("recita").value=0;
+  b.onclick=()=>{S.acordes={};S.forma=d.forma;S.estilo=d.estilo;S.tonica=d.tonica;S.modo=d.modo;S.seed=d.semilla;S.largo="normal";S.tempo=0;S.recita=0;$("recita").value=0;
    $("forma").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===d.forma));$("estilo").value=d.estilo;$("tonica").value=d.tonica;$("modo").value=d.modo;$("semilla").value=d.semilla;$("largo").value="normal";$("tempo").value="";$("campoFinal").style.display=d.forma==="retirada"?"":"none";generar()};
   caja.appendChild(b)}
  caja.parentElement.style.display=DEMOS.length?"":"none"}
@@ -718,14 +817,11 @@ mostrarCoro();
 $("version").onchange=e=>{S.version=+e.target.value;regen()};
 for(const k of["clarinada","cancionFinal","modula"])$(k).onchange=e=>{S[k]=e.target.checked;regen()};
 
-const mixer=$("mixer");
-for(const k of[...ORDEN,"bateria"]){const row=document.createElement("div");row.className="ch";
-  row.innerHTML=`<i style="background:var(--${k})"></i><div><b>${k==="bateria"?"Batería":NOMBRES_CUERDA[k]}</b><span class="rng">${k==="bateria"?"loop real":CUERDAS[k].rango}</span></div>
-   <input type="range" min="0" max="1.5" step="0.05" value="${S.mix[k]}" id="vol-${k}" aria-label="Volumen ${k}"><button class="mute" aria-pressed="false" id="mute-${k}" aria-label="Silenciar ${k}">M</button>`;
-  mixer.appendChild(row);
-  row.querySelector("input").oninput=e=>{S.mix[k]=+e.target.value;aplicarMix(k)};row.querySelector("input").onchange=()=>guardarLuego();
-  row.querySelector("button").onclick=e=>{S.mute[k]=!S.mute[k];e.target.setAttribute("aria-pressed",S.mute[k]);aplicarMix(k);partitura.silenciar(S.mute);guardarLuego()}}
-function aplicarMix(k){if(S.nodos&&S.ac)S.nodos.gains[k].gain.setTargetAtTime(S.mute[k]?0:S.mix[k]*(k==="bateria"?1:.9),S.ac.currentTime,.02)}
+// La mezcla: volumen, M (silenciar) y S (sólo esa) de cada pista están en el multipista. Con algún S prendido suenan sólo
+// las que lo tienen. Lo mismo vale para el MP3 y el WAV: se baja lo que suena.
+function ganancia(k){const hay=Object.values(S.solo).some(Boolean);return S.mute[k]||(hay&&!S.solo[k])?0:S.mix[k]*(k==="bateria"?1:.9)}
+function aplicarMix(k){if(S.nodos&&S.ac)S.nodos.gains[k].gain.setTargetAtTime(ganancia(k),S.ac.currentTime,.02)}
+function aplicarMixTodo(){for(const k of[...ORDEN,"bateria"])aplicarMix(k);multipista.silenciar(S.mute,S.solo);S.mp3=null}
 
 // ============================================================ exportar
 function wav(buf){const n=buf.length,ch=2,ab=new ArrayBuffer(44+n*ch*2),v=new DataView(ab);const w=(o,s)=>[...s].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));
@@ -798,7 +894,7 @@ async function codificarMp3(mix,alAvanzar){
   const fin=enc.flush();if(fin.length)partes.push(new Uint8Array(fin));
   return new Blob(partes,{type:"audio/mpeg"})}
 async function bajarMp3(){
-  if(!S.stems)return;const btn=$("mp3"),clave=S.gen+JSON.stringify(S.mix)+JSON.stringify(S.mute);
+  if(!S.stems)return;const btn=$("mp3"),clave=S.gen+JSON.stringify(S.mix)+JSON.stringify(S.mute)+JSON.stringify(S.solo)+S.lugar+S.sala;
   try{
     if(!S.mp3||S.mp3.clave!==clave){btn.disabled=true;btn.textContent="Mezclando…";
       const mix=await mezclaFinal(.9);
@@ -819,29 +915,41 @@ function datosPapeles(){return{pieza:S.pieza,titulo:titulo(),subtitulo:subtitulo
 async function verPartitura(irAhi){
   const caja=$("grabada");
   if(!S.pieza)return;
-  if(irAhi){mostrarPestana("grabada");caja.closest(".pestanas").scrollIntoView({behavior:"smooth",block:"start"})}
+  if(irAhi){abrirPanel("grabada");return}
   if($("hoja").dataset.lista)return;$("hoja").dataset.lista="1";
   $("grabadaNota").textContent=sint()?"Cinco pentagramas, de la tercia a los bajos, con la letra debajo de cada nota y los acordes arriba.":"Cinco pentagramas, de la tercia a los bajos, con los acordes arriba. Con cantores sintéticos aparece también la letra.";
   $("hoja").textContent="Escribiendo la partitura…";
   try{await mostrarPartitura($("hoja"),datosPapeles())}
   catch(e){console.error(e);delete $("hoja").dataset.lista;$("hoja").textContent=`No se pudo dibujar la partitura: ${e?.message||e}`}}
-$("verPartitura").onclick=()=>verPartitura(true);
 
-// ============================================================ pestañas (abajo de la partitura)
-// Una pestaña está si su panel está (la letra, sólo con cantores que cantan; los cantantes, sólo con difonos). La
-// elegida se guarda en este navegador.
-const PESTANAS=[...document.querySelectorAll(".tabs [role=tab]")];
-let pestanaActual=null,pestanaSola=true;   // pestanaSola: la eligió la página, no la persona
-function mostrarPestana(id,sola=false){const b=PESTANAS.find(x=>x.dataset.panel===id);if(!b||b.hidden)return;pestanaActual=id;pestanaSola=sola;
-  for(const x of PESTANAS){const on=x===b;x.setAttribute("aria-selected",on);x.tabIndex=on?0:-1;$(x.dataset.panel).classList.toggle("activa",on)}
-  if(!sola)try{localStorage.setItem("murga.pestana",id)}catch(e){}
-  if(id==="grabada")verPartitura(false)}
-function revisarPestanas(){for(const x of PESTANAS)x.hidden=$(x.dataset.panel).hidden;
-  if(!pestanaActual||$(pestanaActual).hidden||pestanaSola){let guardada=null;try{guardada=localStorage.getItem("murga.pestana")}catch(e){}
-    const p=PESTANAS.find(x=>x.dataset.panel===guardada&&!x.hidden)||PESTANAS.find(x=>!x.hidden);if(p&&p.dataset.panel!==pestanaActual)mostrarPestana(p.dataset.panel,true)}}
-PESTANAS.forEach((b,i)=>{b.onclick=()=>mostrarPestana(b.dataset.panel);
-  b.onkeydown=e=>{if(e.key!=="ArrowRight"&&e.key!=="ArrowLeft")return;const vis=PESTANAS.filter(x=>!x.hidden),j=vis.indexOf(b),n=vis[(j+(e.key==="ArrowRight"?1:vis.length-1))%vis.length];n.focus();mostrarPestana(n.dataset.panel)}});
-{const mo=new MutationObserver(revisarPestanas);for(const b of PESTANAS)mo.observe($(b.dataset.panel),{attributes:true,attributeFilter:["hidden"]});revisarPestanas()}
+// ============================================================ los paneles de arriba
+// Los botones de la barra abren un panel (uno a la vez) arriba del multipista. Un panel está si su contenido está
+// (la letra, sólo con cantores que cantan; los cantantes, sólo con difonos): si no, su botón no aparece.
+const BOTONES_PANEL=[...document.querySelectorAll(".barra [data-panel]")];
+let panelAbierto=null;
+function abrirPanel(id,alternar=false){const p=$(id);if(!p||p.hidden)return;
+  panelAbierto=alternar&&panelAbierto===id?null:id;pintarPaneles();
+  if(panelAbierto==="grabada")verPartitura(false);
+  if(panelAbierto)requestAnimationFrame(()=>{const r=p.getBoundingClientRect();if(r.top<0||r.top>innerHeight*.6)p.scrollIntoView({behavior:"smooth",block:"start"})})}
+function cerrarPanel(){panelAbierto=null;pintarPaneles()}
+function pintarPaneles(){for(const b of BOTONES_PANEL){const on=b.dataset.panel===panelAbierto;b.setAttribute("aria-pressed",on);b.setAttribute("aria-expanded",on);$(b.dataset.panel).classList.toggle("abierto",on)}}
+function revisarPaneles(){for(const b of BOTONES_PANEL)b.hidden=$(b.dataset.panel).hidden;if(panelAbierto&&$(panelAbierto).hidden)cerrarPanel()}
+BOTONES_PANEL.forEach(b=>{b.setAttribute("aria-controls",b.dataset.panel);b.onclick=()=>{$("barraMas").classList.remove("abierta");$("mas").setAttribute("aria-expanded",false);abrirPanel(b.dataset.panel,true)}});
+document.querySelectorAll(".cerrar-panel").forEach(b=>b.onclick=cerrarPanel);
+{const mo=new MutationObserver(revisarPaneles);for(const b of BOTONES_PANEL)mo.observe($(b.dataset.panel),{attributes:true,attributeFilter:["hidden"]});revisarPaneles();pintarPaneles()}
+// el tema: como el sistema, oscuro o claro (se guarda en este navegador)
+const TEMAS_COLOR=["","dark","light"],NOMBRE_TEMA={"":"como el sistema",dark:"oscuro",light:"claro"};
+let temaColor="";try{temaColor=localStorage.getItem("murga.tema")||""}catch(e){}if(!TEMAS_COLOR.includes(temaColor))temaColor="";
+function ponerTema(t,guardarlo){if(t)document.documentElement.dataset.theme=t;else delete document.documentElement.dataset.theme;
+  $("temaColor").title=`Tema: ${NOMBRE_TEMA[t]} (tocá para cambiarlo)`;$("temaColor").setAttribute("aria-label",`Tema: ${NOMBRE_TEMA[t]}. Cambiar el tema`);
+  if(guardarlo)try{localStorage.setItem("murga.tema",t)}catch(e){}multipista.redibujar()}
+ponerTema(temaColor);
+$("temaColor").onclick=()=>{temaColor=TEMAS_COLOR[(TEMAS_COLOR.indexOf(temaColor)+1)%TEMAS_COLOR.length];ponerTema(temaColor,true)};
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",()=>multipista.redibujar());
+// la barra espaciadora toca o pausa; Escape cierra el panel
+document.addEventListener("keydown",e=>{if(e.target.closest?.("input,textarea,select,button,[contenteditable],dialog,.popover"))return;
+  if(e.key===" "&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!$("play").disabled){e.preventDefault();$("play").click()}
+  else if(e.key==="Escape"&&panelAbierto&&!notaAbierta)cerrarPanel()});
 async function bajarPdf(){if(!S.pieza)return;avisoExport("Armando el PDF…");
   try{const blob=await pdfPartitura(datosPapeles());avisoExport(await guardar(blob,base()+"_partitura.pdf"))}catch(e){errorExport(e)}}
 $("pdf").onclick=bajarPdf;$("pdf2").onclick=bajarPdf;
@@ -871,7 +979,7 @@ function fotoLetra(){const L=S.letra;return L.textos.length?{textos:L.textos.map
 function foto(){return{id:S.murga.id,nombre:S.murga.nombre||"",creada:S.murga.creada,cambiada:Date.now(),version:1,
   resumen:S.pieza?`${titulo()} · ${ESTILOS[S.estilo]||S.estilo} · ${fmt(S.P?.total||0)}`:"",
   pieza:S.pieza,ajustesPieza:Object.fromEntries(CLAVES_PIEZA.map(k=>[k,S[k]])),acordes:S.acordes,voces:S.voces,semCoro:S.semCoro,ajustes:S.ajustes,
-  coro:{formacion:S.formacion,adornos:S.adornos,grito:S.grito,sala:S.sala,lugar:S.lugar},mix:S.mix,mute:S.mute,letra:fotoLetra()}}
+  coro:{formacion:S.formacion,adornos:S.adornos,grito:S.grito,sala:S.sala,lugar:S.lugar},mix:S.mix,mute:S.mute,secElegida:S.secElegida,letra:fotoLetra()}}
 let temporizadorGuardar=null;
 function avisoGuardado(t){$("guardado").textContent=t}
 function guardarLuego(){if(!S.pieza)return;clearTimeout(temporizadorGuardar);avisoGuardado("Guardando…");temporizadorGuardar=setTimeout(guardarYa,700)}
@@ -885,14 +993,13 @@ function sincronizarControles(){
   $("estilo").value=S.estilo;$("tonica").value=S.tonica;$("modo").value=S.modo;$("ritmo").value=S.ritmo;$("largo").value=S.largo;$("tempo").value=S.tempo||"";$("semilla").value=S.seed;
   $("recita").value=S.recita;$("tercia").value=S.tercia;$("brillo").value=S.brillo;$("version").value=S.version;
   for(const k of["clarinada","cancionFinal","modula"])$(k).checked=!!S[k];
-  for(const k of[...ORDEN,"bateria"]){$("vol-"+k).value=S.mix[k];$("mute-"+k).setAttribute("aria-pressed",!!S.mute[k])}
-  partitura.silenciar(S.mute);mostrarVoces();mostrarCoro();$("nombreMurga").value=S.murga.nombre||""}
+  multipista.volumenes(S.mix);multipista.silenciar(S.mute,S.solo);mostrarVoces();mostrarCoro();$("nombreMurga").value=S.murga.nombre||""}
 async function abrirMurga(m){
   S.murga={id:m.id,nombre:m.nombre||"",creada:m.creada||Date.now()};
   for(const k of CLAVES_PIEZA)if(m.ajustesPieza?.[k]!==undefined)S[k]=m.ajustesPieza[k];
-  S.acordes=m.acordes||{};S.editando=null;S.soloCantor=null;if(m.voces)S.voces=m.voces;
+  S.acordes=m.acordes||{};S.soloCantor=null;S.solo={};S.secElegida=m.secElegida||null;if(m.voces)S.voces=m.voces;
   S.semCoro=m.semCoro||1;S.ajustes=m.ajustes||{};Object.assign(S,m.coro||{});S.mix={...S.mix,...(m.mix||{})};S.mute={...(m.mute||{})};
-  cantanteAbierto=null;notaAbierta=null;deshacer.length=0;inspModo="verso";S.firmas=null;S.pv=null;
+  cantanteAbierto=null;notaAbierta=null;deshacer.length=0;S.firmas=null;S.pv=null;
   sincronizarControles();try{localStorage.setItem("murga.actual",m.id)}catch(e){}
   await generar({pieza:m.pieza,letra:m.letra})}
 async function arrancar(){
@@ -900,7 +1007,7 @@ async function arrancar(){
   if(id&&!new URLSearchParams(location.search).has("nueva")){try{const m=await leerMurga(id);if(m&&m.pieza){await abrirMurga(m);return}}catch(e){console.warn("no se pudo abrir la última murga:",e)}}
   $("nombreMurga").value="";generar()}
 function nuevaMurga(){S.murga={id:nuevoId(),nombre:"",creada:Date.now()};$("nombreMurga").value="";S.seed=1+Math.floor(Math.random()*99998);$("semilla").value=S.seed;
-  S.acordes={};S.editando=null;S.letra.semLetra=1;$("tema").value="";cerrarMurgas();generar()}
+  S.acordes={};S.solo={};S.letra.semLetra=1;$("tema").value="";cerrarMurgas();generar()}
 $("nombreMurga").oninput=e=>{S.murga.nombre=e.target.value.trim().slice(0,60);guardarLuego()};
 // «Mis murgas»
 async function mostrarMurgas(){const caja=$("listaMurgas");caja.innerHTML="<p class='hint'>Buscando…</p>";
@@ -925,9 +1032,20 @@ $("dialogoMurgas").addEventListener("click",e=>{if(e.target===$("dialogoMurgas")
 // unísono, la melodía es de todos). Se cambia S.pieza.ev, se guarda, y vuelven a cantar sólo las frases que la tocan.
 function notasJuntas(k,i){const e=S.pieza.ev[k][i];if(!e)return[];const out=[[k,i]];
   for(const c of ORDEN){if(c===k)continue;const j=S.pieza.ev[c].findIndex(x=>x[0]===e[0]&&x[2]===e[2]);if(j>=0)out.push([c,j])}return out}
-function abrirNota(n){if(!S.pieza?.ev[n.cuerda]?.[n.i])return;notaAbierta={cuerda:n.cuerda,i:n.i};inspModo="nota";actualizarInspector();partitura.elegirNota(notaAbierta);dibujarInspNota();
-  if(matchMedia("(max-width:1279px)").matches)$("inspector").scrollIntoView({behavior:"smooth",block:"nearest"})}
-function dibujarInspNota(){const a=notaAbierta;if(!a)return;const e=S.pieza.ev[a.cuerda][a.i];if(!e){notaAbierta=null;inspModo="verso";actualizarInspector();return}
+function abrirNota(n,globito=true){const e=S.pieza?.ev[n.cuerda]?.[n.i];if(!e)return;notaAbierta={cuerda:n.cuerda,i:n.i};
+  const s=seccionDeQ(e[0]);if(s&&s.nombre!==S.secElegida)elegirSeccion(s.nombre);
+  actualizarInspector();multipista.elegirNota(notaAbierta);dibujarInspNota();if(globito)popNota()}
+// el globito de la nota, al lado de ella en el multipista: subirla, bajarla, alargarla, borrarla (queda abierto)
+function popNota(foco){const a=notaAbierta;if(!a||!S.pieza)return;const e=S.pieza.ev[a.cuerda][a.i];if(!e)return;
+  const ancla={getBoundingClientRect:()=>multipista.rectNota(a)||{left:0,top:-9,right:0,bottom:-9,width:0,height:0},isConnected:true,contains:()=>false,focus(){}};
+  const j=notasJuntas(a.cuerda,a.i),juntas=$("inJuntas").checked&&j.length>1;
+  const op=(texto,o)=>({texto,queda:true,hacer:()=>{cambiarNota(o);popNota(texto)}});
+  abrirPopover(ancla,`${nombreNota(e[2])} · ${NOMBRES_CUERDA[a.cuerda]}`,
+    [op("▲ semitono",{op:"p",v:1}),op("▼ semitono",{op:"p",v:-1}),op("▲ octava",{op:"p",v:12}),op("▼ octava",{op:"p",v:-12}),op("Más larga",{op:"d",v:1}),op("Más corta",{op:"d",v:-1})],
+    `${e[1]} semicorchea${e[1]===1?"":"s"}${juntas?` · también la cambian los ${j.slice(1).map(([c])=>NOMBRES_CUERDA[c].toLowerCase()).join(" y los ")}`:""}`,
+    [{texto:"Escuchar",otro:true,queda:true,hacer:()=>$("inEscuchar").click()},{texto:"Borrar",otro:true,hacer:()=>cambiarNota({op:"borrar"})},...(deshacer.length?[{texto:"Deshacer",otro:true,queda:true,hacer:()=>{deshacerNota();popNota("Deshacer")}}]:[])],
+    {clase:"rejilla",foco})}
+function dibujarInspNota(){const a=notaAbierta;if(!a)return;const e=S.pieza.ev[a.cuerda][a.i];if(!e){notaAbierta=null;actualizarInspector();return}
   const[q,d,p]=e,T=S.P.T,sec=S.pieza.secs.find(s=>q>=s.inicio&&q<s.inicio+s.largo);
   $("inCual").textContent=`${NOMBRES_CUERDA[a.cuerda]}${sec?` · ${sec.nombre}`:""} · ${fmt(T(q))}`;
   $("inNota").innerHTML=`${nombreNota(p)}<small>${d} semicorchea${d===1?"":"s"}</small>`;
@@ -937,7 +1055,7 @@ function dibujarInspNota(){const a=notaAbierta;if(!a)return;const e=S.pieza.ev[a
 function cambiarNota({op,v}){const a=notaAbierta;if(!a||!S.pieza)return;
   const lugares=$("inJuntas").checked?notasJuntas(a.cuerda,a.i):[[a.cuerda,a.i]];if(!lugares.length)return;
   const antes=lugares.map(([c,i])=>({c,i,e:[...S.pieza.ev[c][i]]}));
-  if(op==="borrar"){for(const[c,i]of lugares.slice().sort((x,y)=>y[1]-x[1]))S.pieza.ev[c].splice(i,1);deshacer.push({tipo:"borrar",antes});notaAbierta=null;inspModo="verso";actualizarInspector()}
+  if(op==="borrar"){for(const[c,i]of lugares.slice().sort((x,y)=>y[1]-x[1]))S.pieza.ev[c].splice(i,1);deshacer.push({tipo:"borrar",antes});notaAbierta=null;actualizarInspector()}
   else{for(const[c,i]of lugares){const e=S.pieza.ev[c][i];
       if(op==="p")e[2]=Math.max(36,Math.min(84,e[2]+v));
       else if(op==="d"){const sig=S.pieza.ev[c].filter(x=>x[0]>e[0]).reduce((m,x)=>Math.min(m,x[0]),Infinity);e[1]=Math.max(1,Math.min(e[1]+v,sig-e[0]))}}
@@ -947,30 +1065,30 @@ function cambiarNota({op,v}){const a=notaAbierta;if(!a||!S.pieza)return;
 function deshacerNota(){const u=deshacer.pop();if(!u||!S.pieza)return;
   if(u.tipo==="borrar"){for(const{c,i,e}of u.antes.slice().sort((x,y)=>x.i-y.i))S.pieza.ev[c].splice(i,0,e)}
   else for(const{c,i,e}of u.antes)S.pieza.ev[c][i]=e;
-  const x=u.antes[0];notaAbierta={cuerda:x.c,i:x.i};inspModo="nota";actualizarInspector();partitura.elegirNota(notaAbierta);dibujarInspNota();notasCambiadas()}
+  const x=u.antes[0];notaAbierta={cuerda:x.c,i:x.i};actualizarInspector();multipista.elegirNota(notaAbierta);dibujarInspNota();notasCambiadas()}
 let temporizadorNotas=null;
-function notasCambiadas(){S.mp3=null;actualizarVistas();if(notaAbierta)partitura.elegirNota(notaAbierta);guardarLuego();
+function notasCambiadas(){S.mp3=null;actualizarVistas();guardarLuego();
   clearTimeout(temporizadorNotas);temporizadorNotas=setTimeout(()=>{if(sint())cantarDeNuevo();else generar({pieza:S.pieza,letra:fotoLetra()})},900)}
 document.querySelectorAll("#inspNota [data-op]").forEach(b=>b.onclick=()=>{const o=b.dataset.op;cambiarNota(o==="borrar"?{op:"borrar"}:{op:o[0],v:+o.slice(1)})});
 $("inDeshacer").onclick=deshacerNota;
 $("inEscuchar").onclick=()=>{const a=notaAbierta;if(!a)return;const e=S.pieza.ev[a.cuerda][a.i];if(!e)return;saltar(Math.max(0,S.P.T(e[0])-1.5));if(!S.tocando)tocar()};
-$("inCerrar").onclick=()=>{notaAbierta=null;inspModo="verso";actualizarInspector()};
+$("inCerrar").onclick=()=>{notaAbierta=null;actualizarInspector()};
 document.addEventListener("keydown",e=>{
-  if(e.target.closest?.("input,textarea,select,[contenteditable]"))return;
+  if(e.target.closest?.("input,textarea,select,[contenteditable],.popover,dialog"))return;
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"&&deshacer.length){e.preventDefault();deshacerNota();return}
-  if(inspModo!=="nota"||!notaAbierta)return;
+  if(!notaAbierta)return;
   if(e.key==="ArrowUp"||e.key==="ArrowDown"){e.preventDefault();cambiarNota({op:"p",v:(e.key==="ArrowUp"?1:-1)*(e.shiftKey?12:1)})}
   else if(e.key==="Delete"||e.key==="Backspace"){e.preventDefault();cambiarNota({op:"borrar"})}
-  else if(e.key==="Escape"){notaAbierta=null;inspModo="verso";actualizarInspector()}});
+  else if(e.key==="Escape"){notaAbierta=null;actualizarInspector()}});
 
 // ============================================================ cambiar una parte sin regenerar todo
 // El loop de un compás: se rearma sólo la batería (las voces quedan como están).
-async function cambiarBateria(q,id){if(!S.pieza)return;const s=S.pieza.secs.find(x=>q>=x.inicio&&q<x.inicio+x.largo);if(!s)return;
-  const b={...(S.pieza.bateria||{})};const def=loopDeCompas({bateria:{}},s,q);if(id===def)delete b[q];else b[q]=id;S.pieza.bateria=b;
-  await rearmarBateria()}
-async function rearmarBateria(){const gen=S.gen,t=posicion(),sonaba=S.tocando;estadoTexto("Armando la batería…");
-  try{const perc=await renderPercusion(S.P,S.pieza.secs,S.pieza.bateria||{});if(gen!==S.gen)return;procesar(perc,1/picoDe([perc]),1.05);
-    if(sonaba)detener();S.stems={...S.stems,bateria:perc};S.mp3=null;S.offset=t;if(sonaba)tocar();actualizarVistas();resumen();guardarLuego()}
+async function cambiarBateria(qs,id){if(!S.pieza)return;const b={...(S.pieza.bateria||{})};
+  for(const q of[].concat(qs)){const s=seccionDeQ(q);if(!s||s.tipo==="llamada"||s.golpe)continue;const def=loopDeCompas({bateria:{}},s,q);if(id===def)delete b[q];else b[q]=id}
+  S.pieza.bateria=b;actualizarVistas();await rearmarBateria()}
+async function rearmarBateria(){const gb=S.genBat=(S.genBat||0)+1,pieza=S.pieza,P=S.P;estadoTexto("Armando la batería…");
+  try{const perc=await renderPercusion(P,pieza.secs,pieza.bateria||{});if(gb!==S.genBat||pieza!==S.pieza||P!==S.P)return;procesar(perc,1/picoDe([perc]),1.05);
+    const sonaba=S.tocando,t=posicion();if(sonaba)detener();S.stems={...S.stems,bateria:perc};S.mp3=null;S.offset=t;if(sonaba)tocar();actualizarVistas();resumen();guardarLuego()}
   catch(e){console.error(e);estadoTexto(`No se pudo armar la batería: ${e?.message||e}`,true)}}
 // Los acordes de una sección: se compone la pieza con los acordes nuevos y de ahí se toma sólo esa sección (sus notas y
 // sus golpes); el resto de la pieza queda igual, y vuelven a cantar sólo las frases de esa sección.
@@ -979,12 +1097,13 @@ async function recomponerSeccion(nombre){if(!S.pieza)return;
   const nueva=C.componer(C.MODELO,{...S.pieza.opciones,acordes:S.acordes}),vieja=S.pieza;
   const igual=nueva.secs.length===vieja.secs.length&&nueva.secs.every((x,i)=>x.nombre===vieja.secs[i].nombre&&x.inicio===vieja.secs[i].inicio&&x.largo===vieja.secs[i].largo);
   if(!igual){generar({mantenerLetra:true});return}
-  const i=vieja.secs.findIndex(x=>x.nombre===nombre);if(i<0)return;
-  const v=vieja.secs[i],q0=v.inicio,q1=q0+v.largo;
-  for(const k of ORDEN){vieja.ev[k]=vieja.ev[k].filter(e=>e[0]<q0||e[0]>=q1).concat(nueva.ev[k].filter(e=>e[0]>=q0&&e[0]<q1)).sort((a,b)=>a[0]-b[0]||b[2]-a[2])}
-  vieja.secs[i]={...nueva.secs[i],t0:v.t0,t1:v.t1,paso:v.paso};vieja.golpes=vieja.secs.flatMap(x=>x.golpes||[]);
+  const cuales=vieja.secs.map((x,i)=>x.nombre===nombre||x.repite===nombre?i:-1).filter(i=>i>=0);if(!cuales.length)return;
+  for(const i of cuales){const v=vieja.secs[i],q0=v.inicio,q1=q0+v.largo;
+    for(const k of ORDEN){vieja.ev[k]=vieja.ev[k].filter(e=>e[0]<q0||e[0]>=q1).concat(nueva.ev[k].filter(e=>e[0]>=q0&&e[0]<q1)).sort((a,b)=>a[0]-b[0]||b[2]-a[2])}
+    vieja.secs[i]={...nueva.secs[i],t0:v.t0,t1:v.t1,paso:v.paso}}
+  vieja.golpes=vieja.secs.flatMap(x=>x.golpes||[]);
   vieja.opciones={...vieja.opciones,acordes:S.acordes};
-  notaAbierta=null;deshacer.length=0;if(inspModo==="nota")inspModo="verso";
+  notaAbierta=null;deshacer.length=0;
   // la letra: los versos de esa sección pueden cambiar de largo; lo escrito se queda donde encaja
   if(sint()){const L=S.letra,antes=fotoLetra();armarLetra(vieja,S.P.T);
     const encaja=t=>Array.isArray(t)&&t.length===L.partes.length&&t.every((x,j)=>Array.isArray(x)&&x.length===L.partes[j].versos.length);

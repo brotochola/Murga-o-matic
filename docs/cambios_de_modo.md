@@ -107,4 +107,4 @@ El jurado da casi lo mismo que antes (mediana de 8,1–8,7, según la murga y la
 
 ## Cambiar los acordes desde la página
 
-En la tabla de estructura, «Cambiar acordes» abre la grilla de la sección: dos acordes por compás. Al elegir otro acorde, la pieza se vuelve a componer con la misma regla de arriba: la melodía se acomoda, las voces se rearman y el resto no cambia. Con cantores sintéticos, la letra se queda, aunque la hayas editado. Los acordes que cambió el compositor (la preparación o la llegada en el otro modo) aparecen con borde punteado, y los tuyos, resaltados.
+En la página, tocando un acorde del multipista se elige otro; abajo, en la sección elegida, están todos sus acordes, dos por compás. Al elegir otro acorde, la pieza se vuelve a componer con la misma regla de arriba y se toma de ahí sólo esa sección (y las bajadas que la repiten): la melodía se acomoda, las voces se rearman y el resto no cambia. Con cantores sintéticos, la letra se queda, aunque la hayas editado, y vuelven a cantar sólo las frases de esa sección. Los acordes que cambiaste aparecen resaltados.

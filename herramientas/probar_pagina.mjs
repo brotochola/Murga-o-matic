@@ -67,7 +67,7 @@ const leer = async x => (await env('Runtime.evaluate', { expression: x, returnBy
 await env('Runtime.enable'); await env('Network.enable'); await env('Page.enable');
 await env('Page.navigate', { url });
 
-const ESTADO = `document.getElementById("status")?.textContent+" | "+document.getElementById("play")?.textContent+" | filas "+document.querySelectorAll("#tabla tr").length`;
+const ESTADO = `document.getElementById("status")?.textContent+" | "+document.getElementById("play")?.textContent+" | filas "+document.querySelectorAll(".mt-sec").length`;
 let fallas = 0;
 async function listo() {
   await esperar(700);

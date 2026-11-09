@@ -1,6 +1,6 @@
 # Murga-o-matic
 
-Generador de murga uruguaya en el navegador: **https://brotochola.github.io/Murga-o-matic/**
+Generador de murga uruguaya en el navegador: **https://brotochola.github.io/murga-o-matic/**
 
 Elegís presentación o retirada, murga, tono y largo, y compone una pieza nueva con lo que aprendió del coro en 85 presentaciones y retiradas reales de 13 murgas (515 minutos, de 2008 a 2026). La Trasnochada, Agarrate Catalina, La Gran Muñeca, Metele que son Pasteles, Doña Bastarda, Asaltantes con Patente, La Nueva Milonga y Cayó la Cabra tienen estilo propio.
 
@@ -12,13 +12,27 @@ Elegís presentación o retirada, murga, tono y largo, y compone una pieza nueva
   - *Difonos:* la misma letra la cantan trece cantores armados con difonos (pedacitos de voz grabada) de [MBROLA](https://github.com/numediart/MBROLA), compilado a WebAssembly, con acento rioplatense exagerado de murguista. Cada cuerda tiene su largo de garganta y cada cantor sus mañas. Se entiende mucho más: con el coro entero, Whisper erra el 13 % de las letras, contra el 45 % del coro de formantes. Con «Sólo un solista» canta uno solo la melodía. En «Los cantantes» se puede cambiar cada uno de los trece (voz, garganta, afinación, vibrato, brillo, dicción, adornos, volumen, paneo) y escucharlo solo ([docs/solista.md](docs/solista.md)).
   - *El coro, como lo cuenta* Sin Disfraz *(Lamolle y Lombardo, 1998):* 2 bajos, 3 segundos, 5 primos, 2 sobreprimos y la tercia, parados como en La Unión (segundos a la izquierda, sobreprimos en el medio, primos a la derecha) o como en La Teja (al revés). En las clarinadas y en los acordes finales, algunos cantores adornan su nota a su manera: vibrato, trino, una vuelta o pasarse a otra voz del acorde ([INVESTIGACION.md](INVESTIGACION.md)).
 
-Desde la página podés mezclar en vivo y seguir la partitura, con la letra sílaba por sílaba cuando cantan los cantores sintéticos. Se puede bajar:
+## La página
+
+Es un multipista, como el Timba-o-matic: una fila por cosa y los compases de izquierda a derecha, todos del mismo ancho aunque cambie el tempo. Arriba van los compases (tocá uno para escuchar desde ahí), las secciones, los acordes y la letra: verso por verso o, con más zoom, sílaba por sílaba en dos renglones, nunca apilada. Después viene una pista por cuerda, con sus notas, su volumen, M (silenciar) y S (sólo esa), y la batería, con el loop de cada compás.
+
+- Tocando un acorde o el loop de un compás se elige otro, en un globito. Cualquier compás puede llevar cualquier loop, o ninguno, también en las partes a capela.
+- Tocando una nota aparece un globito para subirla, bajarla, alargarla o borrarla. También se puede arrastrar.
+- Abajo está la sección elegida: sus acordes de a medio compás, el loop de cada compás y su letra, que se escribe ahí mismo.
+- Los paneles de la barra (La pieza, Mezcla, Cantantes, Letra, Partitura, Exportar) se abren arriba del multipista, de a uno.
+
+Cada cambio rehace sólo lo que toca:
+- Un acorde recompone sólo su sección (y las bajadas que la repiten), y vuelven a cantar sólo sus frases.
+- El loop de un compás rearma sólo la batería, en unos 2 segundos.
+- Un verso, una nota o un cantante vuelven a cantar sólo las frases que cambiaron.
+
+Cada murga se guarda sola en el navegador, con todo lo que se le cambió, y se vuelve a abrir desde «Mis murgas». Se puede bajar:
 - la mezcla en **MP3**, tal como suena con los volúmenes de la mezcla;
 - la **partitura coral en PDF**: cinco pentagramas, la letra debajo de cada nota y los acordes arriba. También se puede ver en la página;
 - la **letra con los acordes** en TXT, o el cifrado por compases si no hay letra;
 - un **ZIP** con la mezcla en WAV, el coro en MIDI (con la letra), la estructura y la letra.
 
-Los acordes de cada sección se pueden cambiar desde la tabla de estructura: la melodía y las voces se acomodan solas al acorde nuevo, y el resto de la pieza no cambia. Los cambios de tono siguen lo que hacen las murgas del corpus: casi la mitad cambia también de modo, y de mayor al menor de la misma tónica es de los más comunes ([docs/cambios_de_modo.md](docs/cambios_de_modo.md)).
+Al cambiar un acorde, la melodía y las voces se acomodan solas al acorde nuevo, y el resto de la pieza no cambia. Los cambios de tono siguen lo que hacen las murgas del corpus: casi la mitad cambia también de modo, y de mayor al menor de la misma tónica es de los más comunes ([docs/cambios_de_modo.md](docs/cambios_de_modo.md)).
 
 La dirección vieja `/cantada/` lleva a la página principal con los cantores sintéticos elegidos.
 
@@ -26,7 +40,7 @@ Fuera de la página, con una placa de video, cada cantor se puede pasar por [See
 
 ## Sin conexión
 
-La página se guarda en el navegador y después anda sin internet, en la compu o en el teléfono. Abajo de todo, en **Sin conexión**, «Guardar todo» baja lo que falta (23,5 MB: las tres voces de difonos, las muestras del coro, los loops, el compositor de la versión 1, la partitura y el MP3). Lo que se usa se guarda solo, y apenas se abre la página ya queda guardado lo básico (1,4 MB). En Chrome, Edge y Android aparece «Instalar como app»; en iPhone, Compartir → «Agregar a inicio».
+La página se guarda en el navegador y después anda sin internet, en la compu o en el teléfono. En el panel **Exportar**, en «Sin conexión», «Guardar todo» baja lo que falta (23,5 MB: las tres voces de difonos, las muestras del coro, los loops, el compositor de la versión 1, la partitura y el MP3). Lo que se usa se guarda solo, y apenas se abre la página ya queda guardado lo básico (1,4 MB). En Chrome, Edge y Android aparece «Instalar como app»; en iPhone, Compartir → «Agregar a inicio».
 
 También hay una versión en **un solo archivo HTML** (25 MB) que se abre con doble clic, sin internet y sin servidor: `bun herramientas/un_archivo.mjs` la arma en `murga_trabajo/un_archivo/murga-o-matic.html`. Lleva adentro el código empaquetado y todos los audios, comprimidos. Es para la compu; en el teléfono anda mejor la página instalada.
 

@@ -522,12 +522,15 @@ export function cantorDifonos(cuerda, semilla, { c = 0, V = VARIACION, D = DIFER
 }
 
 // Los tiempos de cada cantor: entra siempre un poco tarde (retraso) y cada nota se corre un poco (desfase), sin
-// romper el ligado: si dos notas iban pegadas, siguen pegadas.
+// romper el ligado: si dos notas iban pegadas, siguen pegadas. El desfase de cada nota sale de su semilla y de su
+// momento (no de cuántas notas vinieron antes): si un verso nuevo parte una nota, las frases que siguen quedan iguales
+// y la memoria de frases las encuentra.
+const azarDe = (a, b) => { let x = Math.imul(a ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(b + 0x632be5ab, 0xc2b2ae35); x ^= x >>> 16; x = Math.imul(x, 0x7feb352d); x ^= x >>> 15; x = Math.imul(x, 0x846ca68b); x ^= x >>> 16; return (x >>> 0) / 4294967296; };
 export function correr(notas, opc) {
   const ret = opc.retraso || 0, des = opc.desfase || 0;
   if (!ret && !des) return notas;
-  const rn = new Rnd((opc.semilla || 1) * 53 + 11);
-  const t0 = notas.map(n => n.t0 + ret + (des ? rn.u(-des, des) : 0));
+  const sem = Math.round((opc.semilla || 1) * 53 + 11);
+  const t0 = notas.map(n => n.t0 + ret + (des ? -des + 2 * des * azarDe(sem, Math.round(n.t0 * 400)) : 0));
   return notas.map((n, i) => {
     const sig = notas[i + 1], pegada = sig && sig.t0 - n.t1 < .02;
     const a = Math.max(t0[i], i ? t0[i - 1] + .03 : -1e9);

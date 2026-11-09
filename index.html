@@ -14,9 +14,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Una sola página en paneles: arriba la barra con el transporte; a la izquierda la pieza y la mezcla, en el medio la
-   partitura y abajo de ella las pestañas (letra, cantantes, partitura coral, exportar), a la derecha el inspector (cómo
-   se hizo el verso elegido). Con menos ancho el inspector baja; en el teléfono, todo en una columna. */
+/* Una sola página, a lo Timba-o-matic: arriba la barra con el transporte y los botones de los paneles (la pieza, la
+   mezcla, los cantantes, la letra, la partitura, exportar), que se abren de a uno arriba del multipista; en el medio el
+   multipista (compases, secciones, acordes, letra, una pista por cuerda y la batería); abajo, la sección elegida. */
 :root{
   --bg:#eceef4; --panel:#fbfbfd; --ink:#16182b; --muted:#5d6079; --line:#d6d9e4; --well:#e3e6ef;
   --accent:#d4920a; --accent-ink:#16182b; --accent-soft:#f5e6c4;
@@ -47,7 +47,6 @@ body{font:15px/1.5 var(--body);margin:0}
 .retazos{height:14px;background:
   conic-gradient(from 45deg at 50% 50%,var(--bajos) 0 25%,var(--accent) 0 50%,var(--sobreprimos) 0 75%,var(--tercia) 0) 0 0/28px 28px;
   opacity:.9}
-header.barra{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;justify-content:space-between;padding:10px 0;background:var(--bg);border-bottom:1px solid var(--line);margin-bottom:10px}
 h1{font-family:var(--display);font-weight:400;font-size:clamp(24px,3vw,30px);line-height:1;margin:0;letter-spacing:-.01em;white-space:nowrap}
 h1 span{color:var(--accent)}
 .tag{color:var(--muted);margin:0;max-width:70ch}
@@ -65,23 +64,143 @@ button,select,input{font:inherit;color:inherit}
 .estado-top progress{width:100%;height:6px;accent-color:var(--accent)}
 .status{font-size:14px;color:var(--muted);margin:0}
 .status.err{color:var(--mal)}
-.tablero{display:grid;gap:16px;align-items:start;grid-template-columns:minmax(0,1fr)}
-@media (max-width:859px){.centro{order:1}.izq{order:2}.der{order:3}
-  header.barra{gap:8px 10px}.barra .transport{gap:8px}.barra .play{min-width:92px;padding:7px 14px}.barra .bajar{padding:7px 10px;font-size:13px}}
-@media (min-width:860px){header.barra{position:sticky;top:0;z-index:5}}
-.centro{display:grid;gap:16px;min-width:0}
-@media (min-width:860px){.tablero{grid-template-columns:300px minmax(0,1fr)}.der{grid-column:2}}
-@media (min-width:1280px){.tablero{grid-template-columns:300px minmax(0,1fr) minmax(320px,400px)}.der{grid-column:3;grid-row:1}
-  .izq,.der{position:sticky;top:62px;max-height:calc(100vh - 74px);overflow:auto;overscroll-behavior:contain}}
-.tabs{display:flex;flex-wrap:wrap;gap:2px 4px;border-bottom:1px solid var(--line);margin:-6px -4px 14px;padding:0 4px}
-.tabs button{border:0;background:none;padding:9px 12px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;border-radius:8px 8px 0 0}
-.tabs button:hover{color:var(--ink)}
-.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
-.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-.pestana-panel:not(.activa){display:none}
-.pestana-panel h2{font-family:var(--display);font-weight:400;font-size:18px;margin:0 0 12px}
-.fila-roll.abajo{margin:8px 0 0}
-.der h2{margin-bottom:8px}
+/* la página, a lo Timba-o-matic: la barra de transporte arriba, los paneles que se abren, el multipista y la sección */
+.app{max-width:none}
+.barra{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:8px 0;background:var(--bg);border-bottom:1px solid var(--line)}
+.logo{font:700 15px var(--body);letter-spacing:.02em;color:var(--accent);margin-right:4px;white-space:nowrap}
+.barra .play{min-width:96px;padding:7px 14px;font-size:15px}
+.btn.ghost{background:transparent}
+.pos{font:500 13px var(--mono);font-variant-numeric:tabular-nums;color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:6px 10px;white-space:nowrap}
+.pos b{color:var(--ink)}
+.barra-mas{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;flex:1 1 auto}
+.paneles-btn{display:flex;flex-wrap:wrap;gap:4px;margin-left:auto}
+.paneles-btn .btn{padding:6px 9px;font-size:13px}
+.paneles-btn .btn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.ctl{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.ctl select{width:auto;padding:5px 8px}
+.chk.tg{margin:0}
+.barra .bajar{padding:6px 12px;font-size:13px}
+.mas{display:none}
+@media (max-width:860px){.mas{display:inline-block}.barra-mas{display:none;flex-basis:100%}.barra-mas.abierta{display:flex}.paneles-btn{margin-left:0}}
+@media (max-width:620px){.barra{gap:6px}.logo{display:none}.barra .play{min-width:78px;padding:7px 10px}#detener,.mas{padding:6px 10px}.pos{font-size:12px;padding:6px 7px}
+  .sec-caja,.mt-caja{padding:8px}.dev{padding:8px}.sec-cuerpo{grid-template-columns:minmax(0,1fr)}.panel-sup{padding:12px}}
+.btn.icono{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px}
+.panel-sup,.sec-caja,.mt-caja,.dev{scroll-margin-top:64px}
+.paneles{display:grid;gap:12px}
+.panel-sup{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.panel-sup:not(.abierto){display:none!important}
+.panel-sup>.cabeza{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+.panel-sup>.cabeza h2{font-family:var(--display);font-weight:400;font-size:18px;margin:0}
+.cerrar-panel{padding:3px 10px;font-size:18px;line-height:1}
+.panel-sup.pieza{columns:300px 3;column-gap:28px}
+.panel-sup.pieza>.cabeza{column-span:all}
+.panel-sup.pieza .field{break-inside:avoid}
+.panel-sup.mezcla{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 24px}
+.panel-sup.mezcla>.cabeza,.panel-sup.mezcla>p,.panel-sup.mezcla>h2{grid-column:1/-1}
+.cant-dos{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:1000px){.cant-dos{grid-template-columns:minmax(0,1.4fr) minmax(320px,1fr)}}
+.cant-editor{border-left:1px solid var(--line);padding-left:16px}
+@media (max-width:999px){.cant-editor{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:12px}}
+.panel-sup.letra #libreto{max-height:60vh;overflow:auto}
+.mt-caja{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:12px}
+.gen-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-bottom:8px}
+.ayuda{font-size:12px;color:var(--muted);margin:8px 0 0}
+/* el multipista */
+.multipista{--mt-head:206px}
+@media (max-width:620px){.multipista{--mt-head:132px}.multipista .mt-h{font-size:11px;padding:0 4px 0 6px;gap:4px}.gen-head .btn{padding:6px 10px;font-size:13px}.la-murga{flex:1 1 140px}}
+.mt{border:1px solid var(--line);border-radius:10px;background:var(--bg);overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;position:relative}
+.mt-in{position:relative;min-width:100%}
+.mt-row{display:flex;border-top:1px solid var(--line);min-height:26px}
+.mt-row:first-child{border-top:0}
+.mt-h{position:sticky;left:0;z-index:3;flex:0 0 var(--mt-head);width:var(--mt-head);display:flex;align-items:center;gap:5px;padding:0 6px 0 8px;background:var(--panel);border-right:1px solid var(--line);font-size:12px;min-width:0}
+.mt-h b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1 1 auto}
+.mt-h i{width:4px;align-self:stretch;margin:5px 0;border-radius:2px;flex:none}
+.mt-h input[type=range]{width:50px;flex:0 0 50px}
+@media (max-width:620px){.mt-h input[type=range]{display:none}}
+.mt-ms{display:flex;gap:2px;flex:none}
+.mt-ms button{border:1px solid var(--line);background:var(--bg);color:var(--muted);border-radius:4px;font:600 10px/1 var(--body);width:20px;height:18px;padding:0;cursor:pointer}
+.mt-ms button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.mt-c{position:relative;flex:none}
+.mt-regla .mt-c{height:22px;cursor:pointer}
+.mt-n{position:absolute;top:0;bottom:0;border-left:1px solid var(--line);font:10px/22px var(--mono);color:var(--muted);padding-left:3px;overflow:hidden;white-space:nowrap}
+.mt-n.chico{border-left-color:color-mix(in srgb,var(--line) 50%,transparent)}
+.mt-secs .mt-c{height:28px}
+.mt-sec{position:absolute;top:3px;bottom:3px;border:1px solid color-mix(in srgb,var(--c) 55%,var(--line));border-radius:6px;background:color-mix(in srgb,var(--c) 22%,var(--panel));padding:0 6px;font:600 12px/20px var(--body);color:var(--ink);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:left;cursor:pointer}
+.mt-sec.capela{background-image:repeating-linear-gradient(135deg,transparent 0 6px,color-mix(in srgb,var(--c) 18%,transparent) 6px 12px)}
+.mt-sec.elegida{box-shadow:0 0 0 2px var(--accent);border-color:var(--accent)}
+.mt-acs .mt-c{height:24px}
+.mt-ac{position:absolute;top:2px;bottom:2px;border:0;border-left:1px solid var(--line);background:transparent;font:600 11px/20px var(--body);color:var(--ink);padding:0 3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:left;cursor:pointer}
+.mt-ac:hover,.mt-bat:hover,.mt-verso:hover{background:var(--well)}
+.mt-ac.cambiado{color:var(--accent);text-decoration:underline}
+.mt-letra .mt-c{height:24px}
+.mt-verso,.mt-sil{position:absolute;top:2px;bottom:2px;border:0;background:transparent;font:13px/20px var(--body);color:var(--ink);padding:0 2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:left;cursor:pointer}
+.mt-verso{border-left:2px solid var(--line);padding-left:4px}
+.mt-sil{font-size:12px;border-left:1px solid color-mix(in srgb,var(--line) 60%,transparent);bottom:auto;height:15px;line-height:15px}
+.mt-letra.silabas .mt-c{height:33px}
+.mt-sil.acento{font-weight:700}
+.mt-verso.elegido,.mt-sil.elegido{background:var(--accent-soft)}
+.mt-pista .mt-c{height:var(--alto,60px)}
+.mt-pista.muda .mt-c,.mt-bateria.muda .mt-c{opacity:.45}
+.mt-lienzo{position:absolute;top:0;display:block;touch-action:pan-x}
+.mt-bateria .mt-c{height:26px}
+.mt-bat{position:absolute;top:3px;bottom:3px;border:1px solid var(--line);border-radius:4px;background:color-mix(in srgb,var(--bateria) 18%,var(--panel));font:11px/18px var(--body);color:var(--ink);padding:0 4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:left;cursor:pointer}
+.mt-bat.sin{background:transparent;border-style:dashed;color:var(--muted)}
+.mt-bat.cambiado{border-color:var(--accent)}
+.mt-cabezal{position:absolute;top:0;bottom:0;left:0;width:2px;background:var(--accent);pointer-events:none;z-index:2}
+/* la sección elegida */
+.sec-caja{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:24px}
+.sec-cabeza{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;margin-bottom:10px}
+.sec-quien h2{font-family:var(--display);font-weight:400;font-size:18px;margin:0}
+.sec-cuerpo{display:grid;gap:12px;grid-template-columns:minmax(0,1fr);align-items:start}
+@media (min-width:720px){.sec-cuerpo{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (min-width:1180px){.sec-cuerpo{grid-template-columns:minmax(0,1fr) minmax(0,.9fr) minmax(0,1.2fr)}}
+.dev-nota{grid-column:1/-1}
+.dev{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg);min-width:0}
+.dev-h{margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.dev-proceso{grid-column:1/-1}
+.dev-proceso h2{font-family:var(--display);font-weight:400;font-size:16px;margin:0 0 6px}
+.cards-ac{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:6px}
+.card-ac{border:1px solid var(--line);border-radius:8px;padding:4px 6px 6px;background:var(--panel)}
+.card-ac .nb{font:10px var(--mono);color:var(--muted)}
+.card-ac .dos{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.card-ac select{font:600 13px var(--body);padding:5px 2px;background:var(--panel);border:1px solid var(--line);border-radius:6px;min-width:0}
+.card-ac select.cambiado{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.lista-bat{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.lista-bat label{display:grid;gap:2px;font:10px var(--mono);color:var(--muted)}
+.lista-bat select{font:13px var(--body);padding:5px 6px}
+.lista-bat select.cambiado{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.sec-versos{display:grid;gap:4px}
+.sec-versos label{display:grid;grid-template-columns:2em minmax(0,1fr) 3.9em;gap:6px;align-items:center;font:12px var(--mono);color:var(--muted)}
+.sec-versos input{font:500 15px var(--body);background:transparent;border:0;border-bottom:1px dashed var(--line);padding:4px 2px;min-width:0;color:var(--ink)}
+.sec-versos input:focus{outline:none;border-bottom-color:var(--accent);background:var(--well)}
+/* el globito para elegir un acorde o un loop */
+.popover{position:fixed;z-index:50;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.25);padding:8px;max-height:min(60vh,420px);overflow:auto;min-width:180px}
+.popover h3{margin:2px 4px 6px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.popover button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:6px 8px;border-radius:6px;font:14px var(--body);color:var(--ink);cursor:pointer}
+.popover button:hover,.popover button:focus-visible{background:var(--well);outline:none}
+.popover button[aria-current="true"]{background:var(--accent-soft);font-weight:700}
+.popover small{color:var(--muted);margin-left:6px}
+.sec-titulo{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
+.sec-titulo .btn{padding:4px 10px;font-size:13px}
+.sec-quien .sub{margin:2px 0 0;font-size:13px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400}
+.lista-ac{font:600 15px var(--body);margin:0 0 6px;word-spacing:.1em}
+.todo-bat{margin-bottom:6px;flex-wrap:wrap}
+.todo-bat select{max-width:100%}
+.sec-versos label.elegido{box-shadow:inset 3px 0 0 var(--accent)}
+.sec-versos label.sonando{background:var(--accent-soft);border-radius:6px}
+.mt-ac.igual{border-left-color:transparent;background:transparent}
+.mt-ac.igual:hover{background:color-mix(in srgb,var(--well) 70%,transparent)}
+.mt-ac.igual.cambiado{border-left-color:var(--line)}
+.mt-ac.fijo{color:var(--muted)}
+.mt-bat.fijo{background:var(--well);border-style:solid;color:var(--muted);font-style:italic}
+.mt-bat.igual{color:var(--muted)}
+.popover .hint{margin:0 4px 6px;max-width:30ch}
+.popover button.otro{border-top:1px solid var(--line);border-radius:0 0 6px 6px;margin-top:4px;color:var(--accent);font-weight:600}
+.popover small{font:11px var(--mono)}
+.popover.rejilla{display:grid;grid-template-columns:1fr 1fr;gap:2px 4px;min-width:230px}
+.popover.rejilla h3,.popover.rejilla .hint{grid-column:1/-1}
+.popover.rejilla button{text-align:center}
+.popover.rejilla button.otro{margin-top:4px;border-radius:6px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
 .panel h2{font-family:var(--display);font-weight:400;font-size:18px;margin:0 0 12px;letter-spacing:.01em}
 .field{display:grid;gap:5px;margin-bottom:14px}
@@ -96,45 +215,9 @@ select{width:100%;background:var(--well);border:1px solid transparent;border-rad
 .seed input{width:100%;background:var(--well);border:1px solid transparent;border-radius:10px;padding:8px 10px;font-family:var(--mono)}
 input[type=range]{width:100%;accent-color:var(--accent)}
 .hint{font-size:13px;color:var(--muted);margin:2px 0 0}
-.mixer{display:grid;gap:8px}
-.ch{display:grid;grid-template-columns:14px 92px minmax(0,1fr) 34px;gap:8px;align-items:center}
-.ch i{width:12px;height:12px;border-radius:3px;display:block}
-.ch b{font-weight:600;font-size:14px}
-.ch .rng{font:12px var(--mono);color:var(--muted);display:block;font-weight:400}
-.mute{border:1px solid var(--line);background:transparent;border-radius:7px;font:600 11px var(--mono);padding:4px 0;cursor:pointer;color:var(--muted)}
-.mute[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
-.timeline{position:relative;height:42px;border-radius:10px;overflow:hidden;background:var(--well);cursor:pointer;margin-bottom:10px;display:flex}
-.timeline .sec{height:100%;border-right:1px solid var(--panel);display:flex;align-items:center;padding:0 8px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.timeline .sec.cap{background:repeating-linear-gradient(135deg,transparent 0 6px,color-mix(in srgb,var(--accent) 22%,transparent) 6px 12px)}
-.timeline .ph{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);left:0;pointer-events:none}
-.fila-roll{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;margin-bottom:8px}
-.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin:0}
-.legend span{display:flex;gap:6px;align-items:center}
-.legend i{width:10px;height:10px;border-radius:2px;display:block}
-.zoom{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
-.zoom .btn{padding:3px 11px}
-canvas.roll{display:block;width:100%;height:clamp(320px,44vh,540px);background:var(--well);border-radius:10px;touch-action:pan-y;cursor:grab}
-canvas.mapa{display:block;width:100%;height:30px;margin-top:6px;background:var(--well);border-radius:8px;cursor:pointer;touch-action:none}
-@media (max-width:560px){canvas.roll{height:280px}}
-.nota-roll{font-size:13px;color:var(--muted);margin:8px 0 0}
-.est{overflow-x:auto}
-.est table{min-width:620px}
 table{border-collapse:collapse;width:100%;font-size:14px}
 th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.05em;text-transform:uppercase}
-td.t{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
-td.ac{font-family:var(--mono);font-size:13px;color:var(--muted)}
-.pill{font-size:12px;border-radius:999px;padding:1px 8px;background:var(--well);white-space:nowrap}
-.pill.cap{background:var(--accent);color:var(--accent-ink)}
-td.ac .prep{display:block;font-family:var(--body);font-size:12px;color:var(--muted)}
-td.ac .editar{display:block;margin-top:6px;font:600 12px var(--body);padding:4px 10px}
-tr.editor td{background:var(--well);border-radius:10px}
-tr.editor .grilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin:8px 0}
-tr.editor .compas{display:grid;grid-template-columns:22px 1fr 1fr;gap:4px;align-items:center}
-tr.editor .nb{font:12px var(--mono);color:var(--muted);text-align:right}
-tr.editor select{font:12px var(--mono);padding:5px 2px;background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:0}
-tr.editor select.cambiado{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
-tr.editor select.auto{border-style:dashed}
 .export{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-top:16px}
 .export .hint{flex-basis:100%}
 .notes{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
@@ -278,7 +361,7 @@ dialog .cabeza h2{font-family:var(--display);font-weight:400;font-size:18px;marg
 .cajitas .corte{stroke:var(--accent);stroke-width:1.5}
 .cifras{display:flex;flex-wrap:wrap;gap:6px}
 .cifras span{font-size:13px;padding:4px 9px;border-radius:8px;background:var(--well);font-variant-numeric:tabular-nums}
-.elegido{font-size:16px;font-weight:600}
+p.elegido{font-size:16px;font-weight:600}
 .total{font:12px var(--mono);color:var(--muted);margin-left:6px}
 .puntos{display:flex;flex-wrap:wrap;gap:6px}
 .punto-p{font-size:12px;padding:3px 8px;border-radius:999px;border:1px solid currentColor;font-variant-numeric:tabular-nums}
@@ -297,30 +380,39 @@ dialog .cabeza h2{font-family:var(--display);font-weight:400;font-size:18px;marg
 </head>
 <body>
 
-<div class="retazos" aria-hidden="true"></div>
 <div class="app">
-  <header class="barra">
-    <h1 class="marca">Murga-o-<span>matic</span></h1>
-    <div class="la-murga">
-      <input id="nombreMurga" maxlength="60" placeholder="Murga sin nombre" aria-label="Nombre de esta murga" autocomplete="off">
-      <span class="guardado" id="guardado" role="status"></span>
+  <div class="barra">
+    <span class="logo">murga·o·matic</span>
+    <button class="btn play" id="play" disabled title="Tocar o pausar (barra espaciadora)">Cargando…</button>
+    <button class="btn ghost" id="detener" title="Detener y volver al principio" aria-label="Detener y volver al principio">■</button>
+    <div class="pos" aria-live="off"><b id="posCompas">1</b> / <span id="posTotal">–</span> · <span id="time">0:00 / 0:00</span></div>
+    <button class="btn ghost mas" id="mas" aria-expanded="false" aria-controls="barraMas">Más</button>
+    <div class="barra-mas" id="barraMas">
+      <label class="chk tg" title="Mientras suena, la partitura y la sección de abajo siguen lo que suena"><input type="checkbox" id="seguir" checked> Seguir</label>
+      <label class="ctl">Zoom <select id="zoom"><option value="0">toda</option><option value="1">chico</option><option value="2" selected>medio</option><option value="3">sílabas</option><option value="4">enorme</option></select></label>
+      <span class="paneles-btn">
+        <button class="btn ghost" data-panel="pPieza">La pieza</button>
+        <button class="btn ghost" data-panel="pMezcla">Mezcla</button>
+        <button class="btn ghost" data-panel="cantantes">Cantantes</button>
+        <button class="btn ghost" data-panel="cantada">Letra</button>
+        <button class="btn ghost" data-panel="grabada">Partitura</button>
+        <button class="btn ghost" data-panel="tabExportar">Exportar</button>
+        <button class="btn ghost" data-panel="tabAcerca">Cómo funciona</button>
+      </span>
+      <button class="btn ghost icono" id="temaColor" title="Tema oscuro o claro" aria-label="Cambiar el tema"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.75a6.25 6.25 0 0 1 0 12.5z" fill="currentColor"/></svg></button>
+      <button class="btn bajar" id="mp3" disabled>MP3</button>
     </div>
-    <button class="btn" id="misMurgas">Mis murgas</button>
-    <div class="transport">
-      <button class="btn play" id="play" disabled>Cargando…</button>
-      <span class="time" id="time">0:00 / 0:00</span>
-      <button class="btn bajar" id="mp3" disabled>Descargar MP3</button>
-    </div>
-  </header>
+  </div>
   <div class="estado-top">
     <progress id="avance" max="1" value="0" hidden></progress>
     <p class="status" id="status" role="status"></p>
     <div class="aviso" id="avisoVersion" hidden><span>Hay una versión nueva de la página.</span><button class="btn fuerte" id="recargar">Recargar</button></div>
   </div>
 
-  <div class="tablero">
-    <aside class="panel izq" aria-label="La pieza y la mezcla">
-      <h2>La pieza</h2>
+  <div class="paneles" id="paneles">
+    <section class="panel-sup pieza" id="pPieza" aria-labelledby="t-pPieza">
+      <div class="cabeza"><h2 id="t-pPieza">La pieza</h2><button class="btn ghost cerrar-panel" aria-label="Cerrar">×</button></div>
+
       <div class="field voces"><span class="lbl" id="l-voces">Voces</span>
         <div class="seg" role="group" aria-labelledby="l-voces" id="voces">
           <button data-v="muestras" aria-pressed="true">Muestras de coro</button>
@@ -391,7 +483,11 @@ dialog .cabeza h2{font-family:var(--display);font-weight:400;font-size:18px;marg
         <div class="hint" style="display:flex;justify-content:space-between"><span>muestra pura</span><span>murga medida</span><span>más filoso</span></div>
       </div>
 
-      <h2 style="margin-top:20px">Mezcla</h2>
+      
+    </section>
+    <section class="panel-sup mezcla" id="pMezcla" aria-labelledby="t-pMezcla">
+      <div class="cabeza"><h2 id="t-pMezcla">Mezcla</h2><button class="btn ghost cerrar-panel" aria-label="Cerrar">×</button></div>
+
       <div class="field"><span class="lbl" id="l-formacion">Dónde se para cada cuerda</span>
         <div class="seg" role="group" aria-labelledby="l-formacion" id="formacion">
           <button data-v="union" aria-pressed="true">Como La Unión</button>
@@ -407,33 +503,35 @@ dialog .cabeza h2{font-family:var(--display);font-weight:400;font-size:18px;marg
         <input id="sala" type="range" min="0" max="1" step="0.05" value="0.5">
         <div class="hint" style="display:flex;justify-content:space-between"><span>seco</span><span>la del lugar</span><span>el doble</span></div>
       </div>
-      <div class="mixer" id="mixer"></div>
-    </aside>
-
-    <main class="centro">
-    <section class="panel partitura" aria-labelledby="t-partitura">
-      <h2 id="t-partitura">Partitura y estructura</h2>
-      <div class="timeline" id="timeline" aria-label="Secciones; tocá para saltar"></div>
-      <div class="fila-roll">
-        <div class="legend" id="legend"></div>
-        <div class="zoom"><button class="btn" id="zoomMenos" aria-label="Alejar">−</button><button class="btn" id="zoomMas" aria-label="Acercar">+</button><label class="chk"><input type="checkbox" id="seguir" checked> Seguir el audio</label></div>
-      </div>
-      <canvas id="roll" class="roll" aria-label="Partitura: las notas de cada cuerda y, con cantores sintéticos, la letra sílaba por sílaba"></canvas>
-      <canvas id="mapa" class="mapa" aria-label="Toda la pieza: tocá para ir a esa parte"></canvas>
-      <div class="fila-roll abajo"><p class="nota-roll" id="notaRoll">Tocá las notas o las secciones para escuchar desde ahí; arrastrá para moverte.</p><button class="btn" id="verPartitura">Ver la partitura coral</button></div>
-
+            <p class="hint">El volumen, M (silenciar) y S (sólo esa) de cada cuerda y de la batería están en su pista, a la izquierda del multipista.</p>
     </section>
-    <section class="panel pestanas" aria-label="Letra, cantantes, partitura coral y exportar">
-      <div class="tabs" role="tablist">
-        <button role="tab" data-panel="cantada" aria-selected="false">La letra</button>
-        <button role="tab" data-panel="cantantes" aria-selected="false">Los cantantes</button>
-        <button role="tab" data-panel="tabEstructura" aria-selected="false">Estructura</button>
-        <button role="tab" data-panel="grabada" aria-selected="false">Partitura coral</button>
-        <button role="tab" data-panel="tabExportar" aria-selected="false">Exportar</button>
-        <button role="tab" data-panel="tabAcerca" aria-selected="false">Cómo funciona</button>
-      </div>
-    <section class="pestana-panel letra" id="cantada" hidden role="tabpanel" aria-labelledby="t-letra">
-      <h2 id="t-letra">La letra</h2>
+    <section class="panel-sup cantantes" id="cantantes" hidden aria-labelledby="t-cantantes">
+      <div class="cabeza"><h2 id="t-cantantes">Los cantantes</h2><button class="btn ghost cerrar-panel" aria-label="Cerrar">×</button></div>
+<div class="cant-dos"><div>
+    <div class="cabeza">
+      <span></span>
+      <div class="botones"><button class="btn" id="otrosCantantes">Otros cantantes</button><button class="btn" id="cantantesReset">Volver a como salieron</button></div>
+    </div>
+    <p class="hint">Los trece murguistas, cada uno con su nombre, su voz y sus mañas. Tocá uno para verlo y cambiarlo en el inspector: al cambiar algo, en un momento vuelve a cantar él solo. Son los mismos aunque cambies la música; con «Otros cantantes» viene otro coro. Se guardan en este navegador.</p>
+    <div class="lista-cantantes" id="listaCantantes"></div>
+  </div><div class="cant-editor">      <section class="insp-cantante" id="inspCantante" hidden aria-label="El cantante elegido">
+        <div class="ic-cabeza">
+          <img id="icCara" alt="" width="72" height="72">
+          <div class="ic-quien"><input id="icNombre" maxlength="40" aria-label="Nombre del cantante" autocomplete="off"><p class="sub" id="icCuerda"></p></div>
+          <button class="btn ic-cerrar" id="icCerrar" aria-label="Volver a cómo se hace el verso" title="Volver a cómo se hace el verso">×</button>
+        </div>
+        <div class="botones"><button class="btn" id="icSolo" aria-pressed="false">Escucharlo solo</button><button class="btn" id="icMudo" aria-pressed="false">Callarlo</button><button class="btn" id="icCaraOtra">Otra cara</button></div>
+        <p class="hint" id="icRango"></p>
+        <div class="params" id="icParams"></div>
+        <div class="botones"><button class="btn" id="icReiniciar">Volver a como salió</button><button class="btn" id="icExportar">Exportar</button><label class="btn">Importar<input type="file" id="icImportar" accept=".json,application/json" hidden></label></div>
+        <p class="hint">Exportar baja un archivo con este murguista; Importar pone acá a uno exportado (de esta murga o de otra).</p>
+      </section>
+<p class="hint" id="cantVacio">Tocá un murguista para ver y cambiar sus valores.</p></div></div>
+    </section>
+    <section class="panel-sup letra" id="cantada" hidden aria-labelledby="t-cantada">
+      <div class="cabeza"><h2 id="t-cantada">La letra</h2><button class="btn ghost cerrar-panel" aria-label="Cerrar">×</button></div>
+
+      
       <div class="tema">
         <label class="lbl" for="tema">Tema</label>
         <input id="tema" type="text" placeholder="De qué habla la letra, en pocas palabras" autocomplete="off">
@@ -446,30 +544,23 @@ dialog .cabeza h2{font-family:var(--display);font-weight:400;font-size:18px;marg
       <div class="aviso" id="avisoLetra" hidden><span>Cambiaste la letra.</span><button class="btn fuerte" id="recantar">Cantar esta letra</button></div>
       <p class="status" id="estadoLetra"></p>
       <div id="libreto"></div>
+    
     </section>
-  <section class="pestana-panel cantantes" id="cantantes" hidden role="tabpanel" aria-labelledby="t-cantantes">
+    <section class="panel-sup grabada" id="grabada" aria-labelledby="t-grabada">
+      <div class="cabeza"><h2 id="t-grabada">Partitura coral</h2><button class="btn ghost cerrar-panel" aria-label="Cerrar">×</button></div>
+
     <div class="cabeza">
-      <h2 id="t-cantantes">Los cantantes</h2>
-      <div class="botones"><button class="btn" id="otrosCantantes">Otros cantantes</button><button class="btn" id="cantantesReset">Volver a como salieron</button></div>
-    </div>
-    <p class="hint">Los trece murguistas, cada uno con su nombre, su voz y sus mañas. Tocá uno para verlo y cambiarlo en el inspector: al cambiar algo, en un momento vuelve a cantar él solo. Son los mismos aunque cambies la música; con «Otros cantantes» viene otro coro. Se guardan en este navegador.</p>
-    <div class="lista-cantantes" id="listaCantantes"></div>
-  </section>
-  <section class="pestana-panel grabada" id="grabada" role="tabpanel" aria-labelledby="t-grabada">
-    <div class="cabeza">
-      <h2 id="t-grabada">Partitura coral</h2>
+      <span></span>
       <button class="btn" id="pdf2">Descargar PDF</button>
     </div>
     <p class="hint" id="grabadaNota"></p>
     <div class="hoja" id="hoja"></div>
-  </section>
-    <section class="pestana-panel estructura" id="tabEstructura" role="tabpanel" aria-labelledby="t-estructura">
-      <h2 id="t-estructura">Estructura</h2>
-      <p class="hint">Cada sección con su textura, su tono, su tempo y sus acordes. Tocá una fila para escuchar desde ahí; con «Cambiar acordes» se cambian de a medio compás.</p>
-      <div class="est"><table><thead><tr><th>Tiempo</th><th>Sección</th><th>Textura</th><th>Acordes</th></tr></thead><tbody id="tabla"></tbody></table></div>
+  
     </section>
-    <section class="pestana-panel exportar" id="tabExportar" role="tabpanel" aria-labelledby="t-exportar">
-      <h2 id="t-exportar">Exportar</h2>
+    <section class="panel-sup exportar" id="tabExportar" aria-labelledby="t-tabExportar">
+      <div class="cabeza"><h2 id="t-tabExportar">Exportar</h2><button class="btn ghost cerrar-panel" aria-label="Cerrar">×</button></div>
+
+      
       <div class="export">
                 <button class="btn" id="pdf" disabled>Partitura en PDF</button>
         <button class="btn" id="txt" disabled>Letra y acordes (TXT)</button>
@@ -489,8 +580,10 @@ dialog .cabeza h2{font-family:var(--display);font-weight:400;font-size:18px;marg
     <progress id="sinredAvance" max="1" value="0" hidden></progress>
   </section>
     </section>
-    <section class="pestana-panel acerca" id="tabAcerca" role="tabpanel" aria-labelledby="t-acerca">
-      <h2 id="t-acerca">Cómo funciona</h2>
+    <section class="panel-sup acerca" id="tabAcerca" aria-labelledby="t-tabAcerca">
+      <div class="cabeza"><h2 id="t-tabAcerca">Cómo funciona</h2><button class="btn ghost cerrar-panel" aria-label="Cerrar">×</button></div>
+
+      
       <p class="tag">Generador de murga uruguaya. Aprendió de presentaciones y retiradas reales transcriptas nota por nota; la batería son los loops de La Tríada. Puede cantar con muestras de coro o con cantores sintéticos que cantan una letra escrita para la melodía.</p>
   <section class="notes">
     <div>
@@ -516,28 +609,27 @@ dialog .cabeza h2{font-family:var(--display);font-weight:400;font-size:18px;marg
       <p>Batería: Pablo "Lolito" Iribarne (bombo), Raúl García (redoblante) y Gerardo "Batata" Cánepa (platillos), del video <a href="https://www.youtube.com/watch?v=0DSJVulzDYw" target="_blank" rel="noopener">17 ritmos fundamentales de murga</a>. MP3 con <a href="https://github.com/zhuker/lamejs" target="_blank" rel="noopener">lamejs</a> (LAME, LGPL); partitura con abcjs, jsPDF y svg2pdf.js.</p>
     </div>
   </section>
-    </section>
-    </section>
-    </main>
 
-    <aside class="panel der" id="inspector" aria-labelledby="t-proceso">
-      <section class="proceso-panel" id="procesoBloque">
-      <h2 id="t-proceso">Cómo se hace</h2>
-      <p class="hint">Elegí un verso, en la letra o en la partitura, y acá aparece cada paso con sus datos: qué pide la melodía, cómo eligió el letrista, cómo caen las sílabas en las notas y qué canta cada voz.</p>
-      <div id="proceso"></div>
     </section>
-      <section class="insp-cantante" id="inspCantante" hidden aria-label="El cantante elegido">
-        <div class="ic-cabeza">
-          <img id="icCara" alt="" width="72" height="72">
-          <div class="ic-quien"><input id="icNombre" maxlength="40" aria-label="Nombre del cantante" autocomplete="off"><p class="sub" id="icCuerda"></p></div>
-          <button class="btn ic-cerrar" id="icCerrar" aria-label="Volver a cómo se hace el verso" title="Volver a cómo se hace el verso">×</button>
-        </div>
-        <div class="botones"><button class="btn" id="icSolo" aria-pressed="false">Escucharlo solo</button><button class="btn" id="icMudo" aria-pressed="false">Callarlo</button><button class="btn" id="icCaraOtra">Otra cara</button></div>
-        <p class="hint" id="icRango"></p>
-        <div class="params" id="icParams"></div>
-        <div class="botones"><button class="btn" id="icReiniciar">Volver a como salió</button><button class="btn" id="icExportar">Exportar</button><label class="btn">Importar<input type="file" id="icImportar" accept=".json,application/json" hidden></label></div>
-        <p class="hint">Exportar baja un archivo con este murguista; Importar pone acá a uno exportado (de esta murga o de otra).</p>
-      </section>
+  </div>
+
+  <section class="mt-caja" aria-label="La pieza como multipista">
+    <div class="gen-head">
+      <div class="la-murga"><input id="nombreMurga" maxlength="60" placeholder="Murga sin nombre" aria-label="Nombre de esta murga" autocomplete="off"><span class="guardado" id="guardado" role="status"></span></div>
+      <button class="btn ghost" id="misMurgas">Mis murgas</button>
+    </div>
+    <div id="multipista" class="multipista"></div>
+    <p class="ayuda">Tocá un compás para escuchar desde ahí · una sección para verla abajo · un acorde o el loop de un compás para cambiarlo · una nota para editarla (o arrastrala para arriba o abajo) · la letra para ver cómo se hizo ese verso.</p>
+  </section>
+
+  <section class="sec-caja" id="secCaja" aria-labelledby="secNombre">
+    <div class="sec-cabeza">
+      <button class="btn ghost" id="secAnt" aria-label="Sección anterior" title="Sección anterior">←</button>
+      <div class="sec-quien"><div class="sec-titulo"><h2 id="secNombre">La sección</h2><button class="btn ghost" id="secEscuchar" title="Escuchar desde el principio de esta sección">▶ Desde acá</button></div><p class="sub" id="secInfo"></p></div>
+      <button class="btn ghost" id="secSig" aria-label="Sección siguiente" title="Sección siguiente">→</button>
+    </div>
+    <div class="sec-cuerpo">
+      <section class="dev dev-nota" id="devNota" hidden>
       <section class="insp-nota" id="inspNota" hidden aria-labelledby="t-nota">
         <div class="ic-cabeza sin-cara">
           <div><h2 id="t-nota">La nota</h2><p class="sub" id="inCual"></p></div>
@@ -554,10 +646,22 @@ dialog .cabeza h2{font-family:var(--display);font-weight:400;font-size:18px;marg
         <div class="botones"><button class="btn" data-op="borrar">Borrar la nota</button><button class="btn" id="inDeshacer" disabled>Deshacer</button><button class="btn" id="inEscuchar">Escuchar desde acá</button></div>
         <p class="hint">También en la partitura: arrastrá la nota para arriba o abajo, o usá las flechas del teclado (con Mayúscula, una octava), Suprimir para borrarla y Ctrl+Z para deshacer. Después de cambiarla vuelven a cantar sólo las frases que la tocan.</p>
       </section>
+      </section>
+      <section class="dev" id="devAcordes"><h3 class="dev-h">Acordes</h3><div id="secAcordes"></div></section>
+      <section class="dev" id="devBateria"><h3 class="dev-h">Batería</h3><div id="secBateria"></div></section>
+      <section class="dev" id="devLetra"><h3 class="dev-h">Letra</h3><div id="secLetra"></div></section>
+      <section class="dev dev-proceso" id="devProceso">
+      <section class="proceso-panel" id="procesoBloque">
+      <h2 id="t-proceso">Cómo se hace</h2>
+      <p class="hint">Elegí un verso, en la letra o en la partitura, y acá aparece cada paso con sus datos: qué pide la melodía, cómo eligió el letrista, cómo caen las sílabas en las notas y qué canta cada voz.</p>
+      <div id="proceso"></div>
+      </section>
       <p class="hint" id="inspectorVacio">Con cantores que cantan una letra (Formantes o Difonos), acá aparece paso a paso cómo se hizo el verso que elijas en la letra o en la partitura.</p>
-    </aside>
-  </div>
+      </section>
+    </div>
+  </section>
 </div>
+<div class="popover" id="popover" role="dialog" hidden></div>
 
 <dialog id="dialogoMurgas" aria-labelledby="t-murgas">
   <div class="cabeza"><h2 id="t-murgas">Mis murgas</h2><button class="btn" id="cerrarMurgas" aria-label="Cerrar">×</button></div>
