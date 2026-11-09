@@ -34,11 +34,14 @@ Es un multipista, como el Timba-o-matic: una fila por cosa y los compases de izq
 - Tocando una nota aparece un globito para subirla, bajarla, alargarla o borrarla. También se puede arrastrar.
 - Abajo está la sección elegida: su tono, sus acordes de a medio compás, el loop de cada compás y su letra, que se
   escribe ahí mismo. Cambiando el tono (tónica y modo) se compone de nuevo sólo esa sección en el tono nuevo: así se
-  modula donde uno quiere.
-- Todo entra en una pantalla, como en un programa de audio: el multipista tiene su propio scroll, y una manija entre
-  el multipista y la sección de abajo le cambia el alto. Los paneles de la barra (La pieza, Mezcla, Cantantes, Letra,
-  Partitura, Exportar, Cómo funciona) flotan encima, como ventanas: se arrastran de la cabeza, se agrandan desde la
-  esquina, se pueden tener varios abiertos y se acuerdan dónde quedaron. En el teléfono suben desde abajo, de a uno.
+  modula donde uno quiere. Arranca compacta (una línea con su nombre y su tono) y se abre con «Detalle» o con la
+  manija; al tocar un verso en el multipista se abre sola, porque ahí está cómo se hizo.
+- Todo entra en una pantalla, como en un programa de audio: las pistas se agrandan o se achican para llenar el alto que
+  hay (el multipista tiene su propio scroll sólo si no entran), y una manija entre el multipista y la sección de abajo
+  le cambia el alto. Los paneles de la barra (La pieza, Mezcla, Cantantes, Letra, Partitura, Exportar, ?) se abren en un
+  cajón a la derecha, de a uno: el multipista queda al lado y se achica, así se ve lo que pasa mientras se cambia algo.
+  El ancho se cambia arrastrando el borde del cajón (se acuerda por panel) y Escape lo cierra. En el teléfono el panel
+  sube desde abajo.
 
 Arriba hay tres pasos, cada uno con su botón: **1 Música** (Otra música), **2 Letra** (Otra letra, Lailareo) y **3
 Voces** (Cantar «la sección elegida», Cantar todo). Al entrar se compone la pieza y la página la muestra enseguida, con

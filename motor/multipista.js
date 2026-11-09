@@ -86,7 +86,7 @@ export function crearMultipista(raiz, cb = {}) {
       const vol = f.querySelector('input'); vol.oninput = () => cb.alVolumen?.(k, +vol.value); vol.onchange = () => cb.alVolumenFin?.(k);
       let lo = 99, hi = 0; for (const n of notas) { lo = Math.min(lo, n.p); hi = Math.max(hi, n.p); }
       const rango = { lo: lo - 1, hi: hi + 1 }, alto = Math.max(ALTO[k], Math.min(132, (rango.hi - rango.lo + 1) * (mt.clientWidth < 520 ? 3.5 : 5)));   // al menos 5 px por semitono (3,5 en el teléfono)
-      f.style.setProperty('--alto', alto + 'px');
+      f.style.setProperty('--alto', alto + 'px'); f.dataset.base = alto;
       const c = f.querySelector('.mt-c');
       for (const s of D.secciones) {
         const cv = document.createElement('canvas'); cv.className = 'mt-lienzo';
@@ -103,7 +103,27 @@ export function crearMultipista(raiz, cb = {}) {
     const vb = fb.querySelector('input'); vb.oninput = () => cb.alVolumen?.('bateria', +vb.value); vb.onchange = () => cb.alVolumenFin?.('bateria');
     fb.querySelectorAll('.mt-bat').forEach(b => b.onclick = ev => { ev.stopPropagation(); cb.alBateria?.(+b.dataset.q, b); });
     inn.style.width = (HEAD() + W) + 'px';
+    E.escalaV = 1; ajustarAlto(true);
     dibujarPistas(); moverCabezal();
+  }
+
+  // Las pistas de las cuerdas se escalan parejo para llenar el alto que hay: si no entran, se achican (hasta un mínimo)
+  // antes de tener que hacer scroll; si sobra lugar, se agrandan (hasta una vez y media) y las notas son más fáciles de
+  // tocar. En el teléfono la página se desplaza y el multipista tiene el alto que necesita, así que no se toca nada (si
+  // no, el alto dependería de sí mismo). El alto de cada pista sigue el rango de sus notas (ver armar); acá sólo se escala.
+  function ajustarAlto(sinDibujar) {
+    const pistas = [...inn.querySelectorAll('.mt-pista')], disp = mt.clientHeight;
+    if (!pistas.length || !disp) return;
+    const otras = [...inn.querySelectorAll('.mt-row:not(.mt-pista)')].reduce((a, f) => a + f.offsetHeight, 0);
+    const base = pistas.reduce((a, f) => a + (+f.dataset.base || 0), 0);
+    const esc = base && matchMedia('(min-width:821px)').matches ? Math.floor(Math.max(.55, Math.min(1.5, (disp - otras - pistas.length) / base)) * 20) / 20 : 1;
+    if (esc === E.escalaV) return;
+    E.escalaV = esc;
+    for (const f of pistas) {
+      const alto = Math.max(32, Math.round(+f.dataset.base * esc)); f.style.setProperty('--alto', alto + 'px');
+      for (const L of E.lienzos) if (L.k === f.dataset.k) L.h = alto;
+    }
+    if (!sinDibujar) dibujarPistas();
   }
 
   function dibujarPistas() {
@@ -157,7 +177,15 @@ export function crearMultipista(raiz, cb = {}) {
     cabezal.style.transform = `translateX(${x}px)`;
     if (E.seguir && E.sonando) { const v0 = mt.scrollLeft, w = mt.clientWidth; if (x < v0 + HEAD() + 20 || x > v0 + w * .8) mt.scrollLeft = x - HEAD() - w * .2; }
   }
-  new ResizeObserver(() => { if (E.D && !ZOOMS[E.zoom]) armar(); }).observe(mt);
+  // si cambia el ancho y se ve toda la pieza, se arma de nuevo; si cambia el alto (la sección de abajo, la ventana), se
+  // escalan las pistas
+  let anchoVisto = 0, cuadro = 0;
+  new ResizeObserver(() => {
+    if (!E.D) return;
+    const w = mt.clientWidth, cambio = w !== anchoVisto; anchoVisto = w;
+    if (cambio && !ZOOMS[E.zoom]) { armar(); return; }
+    cancelAnimationFrame(cuadro); cuadro = requestAnimationFrame(() => ajustarAlto());
+  }).observe(mt);
 
   return {
     datos(D) { E.D = D; armar(); },

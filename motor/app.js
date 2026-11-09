@@ -489,7 +489,7 @@ function actualizarInspector(){const cant=!!cantanteAbierto,nota=!!notaAbierta;
   $("procesoBloque").hidden=!sint();$("inspectorVacio").hidden=sint();
   if(!nota)multipista.elegirNota(null)}
 function abrirCantante(clave){cantanteAbierto=clave;actualizarInspector();dibujarCantantes();abrirPanel("cantantes");
-  if(matchMedia("(max-width:999px)").matches)$("inspCantante").scrollIntoView({behavior:"smooth",block:"nearest"})}
+  if(angosto()||cajon.getBoundingClientRect().width<760)$("inspCantante").scrollIntoView({behavior:"smooth",block:"nearest"})}
 function dibujarInspCantante(){
   const x=losCantantes().find(y=>y.clave===cantanteAbierto);
   if(!x){cantanteAbierto=null;actualizarInspector();return}
@@ -700,6 +700,7 @@ function pasos(){
   else{t.textContent=`cantadas · ${quien} · si cambiás algo, vuelve a cantar sólo eso`;b.textContent="Cantantes";b.title="Ver y cambiar a los trece murguistas";$("pasoVoces").className="etapa hecho"}
   b.dataset.que=S.cantando?"parar":(porSec?hay<secsV.length:!S.vozHecha)||L.pendiente?"cantar":"ver";
   $("mp3").disabled=!S.vozHecha||S.cantando;$("mp3").title=S.vozHecha?"":"Primero cantá las voces";
+  $("mp3Motivo").textContent=S.vozHecha&&!S.cantando?"":"El MP3 sale con las voces cantadas: primero cantalas (paso 3).";
 }
 // quiénes cantan, en pocas palabras: «9 con bancos, 4 con MBROLA»
 function quienesCantan(){if(!S.pieza)return"";if(S.voces==="muestras")return"todos con muestras de coro";if(S.voces==="sintetizadas")return"todos con formantes";
@@ -754,7 +755,7 @@ const multipista=crearMultipista($("multipista"),{
   alBuscar:t=>{if(S.P)saltar(t)},
   alElegirSeccion:nombre=>elegirSeccion(nombre),
   alAcorde:(nombre,j,el)=>popAcorde(nombre,j,el),
-  alElegirVerso:(i,k,q)=>{const s=seccionDeQ(q);if(s&&s.nombre!==S.secElegida)elegirSeccion(s.nombre);if(sint())elegir(i,k,false,true)},
+  alElegirVerso:(i,k,q)=>{const s=seccionDeQ(q);if(s&&s.nombre!==S.secElegida)elegirSeccion(s.nombre);if(sint()){abrirDetalle(true);elegir(i,k,false,true)}},
   alMudo:k=>{S.mute={...S.mute,[k]:!S.mute[k]};aplicarMixTodo();guardarLuego()},
   alSolo:k=>{S.solo={...S.solo,[k]:!S.solo[k]};aplicarMixTodo()},
   alVolumen:(k,v)=>{S.mix[k]=v;aplicarMix(k)},
@@ -775,7 +776,7 @@ function dibujarTodo(){
   $("cantada").hidden=!sint();actualizarInspector();dibujarCantantes();
   if(sint()){libreto();chips()}
   actualizarVistas();pintarCursor();
-  delete $("hoja").dataset.lista;if(abiertos.includes("grabada"))verPartitura(false);
+  delete $("hoja").dataset.lista;if(panelAbierto==="grabada")verPartitura(false);
 }
 const totalQ=()=>{const u=S.pieza.secs[S.pieza.secs.length-1];return u.inicio+u.largo};
 const seccionDeQ=q=>S.pieza?.secs.find(s=>q>=s.inicio&&q<s.inicio+s.largo)||null;
@@ -1187,50 +1188,48 @@ async function verPartitura(irAhi){
   try{await mostrarPartitura($("hoja"),datosPapeles())}
   catch(e){console.error(e);delete $("hoja").dataset.lista;$("hoja").textContent=`No se pudo dibujar la partitura: ${e?.message||e}`}}
 
-// ============================================================ los paneles de arriba
-// Los botones de la barra abren un panel (uno a la vez) arriba del multipista. Un panel está si su contenido está
-// (la letra, sólo con cantores que cantan; los cantantes, sólo con difonos): si no, su botón no aparece.
-// Los paneles flotan encima del multipista, como ventanas: varios a la vez, se arrastran de la cabeza, se agrandan
-// desde la esquina de abajo a la derecha, y se acuerdan dónde quedaron y de qué tamaño (en este navegador). Tocar uno
-// lo trae adelante; Escape cierra el de adelante. En el teléfono suben desde abajo, de a uno.
+// ============================================================ el cajón de la derecha
+// Los botones de la barra abren un panel en el cajón de la derecha, de a uno: el multipista queda a la izquierda y se
+// achica, así se ve lo que pasa mientras se cambia algo. El ancho se cambia arrastrando el borde izquierdo del cajón y se
+// acuerda por panel, en este navegador. Un panel está si su contenido está (la letra, sólo con cantores que cantan; los
+// cantantes, sólo con difonos): si no, su botón no aparece. Escape lo cierra. En el teléfono el panel sube desde abajo.
 const BOTONES_PANEL=[...document.querySelectorAll(".barra [data-panel]")];
-const abiertos=[];   // de atrás para adelante
-const ANCHO_PANEL={pPieza:780,pMezcla:600,cantantes:1040,cantada:600,grabada:920,tabExportar:560,tabAcerca:720};
-let lugarPanel={};try{lugarPanel=JSON.parse(localStorage.getItem("murga.paneles")||"{}")||{}}catch(e){}
-const guardarLugares=()=>{try{localStorage.setItem("murga.paneles",JSON.stringify(lugarPanel))}catch(e){}};
+const cajon=$("paneles"),sepCajon=$("sepCajon");
+let panelAbierto=null;
+const ANCHO_PANEL={pPieza:480,pMezcla:440,cantantes:820,cantada:520,grabada:760,tabExportar:460,tabAcerca:600};
+const ANCHO_MIN=340,RESTO_MIN=520;   // al multipista le quedan al menos ~520 px
+let anchos={};try{anchos=JSON.parse(localStorage.getItem("murga.cajon")||"{}")||{}}catch(e){}
+const guardarAnchos=()=>{try{localStorage.setItem("murga.cajon",JSON.stringify(anchos))}catch(e){}};
 const angosto=()=>matchMedia("(max-width:820px)").matches;
-function ubicarPanel(p){if(angosto())return;
-  const l=lugarPanel[p.id]||{},arriba=document.querySelector(".barra").getBoundingClientRect().bottom+6,n=abiertos.length;
-  const w=Math.min(l.w||ANCHO_PANEL[p.id]||640,innerWidth-16);
-  const x=Math.max(8,Math.min(l.x??innerWidth-w-16-28*n,innerWidth-w-8)),y=Math.max(8,Math.min(l.y??arriba+28*n,innerHeight-80));
-  p.style.left=x+"px";p.style.top=y+"px";p.style.right="auto";p.style.width=w+"px";p.style.maxHeight=(innerHeight-y-8)+"px";
-  if(l.h)p.style.height=Math.min(l.h,innerHeight-y-8)+"px";else p.style.removeProperty("height")}
-function alFrente(id){const i=abiertos.indexOf(id);if(i>=0)abiertos.splice(i,1);abiertos.push(id);abiertos.forEach((x,j)=>{$(x).style.zIndex=40+j})}
+const anchoMax=()=>Math.max(ANCHO_MIN,innerWidth-RESTO_MIN-42);   // 42: los márgenes de la página y el borde del cajón
+const anchoDe=id=>Math.max(ANCHO_MIN,Math.min(anchos[id]||ANCHO_PANEL[id]||480,anchoMax()));
+function ponerAncho(px){px=Math.round(px);cajon.style.setProperty("--cajon-w",px+"px");
+  sepCajon.setAttribute("aria-valuenow",px);sepCajon.setAttribute("aria-valuemin",ANCHO_MIN);sepCajon.setAttribute("aria-valuemax",anchoMax())}
 function abrirPanel(id,alternar=false){const p=$(id);if(!p||p.hidden)return;
-  if(abiertos.includes(id)){if(alternar&&abiertos[abiertos.length-1]===id)cerrarPanel(id);else{alFrente(id);pintarPaneles()}return}
-  if(angosto())abiertos.slice().forEach(x=>cerrarPanel(x));
-  ubicarPanel(p);alFrente(id);pintarPaneles();
-  if(id==="grabada")verPartitura(false)}
-function cerrarPanel(id=abiertos[abiertos.length-1]){const i=abiertos.indexOf(id);if(i<0)return;abiertos.splice(i,1);pintarPaneles()}
-function pintarPaneles(){for(const b of BOTONES_PANEL){const id=b.dataset.panel,on=abiertos.includes(id);b.setAttribute("aria-pressed",on);b.setAttribute("aria-expanded",on);$(id).classList.toggle("abierto",on)}}
-function revisarPaneles(){for(const b of BOTONES_PANEL)b.hidden=$(b.dataset.panel).hidden;for(const id of abiertos.slice())if($(id).hidden)cerrarPanel(id)}
+  if(panelAbierto===id){if(alternar)cerrarPanel();return}
+  panelAbierto=id;ponerAncho(anchoDe(id));pintarPaneles();
+  if(id==="grabada")verPartitura(false);
+  p.scrollTop=0;const h=p.querySelector("h2");if(h){h.tabIndex=-1;h.focus({preventScroll:true})}}
+function cerrarPanel(){if(!panelAbierto)return;const id=panelAbierto,dentro=cajon.contains(document.activeElement);panelAbierto=null;pintarPaneles();
+  if(dentro)BOTONES_PANEL.find(b=>b.dataset.panel===id)?.focus({preventScroll:true})}
+function pintarPaneles(){for(const b of BOTONES_PANEL){const id=b.dataset.panel,on=panelAbierto===id;b.setAttribute("aria-pressed",on);b.setAttribute("aria-expanded",on);$(id).classList.toggle("abierto",on)}
+  cajon.hidden=sepCajon.hidden=!panelAbierto}
+function revisarPaneles(){for(const b of BOTONES_PANEL)b.hidden=$(b.dataset.panel).hidden;if(panelAbierto&&$(panelAbierto).hidden)cerrarPanel()}
 BOTONES_PANEL.forEach(b=>{b.setAttribute("aria-controls",b.dataset.panel);b.onclick=()=>{$("barraMas").classList.remove("abierta");$("mas").setAttribute("aria-expanded",false);abrirPanel(b.dataset.panel,true)}});
-document.querySelectorAll(".cerrar-panel").forEach(b=>b.onclick=()=>cerrarPanel(b.closest(".panel-sup").id));
-// arrastrar de la cabeza; agrandar desde la esquina (el resize de CSS) y guardar el tamaño al soltar
-for(const b of BOTONES_PANEL){const p=$(b.dataset.panel),cab=p.querySelector(":scope>.cabeza");
-  p.addEventListener("pointerdown",e=>{if(abiertos[abiertos.length-1]!==p.id)alFrente(p.id);
-    const r=p.getBoundingClientRect();if(!angosto()&&e.clientX>r.right-22&&e.clientY>r.bottom-22)p.dataset.agrandando="1"},true);
-  if(cab)cab.addEventListener("pointerdown",e=>{if(angosto()||e.button!==0||e.target.closest("button,input,select,a,label"))return;
-    e.preventDefault();cab.setPointerCapture(e.pointerId);const r=p.getBoundingClientRect(),dx=e.clientX-r.left,dy=e.clientY-r.top;
-    cab.onpointermove=ev=>{const x=Math.max(80-r.width,Math.min(innerWidth-80,ev.clientX-dx)),y=Math.max(4,Math.min(innerHeight-40,ev.clientY-dy));
-      p.style.left=x+"px";p.style.top=y+"px";p.style.maxHeight=(innerHeight-y-8)+"px"};
-    cab.onpointerup=()=>{cab.onpointermove=cab.onpointerup=null;const q=p.getBoundingClientRect();lugarPanel[p.id]={...lugarPanel[p.id],x:Math.round(q.left),y:Math.round(q.top)};guardarLugares()}})}
-addEventListener("pointerup",()=>{for(const id of abiertos){const p=$(id);if(!p.dataset.agrandando)continue;delete p.dataset.agrandando;
-  const q=p.getBoundingClientRect();lugarPanel[id]={...lugarPanel[id],x:Math.round(q.left),y:Math.round(q.top),w:Math.round(q.width),h:Math.round(q.height)};guardarLugares()}});
-// si la ventana del navegador se achica, los paneles quedan adentro
-addEventListener("resize",()=>{if(angosto())return;for(const id of abiertos){const p=$(id),q=p.getBoundingClientRect();
-  const x=Math.max(8,Math.min(q.left,innerWidth-Math.min(q.width,innerWidth-16)-8)),y=Math.max(8,Math.min(q.top,innerHeight-80));
-  p.style.left=x+"px";p.style.top=y+"px";p.style.maxHeight=(innerHeight-y-8)+"px"}});
+document.querySelectorAll(".cerrar-panel").forEach(b=>b.onclick=()=>cerrarPanel());
+// el borde izquierdo del cajón: arrastrarlo cambia el ancho; doble clic, el de siempre; con el teclado, flechas
+sepCajon.onpointerdown=e=>{if(angosto()||e.button!==0)return;e.preventDefault();sepCajon.setPointerCapture(e.pointerId);sepCajon.classList.add("arrastrando");
+  const x0=e.clientX,w0=cajon.getBoundingClientRect().width;
+  sepCajon.onpointermove=ev=>ponerAncho(Math.max(ANCHO_MIN,Math.min(anchoMax(),w0-(ev.clientX-x0))));
+  sepCajon.onpointerup=()=>{sepCajon.onpointermove=sepCajon.onpointerup=null;sepCajon.classList.remove("arrastrando");
+    anchos[panelAbierto]=Math.round(cajon.getBoundingClientRect().width);guardarAnchos()}};
+sepCajon.ondblclick=()=>{if(!panelAbierto)return;delete anchos[panelAbierto];guardarAnchos();ponerAncho(anchoDe(panelAbierto))};
+sepCajon.onkeydown=e=>{if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight")return;e.preventDefault();
+  const w=Math.max(ANCHO_MIN,Math.min(anchoMax(),cajon.getBoundingClientRect().width+(e.key==="ArrowLeft"?32:-32)));ponerAncho(w);anchos[panelAbierto]=Math.round(w);guardarAnchos()};
+addEventListener("resize",()=>{if(panelAbierto&&!angosto())ponerAncho(anchoDe(panelAbierto))});
+// Escape cierra el panel (con una nota elegida, Escape primero la suelta; el globito y el diálogo tienen su propio Escape)
+document.addEventListener("keydown",e=>{if(e.key!=="Escape"||!panelAbierto||e.defaultPrevented)return;
+  if(e.target.closest?.(".popover,dialog"))return;if(notaAbierta&&!cajon.contains(e.target))return;cerrarPanel()});
 // «La pieza» manda a «Cantantes», donde se eligen las voces
 $("irCantantes").onclick=()=>abrirPanel("cantantes");
 // «Ver modelos disponibles»: las voces que hay (cómo canta la murga, la misma voz para todos, el plantel); se acuerda si
@@ -1241,17 +1240,31 @@ $("verModelos").onclick=()=>verModelos();
 try{if(localStorage.getItem("murga.modelos"))verModelos(true)}catch(e){}
 $("irCantantes").onclick=()=>{abrirPanel("cantantes");verModelos(true)};
 {const mo=new MutationObserver(revisarPaneles);for(const b of BOTONES_PANEL)mo.observe($(b.dataset.panel),{attributes:true,attributeFilter:["hidden"]});revisarPaneles();pintarPaneles()}
-// La manija entre el multipista y la sección de abajo: arrastrándola cambia el alto de la sección (se guarda); doble
-// clic la achica o la vuelve a abrir; con el teclado, flechas arriba y abajo
-{const m=$("manija"),app=document.querySelector(".app");let alto=0;try{alto=+localStorage.getItem("murga.detalle")||0}catch(e){}
- const poner=px=>{alto=Math.round(px);if(alto)app.style.setProperty("--detalle",alto+"px");else app.style.removeProperty("--detalle")};poner(alto);
- const guardarAlto=()=>{try{localStorage.setItem("murga.detalle",String(alto||""))}catch(e){}};
- const limite=px=>Math.max(46,Math.min(innerHeight-240,px)),actual=()=>$("secCaja").getBoundingClientRect().height;
- m.onpointerdown=e=>{e.preventDefault();m.setPointerCapture(e.pointerId);m.classList.add("arrastrando");const y0=e.clientY,h0=actual();
-   m.onpointermove=ev=>poner(limite(h0-(ev.clientY-y0)));
-   m.onpointerup=()=>{m.onpointermove=m.onpointerup=null;m.classList.remove("arrastrando");guardarAlto()}};
- m.ondblclick=()=>{poner(actual()>80?46:Math.round(innerHeight*.38));guardarAlto()};
- m.onkeydown=e=>{if(e.key!=="ArrowUp"&&e.key!=="ArrowDown")return;e.preventDefault();poner(limite(actual()+(e.key==="ArrowUp"?40:-40)));guardarAlto()}}
+// ============================================================ la sección de abajo
+// Compacta (una sola línea con lo de la sección) o abierta (acordes, batería, letra y cómo se hace), con una manija entre
+// el multipista y ella: arrastrarla cambia el alto (y la abre si estaba cerrada), un toque la abre o la cierra, con el
+// teclado Enter y las flechas. Se acuerda en este navegador. Al tocar un verso en el multipista se abre sola: ahí está
+// cómo se hizo.
+const detalle={abierto:false,alto:0};
+try{Object.assign(detalle,JSON.parse(localStorage.getItem("murga.seccion")||"{}"))}catch(e){}
+const guardarDetalle=()=>{try{localStorage.setItem("murga.seccion",JSON.stringify({abierto:detalle.abierto,alto:detalle.alto}))}catch(e){}};
+const altoDetalleBase=()=>Math.max(220,Math.min(520,Math.round(innerHeight*.38)));
+const limiteDetalle=px=>Math.max(140,Math.min(innerHeight-300,px));
+function pintarDetalle(){$("secCaja").classList.toggle("compacta",!detalle.abierto);
+  $("secAbrir").setAttribute("aria-expanded",detalle.abierto);$("secAbrir").textContent=detalle.abierto?"Detalle ▾":"Detalle ▴";
+  document.querySelector(".app").style.setProperty("--detalle-h",(detalle.alto||altoDetalleBase())+"px")}
+function abrirDetalle(v=true,guardar=true){if(detalle.abierto===v)return;detalle.abierto=v;pintarDetalle();if(guardar)guardarDetalle()}
+{const m=$("manija"),caja=$("secCaja");
+ m.onpointerdown=e=>{if(e.button!==0)return;e.preventDefault();m.setPointerCapture(e.pointerId);const y0=e.clientY;let h0=caja.getBoundingClientRect().height,movido=false;
+   m.onpointermove=ev=>{if(!movido&&Math.abs(ev.clientY-y0)<4)return;
+     if(!movido){movido=true;m.classList.add("arrastrando");if(!detalle.abierto){detalle.alto=detalle.alto||altoDetalleBase();detalle.abierto=true;pintarDetalle();h0=caja.getBoundingClientRect().height}}
+     detalle.alto=Math.round(limiteDetalle(h0-(ev.clientY-y0)));pintarDetalle()};
+   m.onpointerup=()=>{m.onpointermove=m.onpointerup=null;m.classList.remove("arrastrando");if(movido)guardarDetalle();else abrirDetalle(!detalle.abierto)}};
+ m.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();abrirDetalle(!detalle.abierto);return}
+   if(e.key!=="ArrowUp"&&e.key!=="ArrowDown")return;e.preventDefault();if(!detalle.abierto){abrirDetalle(true);return}
+   detalle.alto=Math.round(limiteDetalle(caja.getBoundingClientRect().height+(e.key==="ArrowUp"?40:-40)));pintarDetalle();guardarDetalle()};
+ $("secAbrir").onclick=()=>abrirDetalle(!detalle.abierto);
+ pintarDetalle()}
 // el tema: como el sistema, oscuro o claro (se guarda en este navegador)
 const TEMAS_COLOR=["","dark","light"],NOMBRE_TEMA={"":"como el sistema",dark:"oscuro",light:"claro"};
 let temaColor="";try{temaColor=localStorage.getItem("murga.tema")||""}catch(e){}if(!TEMAS_COLOR.includes(temaColor))temaColor="";
@@ -1263,8 +1276,7 @@ $("temaColor").onclick=()=>{temaColor=TEMAS_COLOR[(TEMAS_COLOR.indexOf(temaColor
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",()=>multipista.redibujar());
 // la barra espaciadora toca o pausa; Escape cierra el panel
 document.addEventListener("keydown",e=>{if(e.target.closest?.("input,textarea,select,button,[contenteditable],dialog,.popover"))return;
-  if(e.key===" "&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!$("play").disabled){e.preventDefault();$("play").click()}
-  else if(e.key==="Escape"&&abiertos.length&&!notaAbierta)cerrarPanel()});
+  if(e.key===" "&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!$("play").disabled){e.preventDefault();$("play").click()}});
 async function bajarPdf(){if(!S.pieza)return;avisoExport("Armando el PDF…");
   try{const blob=await pdfPartitura(datosPapeles());avisoExport(await guardar(blob,base()+"_partitura.pdf"))}catch(e){errorExport(e)}}
 $("pdf").onclick=bajarPdf;$("pdf2").onclick=bajarPdf;
@@ -1296,11 +1308,11 @@ function foto(){return{id:S.murga.id,nombre:S.murga.nombre||"",creada:S.murga.cr
   pieza:S.pieza,ajustesPieza:Object.fromEntries(CLAVES_PIEZA.map(k=>[k,S[k]])),acordes:S.acordes,tonos:S.tonos,voces:S.voces,semCoro:S.semCoro,ajustes:S.ajustes,
   coro:{formacion:S.formacion,adornos:S.adornos,grito:S.grito,sala:S.sala,lugar:S.lugar},mix:S.mix,mute:S.mute,secElegida:S.secElegida,letra:fotoLetra()}}
 let temporizadorGuardar=null;
-function avisoGuardado(t){$("guardado").textContent=t}
+function avisoGuardado(t,largo){$("guardado").textContent=t;$("guardado").title=largo||t}
 function guardarLuego(){if(!S.pieza)return;clearTimeout(temporizadorGuardar);avisoGuardado("Guardando…");temporizadorGuardar=setTimeout(guardarYa,700)}
 async function guardarYa(){clearTimeout(temporizadorGuardar);if(!S.pieza)return;
   let f=foto();try{structuredClone(f)}catch(e){f={...f,letra:f.letra&&{...f.letra,diags:null}}}
-  try{await guardarMurga(f);try{localStorage.setItem("murga.actual",S.murga.id)}catch(e){}avisoGuardado("Guardada en este navegador")}
+  try{await guardarMurga(f);try{localStorage.setItem("murga.actual",S.murga.id)}catch(e){}avisoGuardado("✓ Guardada","Guardada en este navegador (sólo la ves vos, en esta compu)")}
   catch(e){console.warn("no se guardó la murga:",e);avisoGuardado("No se pudo guardar")}}
 // los controles, como diga S (al abrir una murga)
 function sincronizarControles(){
