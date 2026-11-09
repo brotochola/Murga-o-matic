@@ -7,6 +7,7 @@
 // Del lado del obrero: cargarBanco(fuente), que arma el banco (banco.js) leyendo de la carpeta.
 import { crearBanco } from './banco.js';
 import { desdeUrl, desdeBlob, abrirZip, leerEntrada, fuenteDeEntrada } from './zip.js';
+import { esOgg, oggAWav } from './opus.js';
 
 // ── IndexedDB ────────────────────────────────────────────────────────────
 const BASE = 'murga-o-matic-estudio', VERSION = 1;
@@ -107,13 +108,14 @@ export async function abrirFuente(fuente) {
 export async function cargarBanco(fuente) {
   const { rutas, leer, carpeta } = await abrirFuente(fuente);
   const bytes = new Map();
-  const esTexto = r => /(^|\/)(oto\.ini|prefix\.map|character\.txt|character\.yaml)$/i.test(r);
+  const esTexto = r => /(^|\/)(oto\.ini|prefix\.map|character\.txt|character\.yaml|murga_niveles\.txt)$/i.test(r);
   await Promise.all(rutas.filter(esTexto).map(async r => bytes.set(r, await leer(r))));
   // los .wav se sueltan apenas banco.js los decodifica (se queda con las muestras)
   const banco = crearBanco(rutas, r => { const b = bytes.get(r) || null; if (b && /\.wav$/i.test(r)) bytes.delete(r); return b; });
+  // (un banco de la versión liviana trae sus .wav en Opus: se decodifican acá, opus.js)
   banco.preparar = async archivos => {
     const faltan = archivos.filter(a => !bytes.has(a) && !banco.yaLeido(a));
-    for (let i = 0; i < faltan.length; i += 16) await Promise.all(faltan.slice(i, i + 16).map(async a => { try { const b = await leer(a); if (b) bytes.set(a, b); } catch { /* no está */ } }));
+    for (let i = 0; i < faltan.length; i += 16) await Promise.all(faltan.slice(i, i + 16).map(async a => { try { let b = await leer(a); if (esOgg(b)) b = await oggAWav(b); if (b) bytes.set(a, b); } catch { /* no está */ } }));
   };
   banco.cacheAnalisis = new Map();
   banco.carpeta = carpeta;

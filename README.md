@@ -81,6 +81,21 @@ La página se guarda en el navegador y después anda sin internet, en la compu o
 
 También hay una versión en **un solo archivo HTML** (25 MB) que se abre con doble clic, sin internet y sin servidor: `bun herramientas/un_archivo.mjs` la arma en `murga_trabajo/un_archivo/murga-o-matic.html`. Lleva adentro el código empaquetado y todos los audios, comprimidos. Es para la compu; en el teléfono anda mejor la página instalada.
 
+Y hay una **versión liviana para la compu**, con los bancos de UTAU adentro (son de uso personal: no se comparte). Los bancos se recortan una vez y la página se arma cada vez que cambia:
+
+    npm run bancos      # bancos/*.zip → ../Murga-o-matic-offline/bancos/, recortados y en Opus (unos 5 minutos)
+    npm run offline     # la página → ../Murga-o-matic-offline/ (hacen falta bun y ffmpeg)
+
+La misma versión liviana, **sin los bancos** (no se pueden publicar) y con las licencias de lo que se redistribuye, es la que va a GitHub Pages (17 MB):
+
+    npm run publicar    # la arma en ../Murga-o-matic-web y la sube a la rama gh-pages (un commit que reemplaza al anterior)
+
+Publica lo commiteado (con cambios sin commit, no publica). GitHub Pages tiene que servir la rama `gh-pages` (Settings → Pages → «Deploy from a branch», `gh-pages`, `/ (root)`).
+
+Queda en una carpeta aparte, al lado del repositorio, `Murga-o-matic-offline/` (159 MB: 142 de bancos y 17 del resto), sólo con lo que hace falta para usarla (sin herramientas, documentos, licencias ni el estudio de voces). Se abre con su `abrir.bat`, que arranca un servidor chico (`servir.mjs`, en el puerto 8124) y abre Chrome. El código va minificado archivo por archivo; los loops, las frases y las muestras del coro, en Opus (duran lo mismo que los WAV, a la muestra); las voces de MBROLA, comprimidas.
+
+De cada banco quedan sólo los `.wav` que la página puede pedir (las sílabas de muchas murgas del letrista, del lailareo y de un texto con las sílabas del castellano, por los versos escritos a mano; cada voz del plantel en cada lugar y en todas las alturas a las que llega con el «Esfuerzo») y, de cada uno, sólo el pedazo que marcan sus `oto.ini`. Los `oto.ini` quedan enteros (con los tiempos corridos) y el nivel de cada `.wav` va anotado en `murga_niveles.txt`; `utau_recortar.mjs` comprueba que el recortado pide los mismos pedazos y canta igual que el entero (1651 → 713 MB). Después cada `.wav` va en Opus a 96 kbps (713 → 142 MB): el archivo se sigue llamando `.wav` y la página lo decodifica con WebCodecs (`motor/cantor/opus.js`; las herramientas, con ffmpeg) y lo vuelve a la frecuencia del original, que va anotada en el OpusHead (a 48 kHz WORLD analiza con el doble de puntos y canta más lento: toda la murga con MIKE, 85 → 123 s). Con Opus lo cantado cambia de 0,7 a 1,3 dB por banda (tercios de octava; analizar a 48 kHz en vez de 44,1, aun sin pérdida, ya lo cambia 1,7 dB); las frases con `.wav` y con Opus quedan en `murga_trabajo/utau/opus_ab/` para escuchar. `--kbps 64` las achica más; `--wav`, sin Opus. Si cambia cómo se reparten las sílabas (`banco.js`, `letra.js`, el letrista), hay que volver a recortar. `node herramientas/probar_pagina.mjs ../Murga-o-matic-offline` y `node herramientas/probar_voces.mjs --carpeta ../Murga-o-matic-offline` la prueban.
+
 Lo hace `sw.js` (un service worker) con la lista `offline.json`, que tiene cada archivo de la página con un resumen de su contenido. **Cada vez que cambia un archivo de la página hay que correr `node herramientas/offline.mjs` antes del commit**: rehace la lista y la versión de `sw.js`. Así, quien la tiene guardada ve «Hay una versión nueva» y, al recargar, baja sólo los archivos que cambiaron. `herramientas/probar_pagina.mjs` avisa si la lista quedó atrasada.
 
 ## Uso local

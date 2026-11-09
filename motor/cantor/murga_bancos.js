@@ -40,14 +40,15 @@ export function opcionesDe(c, voz, veces = 0, V = null) {
 }
 
 // la pieza, su letra y los cantores (como la página: exportar_voces.mjs), cortada al final de la primera sección que
-// termina después de `hasta` segundos (0: entera)
-export function prepararMurga({ forma = 'retirada', estilo = 'trasnochada', semilla = 56, tonica = 9, modo = 'mayor', largo = 'corta', hasta = 60, letraSemilla = 1, tema = '' } = {}) {
+// termina después de `hasta` segundos (0: entera). versos(partes): otra letra en vez de la del letrista (un texto
+// por verso de cada parte), como cuando se escribe a mano en la página
+export function prepararMurga({ forma = 'retirada', estilo = 'trasnochada', semilla = 56, tonica = 9, modo = 'mayor', largo = 'corta', hasta = 60, letraSemilla = 1, tema = '', versos = null } = {}) {
   const op = { forma, estilo, semilla, tonica, modo, largo };
   const LLAMADAS = Object.fromEntries(DATOS.ritmos.map(r => { const a = DATOS.acompana[r.id]; if (!a || !a[0]) return [r.id, 0]; const c4 = r.compas * 4 / r.tpc; return [r.id, Math.ceil((DATOS.frases[a[0]].ultimo + .05) / c4)]; }));
   const P = componer(MODELO, { ...op, llamadas: LLAMADAS });
   const { T, fin } = tiempos(P); P.total = fin; P.T = T;
   const M = metrica(P), partes = partesAEscribir(M, forma);
-  const textos = escribirLetraLocal({ forma, tema, metrica: M, semilla: semilla * 1000 + letraSemilla }).textos;
+  const textos = versos ? versos(partes) : escribirLetraLocal({ forma, tema, metrica: M, semilla: semilla * 1000 + letraSemilla }).textos;
   const letras = {}; partes.forEach((p, i) => { for (const s of p.secciones) letras[s] = textos[i]; });
   const { porQ } = silabear(P, letras);
   const corte = hasta > 0 ? (P.secs.find(s => s.t1 >= hasta)?.t1 ?? fin) : fin;

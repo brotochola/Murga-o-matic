@@ -2,13 +2,14 @@
 // voces, con el botón «Cantar las voces»), las caras (con la regla COEP que bloqueaba las de
 // DiceBear), toda la murga con una voz (MBROLA, muestras de coro, formantes, un banco) y cuánto suena cada una, y cuánto
 // tarda en volver a cantar cuando se cambia un solo murguista (su volumen, su voz).
-//   node herramientas/probar_voces.mjs [--sin-coep] [--voces es2,muestras,formantes,banco:MIKE]
-// Sirve la carpeta con herramientas/servir.js (los bancos de bancos/*.zip, si están). Sale con 1 si algo falla.
+//   node herramientas/probar_voces.mjs [--sin-coep] [--voces es2,muestras,formantes,banco:MIKE] [--carpeta liviana]
+// Sirve la carpeta con herramientas/servir.js (los bancos de bancos/*.zip, si están); con --carpeta, una versión
+// liviana (herramientas/construir.mjs) con su servir.mjs. Sale con 1 si algo falla.
 // Lo que mide sirve para NIVEL_MOTOR (motor/app.js): cuánto más fuerte o más bajo sale cada motor que MBROLA.
 import { spawn } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { RAIZ } from './corpus.js';
 
 const args = process.argv.slice(2);
@@ -28,8 +29,10 @@ function chrome() {
   return exe;
 }
 
+const iC = args.indexOf('--carpeta'), CARPETA = iC >= 0 ? resolve(args[iC + 1]) : null;
 const PW = 8200 + Math.floor(Math.random() * 300);
-const srv = spawn(process.execPath, [join(RAIZ, 'herramientas', 'servir.js'), String(PW)], { cwd: RAIZ, stdio: 'ignore' });
+const srv = CARPETA ? spawn(process.execPath, [join(CARPETA, 'servir.mjs'), String(PW)], { cwd: CARPETA, stdio: 'ignore' })
+  : spawn(process.execPath, [join(RAIZ, 'herramientas', 'servir.js'), String(PW)], { cwd: RAIZ, stdio: 'ignore' });
 await esperar(800);
 const PUERTO = 9300 + Math.floor(Math.random() * 500);
 const perfil = join(process.env.MURGA_PERFIL || tmpdir(), `murga_voces_${Date.now()}`);

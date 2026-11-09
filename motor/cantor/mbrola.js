@@ -6,7 +6,10 @@
 //   const muestras = mb.cantar(pho);                   →  Int16Array
 
 export async function crearMbrola(wasm, voz) {
-  const archivos = new Map([['voz', voz instanceof Uint8Array ? voz : new Uint8Array(voz)]]);
+  voz = voz instanceof Uint8Array ? voz : new Uint8Array(voz);
+  // la voz comprimida con gzip (la versión liviana, herramientas/construir.mjs): se abre acá
+  if (voz[0] === 0x1f && voz[1] === 0x8b) voz = new Uint8Array(await new Response(new Blob([voz]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+  const archivos = new Map([['voz', voz]]);
   const abiertos = new Map(); // fd → { datos, pos }
   let proximo = 4, memoria = null, salida = '';
   const vista = () => new DataView(memoria.buffer);
