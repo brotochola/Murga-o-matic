@@ -115,7 +115,7 @@ export async function cargarBanco(fuente) {
   // (un banco de la versión liviana trae sus .wav en Opus: se decodifican acá, opus.js)
   banco.preparar = async archivos => {
     const faltan = archivos.filter(a => !bytes.has(a) && !banco.yaLeido(a));
-    for (let i = 0; i < faltan.length; i += 16) await Promise.all(faltan.slice(i, i + 16).map(async a => { try { let b = await leer(a); if (esOgg(b)) b = await oggAWav(b); if (b) bytes.set(a, b); } catch { /* no está */ } }));
+    for (let i = 0; i < faltan.length; i += 16) await Promise.all(faltan.slice(i, i + 16).map(async a => { try { let b = await leer(a); if (esOgg(b)) b = await oggAWav(b); if (b) bytes.set(a, b); } catch (e) { console.warn(`${a}: no se pudo leer del banco (${e?.message || e}), ese pedazo no canta`); } }));
   };
   banco.cacheAnalisis = new Map();
   banco.carpeta = carpeta;

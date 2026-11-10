@@ -52,9 +52,23 @@ export function extraer(e, inflar) {
 // Una fuente de bytes: { tamano, leer(desde, hasta) → Promise<Uint8Array> }.
 export const desdeBytes = b => ({ tamano: b.length, leer: async (a, z) => b.subarray(a, z) });
 export const desdeBlob = blob => ({ tamano: blob.size, leer: async (a, z) => new Uint8Array(await blob.slice(a, z).arrayBuffer()) });
+// un pedido de rango, sin la caché del navegador. GitHub Pages manda max-age=600 y ETag, y con eso Chrome guarda los
+// pedazos en su caché, que atiende de a un pedido por vez cada .zip: con los obreros cantando, 240 pedazos de 20 KB
+// (48 a la vez) tardaban 3,0-13,9 s contra 0,6-0,8 s sin ella, y unos 2 de cada 100 fallaban con
+// net::ERR_CACHE_OPERATION_NOT_SUPPORTED (un pedazo de voz que no cantaba). servir.js ya manda no-store.
+// Si falla la red, se pide otra vez después de un rato (dos veces).
+async function rango(url, a, z) {
+  for (let i = 0; ; i++) {
+    try {
+      const q = await fetch(url, { headers: { Range: `bytes=${a}-${z - 1}` }, cache: 'no-store' });
+      if (q.status !== 206) throw new Error(`el servidor dejó de dar pedazos (${q.status})`);
+      return new Uint8Array(await q.arrayBuffer());
+    } catch (e) { if (!(e instanceof TypeError) || i >= 2) throw e; await new Promise(r => setTimeout(r, 300 * (i + 1))); }
+  }
+}
 // una dirección: con pedidos de un rango de bytes si el servidor los acepta (GitHub Pages, servir.js); si no, entero
 export async function desdeUrl(url) {
-  const r = await fetch(url, { headers: { Range: 'bytes=0-0' } });
+  const r = await fetch(url, { headers: { Range: 'bytes=0-0' }, cache: 'no-store' });
   if (r.status === 404) throw new Error('no está');
   if (!r.ok) throw new Error(`el servidor dice ${r.status}`);
   const cr = r.headers.get('content-range');
@@ -62,7 +76,7 @@ export async function desdeUrl(url) {
     await r.arrayBuffer();
     const tamano = +cr.split('/')[1];
     // (un archivo vacío, como el oto.ini de la raíz de LongWei, no se pide: un rango de cero bytes es un error 416)
-    return { tamano, leer: async (a, z) => { if (z <= a) return new Uint8Array(0); const q = await fetch(url, { headers: { Range: `bytes=${a}-${z - 1}` } }); if (q.status !== 206) throw new Error(`el servidor dejó de dar pedazos (${q.status})`); return new Uint8Array(await q.arrayBuffer()); } };
+    return { tamano, leer: async (a, z) => z <= a ? new Uint8Array(0) : rango(url, a, z) };
   }
   return desdeBytes(new Uint8Array(await r.arrayBuffer()));
 }

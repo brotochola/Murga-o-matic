@@ -8,7 +8,7 @@
 //   cambió se copia del guardado anterior en vez de bajarse otra vez.
 // - VERSION la reescribe herramientas/offline.mjs: si cambia un archivo cambia este, y el navegador instala el nuevo.
 //   El nuevo espera; la página avisa «Hay una versión nueva» y al recargar toma su lugar.
-const VERSION = '10cf1a976c';
+const VERSION = 'ffef29cb9b';
 const PREFIJO = 'murga-', CACHE = PREFIJO + VERSION, FUENTES = PREFIJO + 'fuentes';
 const BASE = new URL('./', self.location).href;
 
@@ -64,6 +64,8 @@ self.addEventListener('fetch', e => {
   let ruta = decodeURIComponent(url.pathname.slice(new URL(BASE).pathname.length));
   if (ruta === '' || ruta.endsWith('/')) ruta += 'index.html';
   if (ruta === 'sw.js' || ruta === 'offline.json') return;
+  // los bancos no se guardan acá (no están en offline.json): sus miles de pedidos de rango van directo a la red
+  if (ruta.startsWith('bancos/') && ruta.endsWith('.zip')) return;
   e.respondWith((async () => {
     const L = await laLista().catch(() => null), a = L && L.get(ruta);
     if (!a) return fetch(req);

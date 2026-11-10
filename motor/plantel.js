@@ -76,7 +76,7 @@ export function presentar(w, archivo, enObrero) {
 
 // ── buscar los bancos ──
 async function probarUrl(b) {
-  try { const r = await fetch(urlDelBanco(b.archivo), { headers: { Range: 'bytes=0-0' } }); if (r.ok) { r.body?.cancel?.(); return true; } } catch { /* sin red o sin servidor */ }
+  try { const r = await fetch(urlDelBanco(b.archivo), { headers: { Range: 'bytes=0-0' }, cache: 'no-store' }); if (r.ok) { r.body?.cancel?.(); return true; } } catch { /* sin red o sin servidor */ }
   return false;
 }
 async function ubicar(b) {
