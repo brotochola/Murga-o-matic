@@ -1,0 +1,1 @@
+export const DEMOS=[{estilo:"trasnochada",forma:"presentacion",modo:"menor",tonica:11,semilla:60,nota:9.7},{estilo:"trasnochada",forma:"retirada",modo:"mayor",tonica:9,semilla:56,nota:9.7},{estilo:"catalina",forma:"presentacion",modo:"mayor",tonica:9,semilla:9,nota:9.5},{estilo:"catalina",forma:"retirada",modo:"menor",tonica:9,semilla:28,nota:9.4}];

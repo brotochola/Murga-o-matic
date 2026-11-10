@@ -1,0 +1,1 @@
+import{escribirLetraLocal as s}from"./letrista_local.js";self.onmessage=({data:{id:e,...r}})=>{try{self.postMessage({id:e,r:s(r)})}catch(a){self.postMessage({id:e,error:String(a?.message||a)})}};
