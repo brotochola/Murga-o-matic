@@ -19,6 +19,7 @@ import { mostrarProceso } from './vista.js';
 import { crearMultipista } from './multipista.js';
 import { nombreAcorde, textoConAcordes, mostrarPartitura, pdfPartitura, cargarScript, escritas } from './papeles.js';
 import { guardarMurga, leerMurga, borrarMurga, listarMurgas, nuevoId } from './murgas.js';
+import { etiquetaLame } from './etiqueta_mp3.js';   // la etiqueta LAME del MP3 exportado (lamejs no la escribe)
 
 const DATOS = {"ritmos":[{"id":3,"nombre":"Marcha camión 2/4","tpc":2,"compas":0.8931,"compases":2,"bpm":134.4,"archivo":"loops/03.wav"},{"id":4,"nombre":"Marcha camión 4/4","tpc":4,"compas":2.7963,"compases":2,"bpm":85.8,"archivo":"loops/04.wav"},{"id":6,"nombre":"Base de murga","tpc":4,"compas":2.0109,"compases":2,"bpm":119.3,"archivo":"loops/06.wav"},{"id":8,"nombre":"Candombe","tpc":4,"compas":1.909,"compases":2,"bpm":125.7,"archivo":"loops/08.wav"},{"id":9,"nombre":"Pa'l costado","tpc":4,"compas":2.1441,"compases":2,"bpm":111.9,"archivo":"loops/09.wav"},{"id":10,"nombre":"Plena","tpc":4,"compas":1.729,"compases":2,"bpm":138.8,"archivo":"loops/10.wav"},{"id":11,"nombre":"Bossa nova","tpc":4,"compas":2.856,"compases":2,"bpm":84.0,"archivo":"loops/11.wav"},{"id":13,"nombre":"Conga","tpc":4,"compas":1.7225,"compases":2,"bpm":139.3,"archivo":"loops/13.wav"},{"id":14,"nombre":"Beat","tpc":4,"compas":1.7239,"compases":2,"bpm":139.2,"archivo":"loops/14.wav"},{"id":15,"nombre":"Bolero moderno","tpc":4,"compas":2.55,"compases":2,"bpm":94.1,"archivo":"loops/15.wav"},{"id":17,"nombre":"Son cubano","tpc":4,"compas":1.96,"compases":2,"bpm":122.4,"archivo":"loops/17.wav"},{"id":18,"nombre":"Montuno cubano","tpc":4,"compas":2.4999,"compases":2,"bpm":96.0,"archivo":"loops/18.wav"},{"id":19,"nombre":"Rumba cubana","tpc":4,"compas":2.4175,"compases":2,"bpm":99.3,"archivo":"loops/19.wav"},{"id":20,"nombre":"Miles Davis","tpc":4,"compas":2.6515,"compases":2,"bpm":90.5,"archivo":"loops/20.wav"}],"frases":{"1":{"archivo":"frases/01.wav","ultimo":5.6657,"seg":6.553},"5":{"archivo":"frases/05.wav","ultimo":2.798,"seg":3.999},"7":{"archivo":"frases/07.wav","ultimo":3.6629,"seg":4.196}},"acompana":{"3":[1,null],"4":[1,null],"6":[5,7]}};
 
@@ -1236,7 +1237,10 @@ async function codificarMp3(mix,alAvanzar){
     const buf=enc.encodeBuffer(l16.subarray(0,m),r16.subarray(0,m));if(buf.length)partes.push(new Uint8Array(buf));
     if(performance.now()-t>30){alAvanzar(i/n);await pausa();t=performance.now()}}
   const fin=enc.flush();if(fin.length)partes.push(new Uint8Array(fin));
-  return new Blob(partes,{type:"audio/mpeg"})}
+  // adelante, el cuadro con la etiqueta LAME: sin él, el MP3 arranca 25 ms tarde y termina con relleno
+  const audio=new Uint8Array(partes.reduce((a,p)=>a+p.length,0));let o=0;for(const p of partes){audio.set(p,o);o+=p.length}
+  let cab=new Uint8Array(0);try{cab=etiquetaLame(audio,n,SR,192)}catch(e){console.warn("el MP3 va sin etiqueta LAME:",e)}
+  return new Blob([cab,audio],{type:"audio/mpeg"})}
 async function bajarMp3(){
   if(!S.stems)return;const btn=$("mp3"),clave=S.gen+JSON.stringify(S.mix)+JSON.stringify(S.mute)+JSON.stringify(S.solo)+S.lugar+S.sala;
   try{
